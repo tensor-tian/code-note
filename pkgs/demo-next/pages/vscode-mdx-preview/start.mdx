@@ -1,0 +1,88 @@
+# vscode-mdx-preview
+
+## Contents
+
+## 项目结构
+
+<CH.Scrollycoding>
+
+### examples
+
+项目提供了 `mdx` 的三个示例
+其中第三个示例 `3-calculator` 展示了在 `mdx` 中导入 `React App`。
+
+```sh file-tree.txt focus=7:43
+# from ../../../../vscode-mdx-preview/file-tree.txt
+```
+
+---
+
+### packages/extension
+
+vscode 扩展插件
+
+```sh file-tree.txt focus=47:83
+
+```
+
+---
+
+### packages/webview-app
+
+将 `mdx` 文件在 `VSCode webview` 中预览
+
+```sh file-tree.txt focus=85:111
+
+```
+
+</CH.Scrollycoding>
+
+## extension
+
+```ts extension.ts focus=11:13,16,20
+// from ../../../../vscode-mdx-preview/packages/extension/extension.ts 6:26
+```
+
+### 准备 webpage 页面资源路径
+
+`initWebviewAppHTMLResources(context)`
+
+<CH.Code rows={18}>
+```ts extension.ts focus=1,2
+// from ../../../../vscode-mdx-preview/packages/extension/extension.ts 16:22
+```
+
+```ts preview/webview-manager.ts focus=1:4,6,14,18
+// from ../../../../vscode-mdx-preview/packages/extension/preview/webview-manager.ts 22:41
+```
+
+</CH.Code>
+
+### 监听 workspace 事件
+
+`initWorkspaceHandlers() 中` 监听了当前工作空间开启的 `workspace` 中当前的 `TextDocument` 的 `save`, `did change` 事件，并在当前 `Preview` 做出响应。
+
+<CH.Code rows={12}>
+```ts extension.ts focus=1,3
+// from ../../../../vscode-mdx-preview/packages/extension/extension.ts 16:22
+```
+
+```ts preview/workspace-manager.ts focus=3,6,8,14
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/workspace-manager.ts 9:24
+```
+
+</CH.Code>
+### 注册指令
+
+用户通过指令 `openPreview` 打开预览页面
+指令 `refreshPreview` 刷新预览页面
+
+```ts extension.ts focus=6,10
+// from ../../../../vscode-mdx-preview/packages/extension/extension.ts 16:26
+```
+
+## [extension 和 webview 之间的消息传递](./msg)
+
+## [open preview](./open-preview)
+
+## `webview-app`

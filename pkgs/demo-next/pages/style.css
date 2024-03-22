@@ -1,0 +1,15 @@
+article.app {
+  max-width: 1000px;
+  margin: 0 auto;
+  font-family: sans-serif;
+  --ch-scrollycoding-sticker-width: 600px;
+}
+.ch-spotlight-sticker {
+  width: 600px;
+}
+.ch-code-scroll-parent {
+  width: 100% !important;
+}
+.ch-code-line-number {
+  color: #9ca3af;
+}

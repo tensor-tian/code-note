@@ -1,0 +1,6 @@
+[submodule "pkgs/lighter"]
+	path = pkgs/lighter
+	url = git@github.com:tensor-tian/lighter.git
+[submodule "pkgs/codehike"]
+	path = pkgs/codehike
+	url = git@github.com:tensor-tian/codehike.git

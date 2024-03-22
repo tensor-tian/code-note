@@ -1,0 +1,158 @@
+# intro
+
+## Contents
+
+## code-actions-sample
+
+code action: quick fix
+
+code diagnostics
+
+<CH.Section>
+
+监听 [tab 激活](focus://diagnostics.ts#6)、[编辑](focus://diagnostics.ts#14)、[关闭文档](focus://diagnostics.ts#18) 等事件
+
+```ts diagnostics.ts
+// from /Users/jinmao/code/vscode/vscode-extension-samples/code-actions-sample/src/diagnostics.ts 47:67
+```
+
+</CH.Section>
+
+## tabs-api-sample
+
+<CH.Section>
+
+tab group change [_`vscode.window.tabGroups.onDidChangeTabGroups`_](focus://extension.ts#10)
+
+tab change [_`vscode.window.tabGroups.onDidChangeTabs`_](focus://extension.ts#16)
+
+```ts extension.ts
+// from /Users/jinmao/code/vscode/vscode-extension-samples/tabs-api-sample/src/extension.ts 3:53
+```
+
+</CH.Section>
+
+## codelens-sample
+
+<CH.Section>
+
+[注册 `codelensProvider`](focus://extension.ts#6)。
+
+[注册 codelens action](focus://extension.ts#16)
+
+实现 [`provideCodeLenses`](focus://CodelensProvider.ts#16) 方法，校验文本内容，匹配上规则后在此位置[添加 codeLens](focus://CodelensProvider.ts#27)。
+
+构建消耗比较大的 command 时，可以实现 [`resolveCodeLens`](focus://CodelensProvider.ts#37) ，在其中继续 [补充 command](focus://CodelensProvider.ts#39)。
+
+<CH.Code rows={20}>
+
+```ts CodelensProvider.ts
+// from /Users/jinmao/code/vscode/vscode-extension-samples/codelens-sample/src/CodelensProvider.ts 6:54
+```
+
+```ts extension.ts
+// from /Users/jinmao/code/vscode/vscode-extension-samples/codelens-sample/src/extension.ts 9:35
+```
+
+</CH.Code>
+
+</CH.Section>
+
+## custom-editor-sample
+
+<CH.Section>
+[doc](https://code.visualstudio.com/api/extension-guides/custom-editors)
+
+在 `package.json` 中[声明 `customEditor`，并关联到指定格式的文件](focus://package.json#1:10)
+
+在 `activate()` 中 [注册 `CustomEditorProvider`](focus://extension.ts#3)
+
+[创建一个 `CustomTextEditorProvider` 实例](focus://catScratchEditor.ts#4)，并[注册关联到 自定义的 `viewType`](focus://catScratchEditor.ts#5)
+
+我们自定义的 `CatScratchEditorProvider` 类实现了 [`vscode.CustomTextEditorProvider`](focus://catScratchEditor.ts#1) 的 [`resolveCustomTextEditor()`](focus://catScratchEditor.ts#22) 方法。
+
+用户打开特定文件时，会先初始化一个 [`TextDocument` 和 `WebviewPanel`](focus://catScratchEditor.ts#23:24)。
+
+然后调用 [`resolveCustomTextEditor`](focus://catScratchEditor.ts#22)，此时，我们需要:
+
+1. [加载 webview 内容](focus://catScratchEditor.ts#28:31)
+2. [关联 `TextDocument` 和 `WebviewPanel` 的事件](focus://catScratchEditor.ts#48:70)
+3. [将 `document` 中的文本内容加载到 `webviewPanel` 中完成 UI 绘制](focus://catScratchEditor.ts#72)。
+
+通过 `document` 和 `webviewPanel` 关联的事件实现数据同步：
+
+1. [document 中读取数据](focus://catScratchEditor.ts#163)
+2. 将数据[写入到 `document` 中](focus://179:188)
+
+<CH.Code rows={23}>
+
+```ts catScratchEditor.ts
+// from /Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample/src/catScratchEditor.ts 16:205
+```
+
+```ts extension.ts
+// from /Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample/src/extension.ts 5:9
+```
+
+```json package.json
+// from /Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample/package.json 21:31
+```
+
+</CH.Code>
+
+</CH.Section>
+
+## decrator-sample
+
+<CH.Section rows={22}>
+
+[定义 `TextEditorDecorationType`](focus://8:21,24:28)
+
+[注册文本内容改变相关的事件，触发 decorator 更新](focus://71,74,78,80)
+
+[自己实现的 `throttle` 防止频繁触发更新](focus://56:64)
+
+[校验 document 内容，插入 decorator](focus://36,41,44,46,48,51:52)
+
+```ts
+// from /Users/jinmao/code/vscode/vscode-extension-samples/decorator-sample/src/extension.ts 4:87
+```
+
+</CH.Section>
+
+## fsconsumer-sample
+
+shows how to use the `vscode.workspace.fs` API。
+
+## fsprovider-sample
+
+This extension implements an in-memory file system to show-case the [filesystem provider api](https://github.com/Microsoft/vscode/blob/51a880315fd0ec2cafb511a17de48ec31802ba6d/src/vs/vscode.d.ts#L4968). It serves two purposes:
+
+- Be a sample/reference for extension authors that want to implement a filesystem provider
+- Be a test for other extensions that _falsely_ assume text document always live on disk.
+
+## quickinput-sample
+
+This is a sample extension that shows the QuickInput UI and usage of the QuickInput API.
+
+It is not intended as a production quality extension.
+
+- Open the command palette
+- Run "Quick Input Samples"
+- Pick one of the samples and see it run
+
+## tree-view-sample
+
+# Views & View Containers
+
+This sample demonstrates how to implement and contribute a tree view in VS Code. This includes:
+
+- Contributing views and view containers.
+- Contributing actions in various location of the view.
+- Implementing the tree data provider for the view.
+- Creating and working with the view.
+
+This sample provides following views
+
+- Node dependencies view
+- Ftp file explorer view

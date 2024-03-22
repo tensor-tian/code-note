@@ -1,0 +1,125 @@
+# polestar
+
+## contents
+
+## 实现
+
+<CH.Code rows={94}>
+
+```ts Polestar focus=1,2,9,11:12,14,24,31,34,46,56,63,75,79
+class Polestar {
+  private loads: {
+    [url: string]: {
+      requiredBy: ModuleWrapper[];
+      preparedModuleWrapperPromise: Promise<ModuleWrapper>;
+    };
+  };
+
+  private resolver: Resolver;
+
+  moduleWrappers: {
+    [id: string]: ModuleWrapper;
+  };
+  evaluate(
+    dependencies: string[],
+    code: string,
+    dependencyVersionRanges?: VersionRanges,
+    id?: string
+  ): Promise<Module> {
+    if (id === undefined) {
+      id = "polestar-anonymous://" + String(this.nextEntryId++);
+    }
+
+    return this.prepareModuleWrapper(
+      id,
+      code,
+      dependencies || [],
+      dependencyVersionRanges || {}
+    ).then(getModule);
+  }
+  require(request: string): Promise<Module> {
+    // ...
+  }
+  resolve(
+    request: string,
+    parentId?: string,
+    defaultPackageVersionRanges: VersionRanges = {}
+  ): Resolution {
+    return this.resolver.resolve(
+      request,
+      parentId,
+      defaultPackageVersionRanges
+    );
+  }
+  // Initializes a module if it doesn't already exist
+  loadWrapper(
+    url: string,
+    requiredBy?: ModuleWrapper,
+    originalRequest?: string
+  ): Promise<ModuleWrapper> {
+    // this.moduleWrappers[url]
+    // this.loads[url]
+    // featcher(url, )
+  }
+
+  async unload(id: string) {
+    // get startModule by id
+    // collect modules follow requiredBy relation
+    // remove from this.loads
+    // remove from this.moduleWrappers
+    // remove from this.resolver.knownURLs
+  }
+  preloadModule(id: string, preloadedModule: any, css?: string) {
+    return this.prepareModuleWrapper(
+      id,
+      "",
+      [],
+      undefined,
+      [],
+      css,
+      true,
+      preloadedModule
+    );
+  }
+  private handleFetchResult = (
+    result: FetchResult
+  ): Promise<ModuleWrapper> => {};
+
+  private prepareModuleWrapper(
+    id: string,
+    code: string,
+    dependencies?: "umd" | string[],
+    dependencyVersionRanges?: VersionRanges,
+    requiredBy: ModuleWrapper[] = [],
+    css?: string,
+    isPreloadModule?: boolean,
+    preloadedModule?: any
+  ): Promise<ModuleWrapper> {
+    // if css, insert into dom
+    // build ModuleWrapper
+    // this.resolver.register(id)
+    // this.moduleWrappers[id] = moduleWrapper
+  }
+}
+```
+
+```ts ModuelWrapper
+class ModuleWrapper {
+  module: Module;
+  polestar: Polestar;
+  fn: ModuleFunction;
+  // A promise that resolves once all dependency modules have been loaded,
+  // and the module can be executed
+  // prepared 这个状态是指 所有依赖已经 prepared,
+  // 所以这个模块已经 prepared，可以运行这个模块了
+  isPrepared: boolean;
+  preparedPromise: Promise<ModuleWrapper>;
+  rejectPrepared: (error: any) => void;
+  resolvePrepared: (moduleWrapper: ModuleWrapper) => void;
+  // A list of modules that are waiting for *this* module. We keep track of
+  // this, as we can't wait for any of these modules without causing deadlock.
+  requiredBy: Set<ModuleWrapper>;
+}
+```
+
+</CH.Code>

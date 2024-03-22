@@ -1,0 +1,57 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@types/jest": "^27.5.2",
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^16.18.86",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "lodash": "^4.17.21",
+    "react": "^18.2.0",
+    "react-app-rewired": "^2.2.1",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^9.0.1",
+    "react-scripts": "5.0.1",
+    "reactflow": "^11.10.4",
+    "remark-gfm": "^4.0.0",
+    "types": "0.0.1",
+    "typescript": "^4.9.5",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "build-watch:css": "npx tailwindcss -i ./src/input.css -o ./src/index.css --watch",
+    "build:css": "npx tailwindcss -i ./src/input.css -o ./src/index.css",
+    "start:browser": "react-scripts start",
+    "build:browser": "react-scripts build",
+    "test": "react-scripts test",
+    "prebuild": "npm run build:css && rm -rf ../vscode/dist/web",
+    "build": "react-app-rewired build",
+    "postbuild": "mv ./build ../vscode/dist/web"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}

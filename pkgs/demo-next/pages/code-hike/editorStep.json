@@ -1,0 +1,2085 @@
+{
+  "northPanel": {
+    "tabs": ["attacher()", "transforms", "json"],
+    "active": "attacher()",
+    "heightRatio": 1
+  },
+  "files": [
+    {
+      "name": "attacher()",
+      "focus": "13:14,17:18,24",
+      "start_line": "42",
+      "code": {
+        "lines": [
+          {
+            "tokens": [
+              {
+                "content": "export ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": "const",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": " attacher",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ": ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "CodeHikeRemarkPlugin ",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": "=",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  unsafeConfig ",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": "=> ",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "{",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    return ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": "async ",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "(",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "tree",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": ": ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "SuperNode",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": ", ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "file",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": ": ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "VFile",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": ") ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "=> ",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "{",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "      const ",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "config ",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "= ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "addConfigDefaults",
+                "props": {
+                  "style": {
+                    "color": "#82AAFF"
+                  }
+                }
+              },
+              {
+                "content": "(",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        unsafeConfig",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        file",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "?.",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "cwd",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        file",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "?.",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "history",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "          ? ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "file",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ".",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "history",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "[",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "file",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ".",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "history",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ".",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "length ",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "- ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "1",
+                "props": {
+                  "style": {
+                    "color": "#F78C6C"
+                  }
+                }
+              },
+              {
+                "content": "]",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "          : undefined",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "      )",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "      try ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": "{",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        for",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": " (",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "const ",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "transform ",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "of ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "transforms",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ") ",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "{",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "          await ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": "transform",
+                "props": {
+                  "style": {
+                    "color": "#82AAFF"
+                  }
+                }
+              },
+              {
+                "content": "(",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "tree",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ", ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "config",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ")",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        }",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        const ",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "usedCodeHikeComponents ",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "=",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "          getUsedCodeHikeComponentNames",
+                "props": {
+                  "style": {
+                    "color": "#82AAFF"
+                  }
+                }
+              },
+              {
+                "content": "(",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "tree",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ")",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        if",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": " (",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "usedCodeHikeComponents",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ".",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "length ",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "> ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "0",
+                "props": {
+                  "style": {
+                    "color": "#F78C6C"
+                  }
+                }
+              },
+              {
+                "content": ") ",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "{",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "          await ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": "addConfig",
+                "props": {
+                  "style": {
+                    "color": "#82AAFF"
+                  }
+                }
+              },
+              {
+                "content": "(",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "tree",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ", ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "config",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ")",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "          if",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": " (",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "config",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ".",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "autoImport",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ") ",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "{",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "            addSmartImport",
+                "props": {
+                  "style": {
+                    "color": "#82AAFF"
+                  }
+                }
+              },
+              {
+                "content": "(",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "tree",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ", ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "usedCodeHikeComponents",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ")",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "          }",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        }",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "      } ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "catch",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": " (",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "e",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ") ",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "{",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        console",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ".",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "error",
+                "props": {
+                  "style": {
+                    "color": "#82AAFF"
+                  }
+                }
+              },
+              {
+                "content": "(",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              },
+              {
+                "content": "\"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "error running remarkCodeHike",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\", ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "e",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ")",
+                "props": {
+                  "style": {
+                    "color": "#F07178"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "        throw ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF",
+                    "fontStyle": "italic"
+                  }
+                }
+              },
+              {
+                "content": "e",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "      }",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    }",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  }",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "lang": "typescript"
+      },
+      "annotations": []
+    },
+    {
+      "name": "transforms",
+      "code": {
+        "lines": [
+          {
+            "tokens": [
+              {
+                "content": "const",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": " transforms ",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "=",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": " [",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  transformPreviews",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  transformScrollycodings",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  transformSpotlights",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  transformSlideshows",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  transformSections",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  transformInlineCodes",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  transformCodes",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "]",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "lang": "typescript"
+      },
+      "focus": "",
+      "annotations": []
+    },
+    {
+      "name": "json",
+      "code": {
+        "lines": [
+          {
+            "tokens": [
+              {
+                "content": "{",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "codeConfig",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "\": {",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "staticMediaQuery",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": "\": \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "max-width: 1000px",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "lineNumbers",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": "\": true,",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "showCopyButton",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": "\": true,",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "themeName",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": "\": \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "material-darker",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  },",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "northPanel",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "\": {",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "tabs",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": "\": \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "[",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\\\"",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "attacher()",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\\\"",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ", ",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\\\"",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "transforms",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\\\"",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "]",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "active",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": "\": \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "attacher()",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "heightRatio",
+                "props": {
+                  "style": {
+                    "color": "#FFCB6B"
+                  }
+                }
+              },
+              {
+                "content": "\": ",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "1",
+                "props": {
+                  "style": {
+                    "color": "#F78C6C"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  },",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "files",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "\": [",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "{annotations: Array(0), code: {…}, focus: ",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\\\"",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": "13:14,17…}",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\",",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "    \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "{annotations: Array(0), code: {…}, focus: ",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\\\"\\\"",
+                "props": {
+                  "style": {
+                    "color": "#EEFFFF"
+                  }
+                }
+              },
+              {
+                "content": ", name:…}",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  ],",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "children",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "\": [\"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "<Code />",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\", \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "<Code />",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\"],",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "  \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "onTabClick",
+                "props": {
+                  "style": {
+                    "color": "#C792EA"
+                  }
+                }
+              },
+              {
+                "content": "\": \"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              },
+              {
+                "content": "ƒ onTabClick() {}",
+                "props": {
+                  "style": {
+                    "color": "#C3E88D"
+                  }
+                }
+              },
+              {
+                "content": "\"",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "content": "}",
+                "props": {
+                  "style": {
+                    "color": "#89DDFF"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "lang": "json"
+      },
+      "focus": "",
+      "annotations": []
+    }
+  ]
+}

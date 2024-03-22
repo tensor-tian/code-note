@@ -1,0 +1,29 @@
+{
+  "name": "demo-next",
+  "version": "0.9.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next",
+    "build": "next build"
+  },
+  "dependencies": {
+    "@code-hike-local/mdx": "workspace:^",
+    "@mdx-js/loader": "2.2.1",
+    "@mdx-js/mdx": "2.2.1",
+    "@mdx-js/react": "2.2.1",
+    "@next/mdx": "^14.1.0",
+    "@stefanprobst/rehype-extract-toc": "^2.2.0",
+    "next": "13.1.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-edit-text": "^5.1.1",
+    "rehype-slug": "^6.0.0",
+    "remark-mermaid": "^0.2.0",
+    "remark-mermaidjs": "^6.0.0",
+    "remark-toc": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/react-edit-text": "^5.0.4"
+  }
+}

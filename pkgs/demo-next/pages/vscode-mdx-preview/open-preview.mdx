@@ -1,0 +1,181 @@
+# 打开开始页面
+
+## contents
+
+## 1. activate
+
+```ts extension.ts focus=3,8
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/extension.ts 14:22
+```
+
+## 2. openPreview
+
+```ts preview/preview-manager.ts focus=1,5,7,9,11:12
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/preview/preview-manager.ts 278:290
+```
+
+### 2.1 new Preview
+
+### 2.2 preview.setDoc
+
+### 2.3 createOrShowPannel
+
+```ts preview/webview-manager.ts focus=1,7,18,30:32,36,39
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/preview/webview-manager.ts 120:164
+```
+
+#### 2.3.1 updateViewview
+
+```ts preview/webview-manager.ts focus=6,7
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/preview/webview-manager.ts 111:118
+```
+
+##### 2.3.1.1 run webview
+
+[link to webapp](#3-run-webapp)
+
+```ts webview/index.tsx focus=8,10
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/index.tsx
+```
+
+#### 2.3.2 initWebviewHandshakePromise
+
+调用 `initWebviewHandshakePromise()` 将 `webviewHandshakePromise` 赋值为一个 `Promise`,阻塞 `webviewHandshakePromise` 调用方直到 `resolveWebviewHandshakePromise()` 被调用时。
+
+<CH.Code>
+```ts preview/preview-manager.ts focus=2,31:39
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/preview/preview-manager.ts 26:64
+```
+
+```ts rpc-extension-handle.ts focus=1,7:9
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/rpc-extension-handle.ts 6:25
+```
+
+```ts rpc-webview.ts focus=21,30
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/rpc-webview.ts
+```
+
+</CH.Code>
+
+#### 2.3.3 initRPCExtensionSide
+
+将 extension 端 `ExtensionHandle` 给 webview，获得 `WebviewHandle` 的代理变量。
+
+```ts focus=1,6,9
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/rpc-extension.ts 69:79
+```
+
+### 2.4 `currentPreview.updateWebview()`
+
+[link to openPreview() line 12](#2-openpreview)
+
+<CH.Code>
+
+```ts updatePreview() focus=7,11,15
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/preview/preview-manager.ts 187:208
+```
+
+```ts evaluateInWebview() focus=6,8,14,16
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/preview/evaluate-in-webview.ts 14:43
+```
+
+</CH.Code>
+
+#### 2.4.1 mdx to react code
+
+`mdx` ->`ts` -> `js` -> `bundled js`
+
+```ts transformEntry() focus=4,7,14,22,24,28
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/extension/module-fetcher/transform.ts 9:40
+```
+
+## 3 run webapp
+
+### 3.1 handshake
+
+[link to handshake](#232-initwebviewhandshakepromise)
+
+```ts webview/index.tsx focus=8,10
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/index.tsx
+```
+
+### 3.2 展示加载进度
+
+`<LoadingBar/>` 中订阅展示了加载的进度。
+
+`create-subscription` is a utility for subscribing to external data sources inside React components.
+
+<CH.Code rows={30}>
+```ts App.tsx focus=5,11
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/App.tsx
+```
+
+```ts LoadingBar.tsx focus=2,3,16
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/components/LoadingBar/LoadingBar.tsx
+```
+
+```ts ValueSubscription.ts focus=1,4
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/lib/ValueSubscription.ts
+```
+
+```ts evaluate.ts
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/evaluate.ts 105:105
+```
+
+```ts ValueEventEmitter.ts focus=7,10,16,22
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/lib/ValueEventEmitter.ts
+```
+
+</CH.Code>
+
+## 4 preview mdx content
+
+### 4.1 render mdx in webview side
+
+webview handle 实现了 `updatePreview` 方法更新基于 mdx 编译后的代码
+
+```ts RPCWebViewHandle focus=1,4,6
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/rpc-webview-handle.ts 7:13
+```
+
+使用 Polestar 加载代码到当前 webview
+
+<CH.Code>
+
+```ts evaluate() focus=1,11,18
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/evaluate.ts 107:138
+```
+
+```ts preloadPromise
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/evaluate.ts 92:97
+```
+
+```ts polestar
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/evaluate.ts 72:90
+```
+
+```ts rpcFeatcher
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/webview-app/src/evaluate.ts 16:70
+```
+
+</CH.Code>
+
+在 Polstar 中运行和管理代码及其依赖。
+
+```ts evaluate() focus=1,6
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/polestar/src/Polestar.ts 75:86
+```
+
+`prepareModuleWrapper()` 76 行加载了 `code`，并在 `window` 上运行。然后返回了封装好的 `moduleWrapper`。
+
+```ts prepareModuleWrapper() focus=15,29,66,76:78,83:86,88,95,108
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/polestar/src/Polestar.ts 261:374
+```
+
+`createFunction()` line 22 将 code 插入到了 dom 中，并返回了引用值。
+
+```ts createFunction() focus=4:6,19,22,24,29:34
+// from /Users/jinmao/code/mdx/vscode-mdx-preview/packages/polestar/src/createFunction.ts
+```
+
+### 4.2 extension 传给 webview 的 code 值
