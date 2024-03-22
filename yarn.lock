@@ -2047,6 +2047,7 @@ __metadata:
     "@rollup/pluginutils": "npm:^5.0.2"
     "@types/react": "npm:^18.0.26"
     ansi-sequence-parser: "npm:1.1.1"
+    debug: "npm:@milahu/debug-esm@*"
     jsonc-parser: "npm:^3.2.0"
     node-fetch: "npm:^3.3.1"
     rollup: "npm:^2.79.0"
@@ -2078,6 +2079,7 @@ __metadata:
     autoprefixer: "npm:^9.8.2"
     click-to-react-component: "npm:^1.0.8"
     cssnano: "npm:^4.1.10"
+    debug: "npm:@milahu/debug-esm@*"
     diff: "npm:^4.0.2"
     esbuild: "npm:^0.13.2"
     hast-util-to-estree: "npm:^1.4.0"
@@ -10211,6 +10213,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"debug@npm:@milahu/debug-esm@*":
+  version: 4.3.5
+  resolution: "@milahu/debug-esm@npm:4.3.5"
+  dependencies:
+    ms: "npm:3.0.0-canary.1"
+  checksum: 10c0/7d307d9ada93e9e8401d63085b0fcf2818bf418ad737ca1e3c81fcec85b4768e869ab4603e6ecd264c68590a5f7b0eb2d3b0656c63f662cd5e011c626e5bde7d
+  languageName: node
+  linkType: hard
+
 "debug@npm:^3.2.7":
   version: 3.2.7
   resolution: "debug@npm:3.2.7"
@@ -18278,6 +18289,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ms@npm:3.0.0-canary.1":
+  version: 3.0.0-canary.1
+  resolution: "ms@npm:3.0.0-canary.1"
+  checksum: 10c0/81040c55778c01b6cb8fd35aee71465b765a8ab5daa2f8d46a59f9fde0f86c668483232c82c9e8fb7d9379a3671b3bdd5f34b38e54dcedb608d791d149bb2815
+  languageName: node
+  linkType: hard
+
 "multicast-dns@npm:^7.2.5":
   version: 7.2.5
   resolution: "multicast-dns@npm:7.2.5"
@@ -25907,8 +25925,8 @@ __metadata:
   linkType: hard
 
 "vite@npm:^3.0.0 || ^4.0.0 || ^5.0.0-0, vite@npm:^3.1.0 || ^4.0.0 || ^5.0.0-0":
-  version: 5.2.2
-  resolution: "vite@npm:5.2.2"
+  version: 5.2.3
+  resolution: "vite@npm:5.2.3"
   dependencies:
     esbuild: "npm:^0.20.1"
     fsevents: "npm:~2.3.3"
@@ -25942,7 +25960,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/472c6a1d41707ef51a5056ccc9e347333a3a975beb6069998d3d7a134555662b856e27628cc1354200c32d63373d7e4ef73385a4e90cc3032e48d06fb77928e5
+  checksum: 10c0/6cd235a4fdb41da87cc6e9734c91935751fe6eae1f797a68c5f8772be7e99cc1fd596c783255c168c2aa6fb3ce4f520b2b246713b91e7b0642a976ba29b89c07
   languageName: node
   linkType: hard
 
