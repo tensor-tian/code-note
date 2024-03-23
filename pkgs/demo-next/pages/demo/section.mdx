@@ -3,7 +3,6 @@
 <CH.Code>
 
 ```ts attacher() focus=15:16,47:106 lineNums=10:21,40:47,101:122
-// mark[10:20]
 import { CodeRange, parseRelativeRanges } from "./range";
 import { highlightText, highlightTokens } from "./highlighter";
 
@@ -27,7 +26,7 @@ const commentsTheme: FinalTheme = {
   background: "",
   colors: {},
   settings: [
-    // mark[7:14]
+    // link[10:20] https://codehike.org
     { settings: { foreground: "#000" } },
     {
       scope: ["punctuation.definition.comment"],
