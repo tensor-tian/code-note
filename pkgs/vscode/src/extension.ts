@@ -1,48 +1,87 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 
-import { arch, platform } from "os";
+import { DecorationKind, Highlight, currentSelection } from "./highlight";
 
-import Database from "better-sqlite3";
-import path from "path";
-
-// import sqlite3 from "sqlite3";
-
-// import { validateSqliteCommand } from "./sqlite";
-
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "code-note" is now active!!!');
-  console.log("extension path:", context.extensionPath);
-  console.log("platform:", platform(), "arch:", arch());
+  console.log('Congratulations, your extension "vscode-note" is now active!');
 
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
-  let disposable = vscode.commands.registerCommand(
-    "code-note.helloWorld",
-    () => {
-      // The code you place here will be executed every time your command is executed
-      // Display a message box to the user
-      vscode.window.showInformationMessage("Hello World from code-note!");
-    }
-  );
-
-  context.subscriptions.push(disposable);
-
+  console.log("env", process.env);
+  const highlight = new Highlight();
+  highlight.subscribe(context);
   context.subscriptions.push(
-    vscode.commands.registerCommand("code-note.sqlite-test", () => {
-      // const sqliteCommand = validateSqliteCommand(context.extensionPath);
-      const db = new Database(path.join(context.extensionPath, "test.db"), {});
-      const rows = db.prepare("select * from test").all();
-      console.log(rows);
+    // hello world
+    vscode.commands.registerCommand("vscode-note.helloWorld", () => {
+      vscode.window.showInformationMessage("Hello World from vscode-note!");
+    }),
+    //
+    vscode.commands.registerCommand("vscode-note.toggle-code", () => {
+      highlight.toggleHighlight(DecorationKind.Code);
+    }),
+    vscode.commands.registerCommand("vscode-note.toggle-focus", () => {
+      highlight.toggleHighlight(DecorationKind.Focus);
+    }),
+    vscode.commands.registerCommand("vscode-note.toggle-mark", () => {
+      highlight.toggleHighlight(DecorationKind.Mark);
+    }),
+    vscode.commands.registerCommand("vscode-note.toggle-link", () => {
+      highlight.toggleHighlight(DecorationKind.Link);
+    }),
+    vscode.commands.registerCommand("vscode-note.remove-all", () => {
+      highlight.removeAll();
+    }),
+    vscode.commands.registerCommand("vscode-note.submit", () => {
+      submitNote(highlight);
     })
   );
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
+
+async function submitNote(highlight: Highlight) {
+  console.log("current selection:", currentSelection());
+  const note = highlight.note;
+  if (!note) {
+    return;
+  }
+  const { links, marks } = note;
+  let text: string | undefined;
+  if (links.length + marks.length === 1) {
+    text = await showInputBox(links[0] || marks[0]);
+  } else {
+    text = await showQuickPick(links, marks);
+    if (!text) {
+      vscode.window.showWarningMessage(
+        "failed to submit note: need an input text !"
+      );
+      return;
+    }
+    text = await showInputBox(text);
+  }
+  if (!text) {
+    vscode.window.showWarningMessage(
+      "failed to submit note: need an input text !"
+    );
+    return;
+  }
+  // post { ...note, text } to server
+  console.log("post to server:", { ...note, text });
+}
+async function showInputBox(value: string): Promise<string | undefined> {
+  const result = await vscode.window.showInputBox({
+    value: value || "",
+    valueSelection: [0, value.length],
+    placeHolder: "note text",
+  });
+  return result;
+}
+
+async function showQuickPick(
+  links: string[],
+  marks: string[]
+): Promise<string | undefined> {
+  const window = vscode.window;
+  const result = await window.showQuickPick([...links, ...marks], {
+    placeHolder: links[0] || marks[0],
+  });
+  return result;
+}

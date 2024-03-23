@@ -1,10 +1,10 @@
 {
-  "name": "code-note-vscode",
-  "displayName": "code-note-vscode",
-  "description": "",
+  "name": "vscode",
+  "displayName": "vscode",
+  "description": "mark code with code-hike",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.86.1"
+    "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
@@ -14,18 +14,88 @@
   "contributes": {
     "commands": [
       {
-        "command": "code-note.helloWorld",
+        "command": "vscode-note.helloWorld",
         "title": "Hello World"
       },
       {
-        "command": "code-note.sqlite-test",
-        "title": "Test Sqlite"
+        "command": "vscode-note.remove-all",
+        "title": "Remove All"
+      },
+      {
+        "command": "vscode-note.toggle-code",
+        "title": "Toggle Code"
+      },
+      {
+        "command": "vscode-note.toggle-focus",
+        "title": "Toggle Focus"
+      },
+      {
+        "command": "vscode-note.toggle-mark",
+        "title": "Toggle Mark"
+      },
+      {
+        "command": "vscode-note.toggle-link",
+        "title": "Toggle Link"
+      },
+      {
+        "command": "vscode-note.submit",
+        "title": "Submit Note"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "vscode-note.remove-all"
+        },
+        {
+          "command": "vscode-note.toggle-code"
+        },
+        {
+          "command": "vscode-note.toggle-focus"
+        },
+        {
+          "command": "vscode-note.toggle-mark"
+        },
+        {
+          "command": "vscode-note.toggle-link"
+        },
+        {
+          "command": "vscode-note.submit"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "vscode-note.remove-all",
+        "key": "ctrl+shift+opt+r",
+        "mac": "cmd+shift+opt+r"
+      },
+      {
+        "command": "vscode-note.toggle-code",
+        "key": "ctrl+shift+opt+c",
+        "mac": "cmd+shift+opt+c"
+      },
+      {
+        "command": "vscode-note.toggle-focus",
+        "key": "ctrl+shift+opt+f",
+        "mac": "cmd+shift+opt+f"
+      },
+      {
+        "command": "vscode-note.toggle-mark",
+        "key": "ctrl+shift+opt+m",
+        "mac": "cmd+shift+opt+m"
+      },
+      {
+        "command": "vscode-note.toggle-link",
+        "key": "ctrl+shift+opt+l",
+        "mac": "cmd+shift+opt+l"
       }
     ]
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",
     "compile": "webpack",
+    "build": "yarn run compile",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
@@ -35,7 +105,6 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.9",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
     "@types/vscode": "^1.87.0",
@@ -49,7 +118,5 @@
     "webpack": "^5.90.0",
     "webpack-cli": "^5.1.4"
   },
-  "dependencies": {
-    "better-sqlite3": "^9.4.3"
-  }
+  "dependencies": {}
 }

@@ -1,15 +1,18 @@
 {
   "folders": [
-	{
-		"path": "."
-	},
-	{
-		"path": "pkgs/codehike"
-	},
-	{
-		"path": "pkgs/lighter"
-	}
-],
+    {
+      "path": "."
+    },
+    {
+      "path": "pkgs/codehike"
+    },
+    {
+      "path": "pkgs/lighter"
+    },
+    {
+      "path": "pkgs/vscode"
+    }
+  ],
   "settings": {
     "typescript.tsc.autoDetect": "off"
   }
