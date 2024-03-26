@@ -11,6 +11,9 @@
     },
     {
       "path": "pkgs/vscode"
+    },
+    {
+      "path": "pkgs/server"
     }
   ],
   "settings": {
