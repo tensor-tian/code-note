@@ -7,41 +7,75 @@ export interface Package {
   configFile: string; // 包声明文件
   desc: string; // 包描述
 }
+type BlockType = "Code" | "Scrolly" | "Tree" | "Section";
 
-interface Range {
-  from: number;
-  to: number;
-}
+export type Block = CodeBlock | ScrollyCodeBlock | TreeBlock;
 
-export interface Block {
+export interface BaseBlock {
   id: string;
-  loc: string; // vscode document symbol
   text: string;
-  pkgName: string;
-  mdx: string;
+  type: BlockType;
+  parentId?: string;
+}
+
+export interface CodeBlock extends BaseBlock {
+  type: "Code";
+  code: string;
   file: string;
-  fileRanges: Range[];
-  type?: string;
+  focus: string;
+  lineNums: string;
+  lang: string;
+  project: string;
 }
 
-export interface Graph<T = {}> {
+export interface ScrollyCodeBlock extends BaseBlock {
+  type: "Scrolly";
+  chain: string[];
+}
+
+export interface TreeBlock extends BaseBlock {
+  type: "Tree";
+}
+
+export interface LayoutNode {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  totalH: number;
+  totalW: number;
+  left?: string;
+  right?: string;
+  top?: string;
+  bottom?: string;
+}
+
+export interface Note<T extends Block> {
+  type: "CodeNote";
   text: string;
+  pkgName: string;
+  blockMap: Record<string, T>;
   edges: Edge<T>[];
-  nodes: Record<
-    string,
-    {
-      type: string;
-      position: XYPosition;
-    }
-  >;
+  activeBlockId: string | null;
 }
 
-export interface Note<T = {}> {
-  title: string;
-  pkgName: string;
-  _auto_inc_block_id: number;
-  _auto_inc_edge_id: number;
-  blockMap: Record<string, Block>;
-  tree: Graph<T>;
-  graphs: Graph<T>[];
-}
+export type MessageDataAddBlock = {
+  action: "add-detail" | "add-next";
+  data: Omit<CodeBlock, "id">;
+};
+
+export type MessageDataE2W = MessageDataAddBlock;
+
+export type MessageDataW2E =
+  | {
+      action: "add-detail-done" | "add-next-done";
+    }
+  | {
+      action: "add-detail-fail" | "add-next-fail";
+      message: string;
+    }
+  | {
+      action: "save-note";
+      data: Note<CodeBlock>;
+    };

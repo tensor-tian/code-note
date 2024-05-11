@@ -1,27 +1,28 @@
 import { BezierEdge, EdgeProps } from "reactflow";
 
+import { selectEdgeHilight } from "../../service/note-slice";
+import { useAppSelector } from "../../service/store";
 import { useMemo } from "react";
 
 const Edge = (props: EdgeProps) => {
-  const handleId = props.sourceHandleId;
   const style = props.style;
+  const { id } = useAppSelector(selectEdgeHilight);
+  const highlight = id === props.id;
   const newStyle = useMemo(() => {
-    if (handleId?.endsWith("right")) {
+    if (highlight) {
       return {
-        stroke: "#63b3ed",
+        stroke: "#1a202c",
         strokeWidth: 2,
         ...style,
       };
-    } else if (handleId?.endsWith("bottom")) {
+    } else {
       return {
-        stroke: "#b794f4",
-        strokeWidth: 2,
+        stroke: "#cbd5e0",
+        strokeWidth: 1,
         ...style,
       };
     }
-    return style;
-  }, [handleId, style]);
-
+  }, [highlight, style]);
   return <BezierEdge {...props} style={newStyle} />;
 };
 

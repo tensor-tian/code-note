@@ -145,6 +145,7 @@ module.exports = {
         px: "1px",
         0: "0",
         0.5: "0.125rem",
+        0.75: "0.1875rem",
         1: "0.25rem",
         1.5: "0.375rem",
         2: "0.5rem",
@@ -185,6 +186,7 @@ module.exports = {
         lg: ".5rem",
         full: "9999px",
       },
+      borderWidth: {},
     },
   },
 };

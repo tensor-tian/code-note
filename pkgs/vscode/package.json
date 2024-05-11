@@ -9,86 +9,119 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:extension.activate"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
+    "files.associations": {
+      ".cnote": "vscode-note"
+    },
+    "customEditors": [
+      {
+        "viewType": "vscode-note",
+        "displayName": "Code Note",
+        "selector": [
+          {
+            "filenamePattern": "*.cnote"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
-        "command": "vscode-note.helloWorld",
-        "title": "Hello World"
+        "command": "vscode-note.open-workspace",
+        "title": "Code Note: Open Workspace"
+      },
+      {
+        "command": "vscode-note.open-file",
+        "title": "Code Note: Open File"
+      },
+      {
+        "command": "vscode-note.create-file",
+        "title": "Code Note: Create File"
       },
       {
         "command": "vscode-note.remove-all",
-        "title": "Remove All"
+        "title": "Code Note: Remove All"
       },
       {
         "command": "vscode-note.toggle-code",
-        "title": "Toggle Code"
+        "title": "Code Note: Toggle Code"
       },
       {
         "command": "vscode-note.toggle-focus",
-        "title": "Toggle Focus"
+        "title": "Code Note: Toggle Focus"
       },
       {
         "command": "vscode-note.toggle-mark",
-        "title": "Toggle Mark"
+        "title": "Code Note: Toggle Mark"
       },
       {
         "command": "vscode-note.toggle-link",
-        "title": "Toggle Link"
+        "title": "Code Note: Toggle Link"
       },
       {
-        "command": "vscode-note.submit",
-        "title": "Submit Note"
+        "command": "vscode-note.add-detail",
+        "title": "Code Note: Add Detail Note"
+      },
+      {
+        "command": "vscode-note.add-next",
+        "title": "Code Note: Add Next Note"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "vscode-note.remove-all"
+          "command": "vscode-note.remove-all",
+          "group": "code-note@7"
         },
         {
-          "command": "vscode-note.toggle-code"
+          "command": "vscode-note.toggle-code",
+          "group": "code-note@3"
         },
         {
-          "command": "vscode-note.toggle-focus"
+          "command": "vscode-note.toggle-focus",
+          "group": "code-note@4"
         },
         {
-          "command": "vscode-note.toggle-mark"
+          "command": "vscode-note.toggle-mark",
+          "group": "code-note@5"
         },
         {
-          "command": "vscode-note.toggle-link"
+          "command": "vscode-note.toggle-link",
+          "group": "code-note@6"
         },
         {
-          "command": "vscode-note.submit"
+          "command": "vscode-note.add-detail",
+          "group": "code-note@1"
+        },
+        {
+          "command": "vscode-note.add-next",
+          "group": "code-note@2"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "vscode-note.remove-all",
-        "key": "ctrl+shift+opt+r",
-        "mac": "cmd+shift+opt+r"
+        "command": "vscode-note.highlight",
+        "key": "ctrl+h",
+        "mac": "cmd+h"
       },
       {
-        "command": "vscode-note.toggle-code",
-        "key": "ctrl+shift+opt+c",
-        "mac": "cmd+shift+opt+c"
+        "command": "vscode-note.remove-highlight",
+        "key": "alt+ctrl+h",
+        "mac": "alt+cmd+h"
       },
       {
-        "command": "vscode-note.toggle-focus",
-        "key": "ctrl+shift+opt+f",
-        "mac": "cmd+shift+opt+f"
+        "command": "vscode-note.add-next-block",
+        "key": "alt+ctrl+n",
+        "mac": "alt+cmd+n"
       },
       {
-        "command": "vscode-note.toggle-mark",
-        "key": "ctrl+shift+opt+m",
-        "mac": "cmd+shift+opt+m"
-      },
-      {
-        "command": "vscode-note.toggle-link",
-        "key": "ctrl+shift+opt+l",
-        "mac": "cmd+shift+opt+l"
+        "command": "vscode-note.add-detail-block",
+        "key": "alt+ctrl+d",
+        "mac": "alt+cmd+d"
       }
     ]
   },
@@ -106,6 +139,7 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
+    "@types/nanoid": "^3.0.0",
     "@types/node": "18.x",
     "@types/vscode": "^1.87.0",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
@@ -118,5 +152,8 @@
     "webpack": "^5.90.0",
     "webpack-cli": "^5.1.4"
   },
-  "dependencies": {}
+  "dependencies": {
+    "nanoid": "^5.0.7",
+    "toml": "^3.0.0"
+  }
 }

@@ -13,7 +13,7 @@
       "path": "pkgs/vscode"
     },
     {
-      "path": "pkgs/server"
+      "path": "pkgs/web"
     }
   ],
   "settings": {

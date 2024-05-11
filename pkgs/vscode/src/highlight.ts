@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { Note, toMDx } from "./code-hike-mdx";
+import { CodeBlock, toMDx } from "./code-hike-mdx";
 
 export enum DecorationKind {
   Code = 0,
@@ -68,8 +68,8 @@ export class Highlight {
     this._rangeMap.set(editor.document.uri.fsPath, ranges);
   }
 
-  private _mdx: Note | undefined;
-  public get note(): Note | undefined {
+  private _mdx: CodeBlock | undefined;
+  public get block(): CodeBlock | undefined {
     return this._mdx;
   }
 

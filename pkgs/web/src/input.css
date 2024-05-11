@@ -16,3 +16,95 @@ body,
 .react-flow__panel.react-flow__attribution {
   display: none;
 }
+.Resizer {
+  background: #000;
+  opacity: 0.2;
+  z-index: 1;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  -moz-background-clip: padding;
+  -webkit-background-clip: padding;
+  background-clip: padding-box;
+}
+
+.Resizer:hover {
+  -webkit-transition: all 2s ease;
+  transition: all 2s ease;
+}
+
+.Resizer.horizontal {
+  height: 11px;
+  margin: -5px 0;
+  border-top: 5px solid rgba(255, 255, 255, 0);
+  border-bottom: 5px solid rgba(255, 255, 255, 0);
+  cursor: row-resize;
+  width: 100%;
+}
+
+.Resizer.horizontal:hover {
+  border-top: 5px solid rgba(0, 0, 0, 0.5);
+  border-bottom: 5px solid rgba(0, 0, 0, 0.5);
+}
+
+.Resizer.vertical {
+  width: 5px;
+  margin: 0 -5px;
+  border-left: 3px solid rgba(255, 255, 255, 0.2);
+  border-right: 3px solid rgba(255, 255, 255, 0.2);
+  cursor: col-resize;
+}
+
+.Resizer.vertical:hover {
+  border-left: 3px solid white;
+  border-right: 3px solid white;
+}
+.Resizer.disabled {
+  cursor: not-allowed;
+}
+.Resizer.disabled:hover {
+  border-color: transparent;
+}
+
+.unread-tippy .tippy-arrow {
+  color: #2d3748;
+}
+
+.react-flow__node input[type="text"] {
+  display: block;
+  width: 100%;
+  outline: double 1px #cbd5e0;
+  border-radius: 2px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.react-flow__node-Code {
+  width: 600px;
+}
+
+.react-flow__edge-edge:hover {
+  width: 4px;
+}
+
+.react-flow__node-Scrolly {
+  border-width: 1px;
+  border-color: #1a202c;
+  border-radius: 4px;
+}
+.react-flow__node-Tree {
+  border-width: 2px;
+  border-color: #63b3ed;
+  border-radius: 4px;
+}
+
+.btn-blue {
+  @apply text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded text-xs px-3 py-1 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800;
+}
+
+.code-handle {
+  @apply bg-gray-600 border-gray-600 w-1 h-1;
+}
+.code-handle-hl {
+  @apply bg-gray-900 border-gray-900 w-2 h-2;
+}

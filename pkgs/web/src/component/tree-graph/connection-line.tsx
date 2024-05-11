@@ -9,7 +9,7 @@ import { useMemo } from "react";
 const useStroke = () => {
   const handleId = useStore((state) => state.connectionHandleId);
   const stroke = useMemo(() => {
-    console.log("handleId:", handleId);
+    // console.log("handleId:", handleId);
     if (handleId?.endsWith("right")) {
       return "#63b3ed";
     } else if (handleId?.endsWith("bottom")) {

@@ -1,0 +1,135 @@
+import "@code-hike-local/mdx/dist/index.css";
+
+import * as runtime from "react/jsx-runtime";
+
+import type { ErrorInfo, FC } from "react";
+import { compile, run } from "@mdx-js/mdx";
+import { useEffect, useMemo, useState } from "react";
+
+import { CH } from "@code-hike-local/mdx/components";
+import { CodeBlock } from "types";
+import { ErrorBoundary } from "react-error-boundary";
+import type { MDXContent } from "mdx/types";
+import { remarkCodeHike } from "@code-hike-local/mdx";
+
+function block2MDX(block: CodeBlock): string {
+  return `
+<CH.Code>
+
+\`\`\`${block.lang} ${block.file} lineNums=${block.lineNums} focus=${block.focus}
+${block.code}
+\`\`\`
+
+</CH.Code>
+  `;
+}
+
+async function compileAndRun(input: string) {
+  try {
+    const c = await compile(input, {
+      outputFormat: "function-body",
+      remarkPlugins: [
+        [
+          remarkCodeHike,
+          {
+            theme: "github-light", // https://codehike.org/docs/themes
+            lineNumbers: true, // https://codehike.org/docs/configuration
+            showCopyButton: false,
+            autoImport: false,
+            autoLink: false,
+          },
+        ],
+      ],
+    });
+    // @ts-ignore
+    const x = await run(String(c), runtime);
+    return { content: x.default, error: undefined };
+  } catch (e) {
+    if (e instanceof Error) {
+      return { content: undefined, error: e.message };
+    } else if (typeof e === "string") {
+      return { content: undefined, error: e };
+    }
+    return { content: undefined, error: "unknown error" };
+  }
+}
+
+let effectId = 0;
+function useInput(input: string) {
+  const [{ Component, error }, setState] = useState<{
+    Component: MDXContent | undefined;
+    error: string | undefined;
+  }>({
+    Component: undefined,
+    error: undefined,
+  });
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const id = effectId;
+    // console.log("compiling...", id);
+    setLoading(true);
+    compileAndRun(input).then(({ content, error }) => {
+      // console.log("compiled", id, error);
+      if (id !== effectId) {
+        // console.log("skipping", id);
+        return;
+      }
+      setState({
+        Component: content,
+        error: error,
+      });
+      setLoading(false);
+    });
+    return () => {
+      // console.log("cancelling", id);
+      effectId++;
+    };
+  }, [input]);
+
+  return { Component, error, loading };
+}
+
+function ErrorFallback({ error }: { error: string }) {
+  return (
+    <div className="preview-error">
+      <h3>Runtime Error:</h3>
+      <pre>{String(error)}</pre>
+    </div>
+  );
+}
+
+const InnerPreview: FC<{ input: string }> = ({ input }) => {
+  const { Component, error, loading } = useInput(input);
+  // console.log("error:", error, typeof Component);
+  return (
+    <>
+      {error ? (
+        <div className="compile-error">
+          <h3>Compliation Error:</h3>
+          <pre>{error}</pre>
+        </div>
+      ) : null}
+      <div className={`preview-container ${error ? "with-error" : ""}`}>
+        <div style={{ opacity: loading ? 1 : 0 }} className="loading-border" />
+        {Component ? <Component components={{ CH }} /> : null}
+      </div>
+    </>
+  );
+};
+
+const logError = (error: Error, info: ErrorInfo) => {
+  console.log("error boundary:", error, info);
+};
+
+const MDX: FC<{ block: CodeBlock }> = ({ block }) => {
+  const mdx = useMemo(() => block2MDX(block), [block]);
+  // console.log(mdx);
+
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback} onError={logError}>
+      <InnerPreview input={mdx} />
+    </ErrorBoundary>
+  );
+};
+
+export default MDX;

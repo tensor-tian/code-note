@@ -2,9 +2,10 @@ import * as vscode from "vscode";
 
 import { DecorationKind, lastCharOfLine } from "./highlight";
 
+import { getProjectRoot } from "./utils";
 import { posix } from "path";
 
-export type Note = {
+export type CodeBlock = {
   file: string;
   project: string;
   code: string;
@@ -12,8 +13,10 @@ export type Note = {
   lineNums: string;
   links: string[];
   marks: string[];
+  lang: string;
 };
-export function toMDx(ranges: vscode.Range[][]): Note | undefined {
+
+export function toMDx(ranges: vscode.Range[][]): CodeBlock | undefined {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showErrorMessage("Active highlighted editor not found!");
@@ -25,12 +28,7 @@ export function toMDx(ranges: vscode.Range[][]): Note | undefined {
 
   const doc = editor.document;
   let file = doc.uri.fsPath;
-  const project = vscode.workspace.workspaceFolders?.find((wsFolder) => {
-    const relative = posix.relative(wsFolder.uri.fsPath, file);
-    return (
-      relative && !relative.startsWith("..") && !posix.isAbsolute(relative)
-    );
-  })?.uri.fsPath;
+  const project = getProjectRoot();
   if (!project) {
     return;
   }
@@ -70,7 +68,7 @@ export function toMDx(ranges: vscode.Range[][]): Note | undefined {
     (range) => "`" + doc.getText(range) + "`"
   );
 
-  return { project, file, code, focus, lineNums, links, marks };
+  return { project, file, code, focus, lineNums, links, marks, lang: ext };
 }
 
 function codeStr(
