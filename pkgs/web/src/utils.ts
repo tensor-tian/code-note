@@ -43,7 +43,7 @@ if (!window.acquireVsCodeApi) {
 
 export const vscode = acquireVsCodeApi();
 
-export const saveNote = debounce((note: Note<Block>) => {
+export const saveNote = debounce((note: Note) => {
   vscode.postMessage({
     action: "save-note",
     data: note,

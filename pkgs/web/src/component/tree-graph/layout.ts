@@ -1,4 +1,4 @@
-import type { Block, CodeBlock, ScrollyCodeBlock, TreeBlock } from "types";
+import type { Block, CodeBlock, ScrollyCodeBlock } from "types";
 import type { Edge, Node } from "reactflow";
 
 import { Layout } from "../../utils";
@@ -255,7 +255,7 @@ export function layout(
 }
 
 function newNode(n: LayoutNode, b: CodeBlock): Node<CodeBlock> {
-  const parentId = b.parentId;
+  // const parentId = b.parentId;
   return {
     id: b.id,
     type: b.type,
@@ -265,7 +265,7 @@ function newNode(n: LayoutNode, b: CodeBlock): Node<CodeBlock> {
     width: n.w,
     height: n.h,
     // },
-    ...(parentId ? { parentId } : {}),
+    // ...(parentId ? { parentId } : {}),
     focusable: true,
     deletable: false,
     draggable: false,

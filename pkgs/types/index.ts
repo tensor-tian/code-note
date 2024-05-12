@@ -1,4 +1,16 @@
-import type { Edge, XYPosition } from "reactflow";
+import type { Edge as RFEdge, Node as RFNode, XYPosition } from "reactflow";
+export type {
+  Edge as RFEdge,
+  Node as RFNode,
+  XYPosition,
+  NodeDimensionChange,
+  NodePositionChange,
+} from "reactflow";
+
+export type Edge = RFEdge<EdgeData>;
+export type Node = RFNode<Block>;
+export type CodeNode = RFNode<CodeBlock>;
+export type GroupNode = RFNode<ScrollyCodeBlock>;
 
 export interface Package {
   name: string; // 包名
@@ -7,15 +19,14 @@ export interface Package {
   configFile: string; // 包声明文件
   desc: string; // 包描述
 }
-type BlockType = "Code" | "Scrolly" | "Tree" | "Section";
+type BlockType = "Code" | "Scrolly";
 
-export type Block = CodeBlock | ScrollyCodeBlock | TreeBlock;
+export type Block = CodeBlock | ScrollyCodeBlock;
 
 export interface BaseBlock {
   id: string;
   text: string;
   type: BlockType;
-  parentId?: string;
 }
 
 export interface CodeBlock extends BaseBlock {
@@ -26,6 +37,7 @@ export interface CodeBlock extends BaseBlock {
   lineNums: string;
   lang: string;
   project: string;
+  showCode: boolean;
 }
 
 export interface ScrollyCodeBlock extends BaseBlock {
@@ -33,49 +45,38 @@ export interface ScrollyCodeBlock extends BaseBlock {
   chain: string[];
 }
 
-export interface TreeBlock extends BaseBlock {
-  type: "Tree";
-}
-
-export interface LayoutNode {
+export interface EdgeData {
   id: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  totalH: number;
-  totalW: number;
-  left?: string;
-  right?: string;
-  top?: string;
-  bottom?: string;
 }
 
-export interface Note<T extends Block> {
+export interface Note {
   type: "CodeNote";
   text: string;
   pkgName: string;
-  blockMap: Record<string, T>;
-  edges: Edge<T>[];
-  activeBlockId: string | null;
+  nodeMap: Record<string, Node>;
+  edges: Edge[];
+  activeBlockId?: string;
 }
 
-export type MessageDataAddBlock = {
-  action: "add-detail" | "add-next";
-  data: Omit<CodeBlock, "id">;
-};
+namespace Ext2Web {
+  export type AddBlockData = Omit<CodeBlock, "id">;
+  export type AddBlock = {
+    action: "add-detail" | "add-next";
+    data: AddBlockData;
+  };
+  export type Message = AddBlock;
+}
 
-export type MessageDataE2W = MessageDataAddBlock;
+namespace Web2Ext {
+  export type SaveNote = {
+    action: "save-note";
+    data: Note;
+  };
+  export type ShowMsg = {
+    action: "show-info" | "show-warn" | "show-error";
+    data: string;
+  };
+  export type Message = SaveNote | ShowMsg;
+}
 
-export type MessageDataW2E =
-  | {
-      action: "add-detail-done" | "add-next-done";
-    }
-  | {
-      action: "add-detail-fail" | "add-next-fail";
-      message: string;
-    }
-  | {
-      action: "save-note";
-      data: Note<CodeBlock>;
-    };
+export type { Ext2Web, Web2Ext };

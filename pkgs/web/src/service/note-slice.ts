@@ -1,7 +1,20 @@
-import type { Block, MessageDataAddBlock, Note, ScrollyCodeBlock } from "types";
-import { PayloadAction, createSlice } from "@reduxjs/toolkit";
+import {
+  CODE_SIZE,
+  isCodeNode,
+  isGroupNode,
+  layout,
+} from "../component/tree-graph/layout2";
+import type {
+  Edge,
+  Ext2Web,
+  GroupNode,
+  Node,
+  NodeDimensionChange,
+  NodePositionChange,
+  Note,
+} from "types";
+import { PayloadAction, createSelector, createSlice } from "@reduxjs/toolkit";
 
-import type { Edge } from "reactflow";
 import type { RootState } from "./store";
 import { nanoid } from "../utils";
 
@@ -13,144 +26,185 @@ const noteSlice = createSlice({
       type: "CodeNote",
       text: "sample",
       pkgName: "decorator-sample",
-      blockMap: {},
+      nodeMap: {},
       edges: [],
-      activeBlockId: null,
-    } as Note<Block>,
+      activeBlockId: undefined,
+    } as Note,
     forceLayout: false,
-    selections: new Array<string>(),
-    showCodeBlockIds: new Array<string>(),
+    nodesSelected: new Array<string>(),
+    edgeSelected: "",
+    highlightEdge: undefined as
+      | undefined
+      | {
+          id: string;
+          sourceHandle: string;
+          targetHandle: string;
+        },
     activeEdgeId: "",
-    highlightEdge: {
-      id: "",
-      sourceHandle: "",
-      targetHandle: "",
+    containerBounds: {
+      width: 100,
+      height: 100,
+    },
+    viewport: {
+      x: 0,
+      y: 0,
+      zoom: 1,
     },
   },
   reducers: {
-    addNote(
+    actAddNote(
       state,
       action: PayloadAction<{
-        data: MessageDataAddBlock["data"];
-        msgType: MessageDataAddBlock["action"];
+        data: Ext2Web.AddBlockData;
+        msgType: Ext2Web.AddBlock["action"];
       }>
     ) {
       const { data, msgType } = action.payload;
-      const edges = state.data.edges;
-      const activeId = state.data.activeBlockId;
-      if (msgType === "add-detail" && activeId) {
-        if (
-          edges.find(
-            ({ sourceHandle }) =>
-              sourceHandle &&
-              sourceHandle.startsWith(activeId) &&
-              sourceHandle.endsWith("right")
-          )
-        ) {
-          return;
-        }
-      } else if (msgType === "add-next" && activeId) {
-        if (
-          edges.find(
-            ({ sourceHandle }) =>
-              sourceHandle &&
-              sourceHandle.startsWith(activeId) &&
-              sourceHandle.endsWith("bottom")
-          )
-        ) {
-          return;
-        }
+      const { nodeMap, edges, activeBlockId } = state.data;
+      if (!activeBlockId && Object.keys(nodeMap).length > 0) {
+        return;
       }
 
       const id = nanoid();
+      if (activeBlockId) {
+        if (msgType === "add-detail") {
+          if (
+            edges.find(
+              ({ sourceHandle }) =>
+                sourceHandle &&
+                sourceHandle.startsWith(activeBlockId) &&
+                sourceHandle.endsWith("right")
+            )
+          )
+            return;
+        } else if (msgType === "add-next") {
+          if (
+            edges.find(
+              ({ sourceHandle }) =>
+                sourceHandle &&
+                sourceHandle.startsWith(activeBlockId) &&
+                sourceHandle.endsWith("bottom")
+            )
+          )
+            return;
+        }
+      }
+
       const block = { ...data, text: id, id };
-      state.data.blockMap[id] = block;
+      nodeMap[id] = {
+        id: block.id,
+        type: block.type,
+        position: { x: 0, y: 0 },
+        data: block,
+      };
 
       state.data.activeBlockId = id;
-      if (!activeId) {
-        return;
+      if (activeBlockId) {
+        const edge = newEdge(activeBlockId, id, msgType);
+        state.data.edges.push(edge);
       }
-      const edge = newEdge(activeId, id, msgType);
-      state.data.edges.push(edge);
+      layout(nodeMap, edges);
     },
-    toggleShowCode(state, action: PayloadAction<string>) {
+    actToggleCode(state, action: PayloadAction<string>) {
       const id = action.payload;
-      const block = state.data.blockMap[id];
-      // Scrolly
-      if (block.type === "Scrolly") {
-        const set = new Set(block.chain);
-        const showCode = state.showCodeBlockIds.find((nID) => set.has(nID));
-        state.showCodeBlockIds = state.showCodeBlockIds.filter(
-          (nID) => !set.has(nID)
-        );
-        if (!showCode) {
-          state.showCodeBlockIds.push(...block.chain);
-        }
+      const { nodeMap } = state.data;
+      const node = nodeMap[id];
+      // Code
+      if (isCodeNode(node)) {
+        node.data.showCode = !node.data.showCode;
+        state.data.activeBlockId = node.id;
         return;
       }
-      // Code
-      if (state.showCodeBlockIds.includes(id)) {
-        state.showCodeBlockIds = state.showCodeBlockIds.filter(
-          (blockId) => blockId !== id
-        );
-      } else {
-        state.showCodeBlockIds.push(id);
+      // Group
+      if (isGroupNode(node)) {
+        const nodes = node.data.chain.map((id) => nodeMap[id]);
+        if (
+          nodes.find((n) => {
+            if (!isCodeNode(n)) return false;
+            return n.data.showCode;
+          })
+        ) {
+          nodes.forEach((n) => {
+            if (!isCodeNode(n)) return;
+            if (n.data.showCode === true) {
+              n.data.showCode = false;
+            }
+          });
+        } else {
+          nodes.forEach((n) => {
+            if (!isCodeNode(n)) return;
+            n.data.showCode = true;
+          });
+        }
+        state.data.activeBlockId = nodeMap[node.data.chain[0]].id;
+        return;
       }
     },
-    activateBlock(state, action: PayloadAction<string>) {
+    actSetContainerBounds(
+      state,
+      action: PayloadAction<{ width: number; height: number }>
+    ) {
+      state.containerBounds = action.payload;
+    },
+    actSetNodeActive(state, action: PayloadAction<string>) {
       state.data.activeBlockId = action.payload;
     },
-    setForceLayout(state, action: PayloadAction<boolean>) {
+    actSetForceLayout(state, action: PayloadAction<boolean>) {
       state.forceLayout = action.payload;
     },
-    setBlockText(state, action: PayloadAction<{ id: string; text: string }>) {
+    actUpdateBlockText(
+      state,
+      action: PayloadAction<{ id: string; text: string }>
+    ) {
       const { id, text } = action.payload;
-      state.data.blockMap[id].text = text;
+      state.data.nodeMap[id].data.text = text;
     },
-    toggleBlockSelection(state, action: PayloadAction<string>) {
+    actToggleNodeSelection(state, action: PayloadAction<string>) {
       const id = action.payload;
-      if (state.selections.includes(id)) {
-        state.selections = state.selections.filter((blockId) => blockId !== id);
+      if (state.nodesSelected.includes(id)) {
+        state.nodesSelected = state.nodesSelected.filter((nID) => nID !== id);
       } else {
-        state.selections.push(id);
+        state.nodesSelected.push(id);
       }
     },
-    toggleSrollyBlock(state, _action: PayloadAction<void>) {
-      const { selections, data } = state;
-      const { blockMap, edges } = data;
-      if (selections.length === 1) {
+    actToggleGroup(state, _action: PayloadAction<void>) {
+      const { nodesSelected, data } = state;
+      const { nodeMap, edges } = data;
+      if (nodesSelected.length === 1) {
         // revmove Scrolly
-        const scrolly = blockMap[selections[0]];
-        if (scrolly.type !== "Scrolly") {
-          return;
-        }
-        delete blockMap[scrolly.id];
-        Object.values(blockMap).forEach((block) => {
-          if (block.parentId === scrolly.id) {
-            delete block.parentId;
-          }
+        const node = nodeMap[nodesSelected[0]];
+        if (!isGroupNode(node)) return;
+        delete nodeMap[node.id];
+        node.data.chain.forEach((id) => {
+          const n = nodeMap[id];
+          delete n.parentId;
+          delete n.extent;
         });
       } else {
         // wrap Code nodes with Scrolly
-        const isInScrolly = selections.find((nID) => blockMap[nID].parentId);
+        const isInScrolly = nodesSelected.find((id) => nodeMap[id].parentId);
         if (isInScrolly) {
           console.log(
             "stop grouping: a code block is already in scrolly block"
           );
           return;
         }
-        const chain = getNextChain(selections, edges);
+        const chain = getNextChain(nodesSelected, edges);
         if (!chain) return;
-        const scrolly = newScrolly(chain);
-        blockMap[scrolly.id] = scrolly;
-        chain.forEach((nID) => {
-          blockMap[nID].parentId = scrolly.id;
+        const group = newScrolly(chain);
+        nodeMap[group.id] = group;
+        chain.forEach((id) => {
+          nodeMap[id].parentId = group.id;
+          nodeMap[id].extent = "parent";
         });
         state.data.activeBlockId = chain[0];
       }
-      state.selections = [];
+      state.nodesSelected = [];
     },
-    setHighlightEdge(state, action: PayloadAction<Edge | undefined>) {
+    actSetEdgeActive(state, action: PayloadAction<string>) {
+      state.activeEdgeId = action.payload;
+    },
+    actSetEdgeHighlight(state, action: PayloadAction<Edge | undefined>) {
       const edge = action.payload;
       if (edge) {
         state.highlightEdge = {
@@ -159,34 +213,119 @@ const noteSlice = createSlice({
           targetHandle: edge.targetHandle!,
         };
       } else {
-        state.highlightEdge = {
-          id: "",
-          sourceHandle: "",
-          targetHandle: "",
-        };
+        state.highlightEdge = undefined;
       }
     },
-    activateEdge(state, action: PayloadAction<string>) {
-      state.activeEdgeId = action.payload;
+    actSelectEdge(state, action: PayloadAction<string>) {
+      state.edgeSelected = action.payload;
     },
-    deleteEdge(state, _action: PayloadAction<void>) {
+    actDeleteEdge(state, _action: PayloadAction<void>) {
       state.data.edges = state.data.edges.filter(
-        (e) => e.id !== state.activeEdgeId
+        (e) => e.id !== state.edgeSelected
       );
-      state.activeEdgeId = "";
+      state.edgeSelected = "";
     },
-    // deleteBlock(state, _action: PayloadAction<void>) {
-    //   const { selections, data } = state;
-    //   if (selections.length !== 1) {
-    //     console.log("stop delete: multiple selection");
-    //     return;
-    //   }
-    //   const { blockMap, edges } = data;
-    //   const nID = selections[0];
-    //   const inEdge = edges.find((e) => e.target === nID);
-    //   const outEdges = edges.filter((e) => e.source === nID);
-
-    // },
+    actDeleteNode(state, _action: PayloadAction<void>) {
+      const { nodesSelected, data } = state;
+      const { nodeMap, edges } = data;
+      if (nodesSelected.length !== 1) {
+        console.log("stop delete: multiple node selection");
+        return;
+      }
+      const node = nodeMap[nodesSelected[0]];
+      // delete group node
+      if (isGroupNode(node)) {
+        delete nodeMap[node.id];
+        node.data.chain.forEach((id) => {
+          const n = nodeMap[id];
+          delete n.parentId;
+          delete n.extent;
+        });
+        return;
+      }
+      // delete code node
+      if (!isCodeNode(node)) return;
+      const es = edges.filter(
+        (e) => e.source === node.id || e.target === node.id
+      );
+      if (es.length > 1) {
+        console.log(
+          "stop delete: multiple edge is connect to the selected node"
+        );
+        return;
+      }
+      if (node.parentId) {
+        const parent = nodeMap[node.parentId];
+        if (isGroupNode(parent)) {
+          parent.data.chain = parent.data.chain.filter((id) => id !== node.id);
+        }
+      }
+      delete nodeMap[node.id];
+      const edge = es[0];
+      if (edge) {
+        state.data.edges = edges.filter((e) => e.id !== edge.id);
+      }
+    },
+    actLayout(state, _action: PayloadAction<void>) {
+      layout(state.data.nodeMap, state.data.edges);
+    },
+    actPanToActiveNode(state, _action: PayloadAction<void>) {
+      const { containerBounds: bounds, data } = state;
+      const { nodeMap, activeBlockId } = data;
+      const activeNode = nodeMap[activeBlockId || ""];
+      if (!isCodeNode(activeNode)) return;
+      let xActive = activeNode.position.x;
+      let yActive = activeNode.position.y;
+      const group = nodeMap[activeNode.parentId || ""];
+      if (group) {
+        xActive += group.position.x;
+        yActive += group.position.y;
+      }
+      const wActive = activeNode.width || CODE_SIZE.W;
+      const hActive = activeNode.height || CODE_SIZE.H;
+      const x = bounds.width / 2 - xActive - wActive / 2;
+      const y = bounds.height / 2 - yActive - hActive / 2 - 50;
+      state.viewport = { x, y, zoom: 1 };
+    },
+    actChangeNodes(
+      state,
+      action: PayloadAction<Array<NodeDimensionChange | NodePositionChange>>
+    ) {
+      const { nodeMap, edges } = state.data;
+      const changes = action.payload;
+      let needLayout = false;
+      for (const change of changes) {
+        const n = nodeMap[change.id];
+        if (change.type === "dimensions") {
+          if (change.dimensions) {
+            if (isCodeNode(n)) {
+              n.width = change.dimensions.width;
+              n.height = change.dimensions.height;
+            } else if (isGroupNode(n)) {
+              n.style = change.dimensions;
+            }
+          }
+          needLayout = true;
+        } else if (change.type === "position") {
+          if (change.position) {
+            n.position = change.position;
+          }
+        }
+      }
+      if (needLayout) {
+        layout(nodeMap, edges);
+      }
+    },
+    actEditNodeText(
+      state,
+      action: PayloadAction<{ id: string; text: string }>
+    ) {
+      const { id, text } = action.payload;
+      const node = state.data.nodeMap[id];
+      if (isCodeNode(node)) {
+        node.data.text = text;
+      }
+    },
   },
 });
 
@@ -243,12 +382,22 @@ function getNextChain(
   return chain;
 }
 
-function newScrolly(chain: string[]): ScrollyCodeBlock {
+function newScrolly(chain: string[]): GroupNode {
+  const id = nanoid();
   return {
-    id: nanoid(),
+    id,
     type: "Scrolly",
-    text: "",
-    chain,
+    data: {
+      id,
+      type: "Scrolly",
+      text: "",
+      chain,
+    },
+    position: { x: 0, y: 0 },
+    style: {
+      width: 0,
+      height: 0,
+    },
   };
 }
 
@@ -256,12 +405,13 @@ function newEdge(
   source: string,
   target: string,
   action: "add-detail" | "add-next" = "add-next"
-): Edge<Block> {
+): Edge {
   return {
     id: nanoid(12),
-    type: "edge",
+    type: "CodeEdge",
     source,
     target,
+    animated: true,
     sourceHandle:
       action === "add-detail" ? `${source}-right` : `${source}-bottom`,
     targetHandle: action === "add-detail" ? `${target}-left` : `${target}-top`,
@@ -270,43 +420,68 @@ function newEdge(
 
 // action
 export const {
-  addNote,
-  toggleShowCode,
-  activateBlock,
-  setForceLayout,
-  setBlockText,
-  toggleBlockSelection,
-  toggleSrollyBlock,
-  setHighlightEdge,
-  activateEdge,
-  deleteEdge,
+  actAddNote,
+  actSelectEdge,
+  actToggleNodeSelection,
+  actDeleteEdge,
+  actDeleteNode,
+  actSetContainerBounds,
+  actSetForceLayout,
+  actSetEdgeHighlight,
+  actSetNodeActive,
+  actSetEdgeActive,
+  actToggleCode,
+  actToggleGroup,
+  actUpdateBlockText,
+  actLayout,
+  actChangeNodes,
+  actEditNodeText,
 } = noteSlice.actions;
 
 // selector
-export const selectNote = (state: RootState) => state.note.data;
+export const selectNodeMap = (state: RootState) => state.note.data.nodeMap;
+export const selectEdges = (state: RootState) => state.note.data.edges;
+export const selectNodes = createSelector([selectNodeMap], (nodeMap) => {
+  const nodes = Object.values(nodeMap);
+  const sorted: Node[] = nodes.filter(isGroupNode);
+  sorted.push(...nodes.filter(isCodeNode));
+  return sorted;
+});
+
 export const selectNeedLayout = (state: RootState) => [
-  state.note.showCodeBlockIds,
   state.note.data.activeBlockId,
 ];
-export const selectShowCode = (id: string) => (state: RootState) =>
-  state.note.showCodeBlockIds.includes(id);
-export const selectIsActive = (id: string) => (state: RootState) =>
-  state.note.data.activeBlockId === id;
-export const selectActiveBlockId = (state: RootState) =>
+
+export const selectActiveNodeId = (state: RootState) =>
   state.note.data.activeBlockId;
+
+export const selectIsActiveNode = (id: string) => (state: RootState) =>
+  state.note.data.activeBlockId === id;
+
 export const selectForceLayout = (state: RootState) => state.note.forceLayout;
+
 export const selectIsSeleced = (id: string) => (state: RootState) =>
-  state.note.selections.includes(id);
-export const selectGroupShowCode = (id: string) => (state: RootState) => {
-  const scrolly = state.note.data.blockMap[id] as ScrollyCodeBlock;
-  if (!scrolly) return false;
-  const set = new Set(state.note.showCodeBlockIds);
-  const { chain } = scrolly;
-  for (const nID of chain) {
-    if (set.has(nID)) return true;
+  state.note.nodesSelected.includes(id);
+
+export const selectShowCode = (id: string) => (state: RootState) => {
+  const nodeMap = state.note.data.nodeMap;
+  const node = nodeMap[id];
+  if (isCodeNode(node)) {
+    return !!node.data.showCode;
   }
-  return false;
+  if (!isGroupNode(node)) return false;
+  const chain = node.data.chain;
+  return chain.find((id) => {
+    const n = nodeMap[id];
+    if (!isCodeNode(n)) return false;
+    return n.data.showCode;
+  });
 };
-export const selectEdgeHilight = (state: RootState) => state.note.highlightEdge;
+
+export const selectHiglightEdge = (state: RootState) =>
+  state.note.highlightEdge;
+
+export const selectNoteText = (state: RootState) => state.note.data.text;
+
 // reducer
 export default noteSlice.reducer;

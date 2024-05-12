@@ -1,46 +1,41 @@
-import { Block, CodeBlock, Note } from "types";
-import { DefaultViewport, Layout, saveNote, vscode } from "../../utils";
+import { Block, CodeBlock, Edge, Node } from "types";
+import { DefaultViewport, vscode } from "../../utils";
 import {
-  Edge,
   EdgeTypes,
-  Node,
   OnConnect,
   OnEdgesChange,
   OnNodesChange,
   ReactFlowProvider,
-  useReactFlow,
 } from "reactflow";
-import { MouseEvent, useCallback, useEffect, useRef, useState } from "react";
+import type { Ext2Web, NodeDimensionChange, NodePositionChange } from "types";
+import { MouseEvent, useCallback, useEffect, useRef } from "react";
 import ReactFlow, {
   Controls,
   MiniMap,
   NodeTypes,
-  SelectionMode,
   addEdge as addEdgeToState,
   useEdgesState,
   useNodesState,
 } from "reactflow";
 import {
-  activateBlock,
-  activateEdge,
-  addNote,
-  selectActiveBlockId,
-  selectForceLayout,
-  selectNeedLayout,
-  selectNote,
-  setForceLayout,
-  setHighlightEdge,
+  actAddNote,
+  actChangeNodes,
+  actSetEdgeActive,
+  actSetEdgeHighlight,
+  actSetNodeActive,
+  selectActiveNodeId,
+  selectEdges,
+  selectNodes,
 } from "../../service/note-slice";
 import { useAppDispatch, useAppSelector } from "../../service/store";
 
+import { CODE_SIZE } from "./layout2";
 import Code from "./code";
+import CodeEdge from "./edge";
 import ConnectionLine from "./connection-line";
 import Menu from "./menu";
-import type { MessageDataAddBlock } from "types";
 import Scrolly from "./scrolly";
 import Tree from "./Tree";
-import edge from "./edge";
-import { layout } from "./layout";
 
 const nodeTypes: NodeTypes = {
   Code,
@@ -48,56 +43,63 @@ const nodeTypes: NodeTypes = {
   Tree,
 };
 const edgeTypes: EdgeTypes = {
-  edge,
+  CodeEdge,
 };
 const defaultEdgeOptions = {
   zIndex: 1,
 };
 
-const useNodeChange = (_onNodesChange: OnNodesChange, note: Note<Block>) => {
-  const [nodesReset, setNodesReset] = useState(false);
+const useNodeChange = (_onNodesChange: OnNodesChange, dispatch: Function) => {
+  // const [nodesReset, setNodesReset] = useState(false);
 
-  useEffect(() => {
-    if (nodesReset) {
-      setNodesReset(false);
-      saveNote(note);
-    }
-  }, [note, nodesReset, setNodesReset]);
+  // useEffect(() => {
+  //   if (nodesReset) {
+  //     setNodesReset(false);
+  //     saveNote(note);
+  //   }
+  // }, [note, nodesReset, setNodesReset]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      for (const change of changes) {
-        if (
-          (change.type === "position" && change.dragging) ||
-          ["remove", "add"].includes(change.type)
-        ) {
-          setNodesReset(true);
-        }
+      const chgs = changes.filter(
+        (change) =>
+          change.type === "dimensions" ||
+          (change.type === "position" && change.dragging)
+      ) as Array<NodeDimensionChange | NodePositionChange>;
+      if (chgs.length > 0) {
+        dispatch(actChangeNodes(chgs));
       }
+      // for (const change of changes) {
+      //   if (
+      //     (change.type === "position" && change.dragging) ||
+      //     ["remove", "add"].includes(change.type)
+      //   ) {
+      //     setNodesReset(true);
+      //   }
+      // }
       console.log("on node change:", changes);
       _onNodesChange(changes);
     },
-    [_onNodesChange, setNodesReset]
+    [dispatch, _onNodesChange]
   );
 
   return onNodesChange;
 };
 
-const useEdgeChange = (_onEdgesChange: OnEdgesChange, note: Note<Block>) => {
-  const [edgesReset, setEdgesReset] = useState(false);
+const useEdgeChange = (_onEdgesChange: OnEdgesChange) => {
+  // const [edgesReset, setEdgesReset] = useState(false);
 
-  useEffect(() => {
-    if (edgesReset) {
-      setEdgesReset(false);
-      saveNote(note);
-    }
-  }, [note, edgesReset, setEdgesReset]);
+  // useEffect(() => {
+  //   if (edgesReset) {
+  //     setEdgesReset(false);
+  //   }
+  // }, [edgesReset, setEdgesReset]);
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
       for (const change of changes) {
         if (["add", "remove"].includes(change.type)) {
-          setEdgesReset(true);
+          // setEdgesReset(true);
         }
         if (change.type === "add") {
           change.item.type = "treeEdge";
@@ -105,13 +107,13 @@ const useEdgeChange = (_onEdgesChange: OnEdgesChange, note: Note<Block>) => {
       }
       _onEdgesChange(changes);
     },
-    [_onEdgesChange, setEdgesReset]
+    [_onEdgesChange]
   );
 
   return onEdgesChange;
 };
 const handleMessage =
-  (dispatch: Function) => (event: MessageEvent<MessageDataAddBlock>) => {
+  (dispatch: Function) => (event: MessageEvent<Ext2Web.AddBlock>) => {
     switch (event.data.action) {
       case "add-detail":
       case "add-next":
@@ -119,7 +121,7 @@ const handleMessage =
         // const { nodeInternals } = store.getState();
         // const activeNode = nodeInternals.get(activeBlockId || "");
         dispatch(
-          addNote({
+          actAddNote({
             data: event.data.data,
             msgType: event.data.action,
           })
@@ -132,85 +134,40 @@ const handleMessage =
  *  Tree Graph Component
  */
 function TreeFlow() {
-  const note = useAppSelector(selectNote);
   const [nodes, setNodes, _onNodesChange] = useNodesState<Block>([]);
   const [edges, setEdges, _onEdgesChange] = useEdgesState<any>([]);
   const dispatch = useAppDispatch();
-  const activeBlockId = useAppSelector(selectActiveBlockId);
-  const { setViewport, getNode } = useReactFlow();
+  const activeBlockId = useAppSelector(selectActiveNodeId);
   const ref = useRef<HTMLDivElement>(null);
+  // add block buttonn in Menu component
   const addBlock = useCallback(
-    (action: MessageDataAddBlock["action"], data: Omit<CodeBlock, "id">) => {
+    (action: Ext2Web.AddBlock["action"], data: Omit<CodeBlock, "id">) => {
       const handler = handleMessage(dispatch);
       handler(new MessageEvent("message", { data: { action, data } }));
     },
     [dispatch]
   );
+  // message from extension
   useEffect(() => {
     const handler = handleMessage(dispatch);
     window.addEventListener("message", handler);
     return () => {
       window.removeEventListener("message", handler);
     };
-  }, [dispatch, nodes, getNode]);
+  }, [dispatch]);
 
-  const [needLayout, setNeeedLayout] = useState<boolean>(false);
-
+  console.log("nodes:", nodes);
+  console.log("edges:", edges);
+  const nodes2 = useAppSelector(selectNodes);
+  const edges2 = useAppSelector(selectEdges);
   useEffect(() => {
-    const nodes = layout(note.edges, note.blockMap, getNode);
-    setNodes(nodes);
-    setEdges(note.edges);
-    setNeeedLayout(true);
-  }, [getNode, note, setEdges, setNodes]);
-
-  const forceLayout = useAppSelector(selectForceLayout);
+    setNodes(nodes2);
+    console.log("nodes 2:", nodes2);
+  }, [nodes2, setNodes]);
   useEffect(() => {
-    if (forceLayout) {
-      dispatch(setForceLayout(false));
-      setNeeedLayout(true);
-    }
-  }, [forceLayout, dispatch]);
-
-  const [cond1, cond2] = useAppSelector(selectNeedLayout);
-  useEffect(() => {
-    setNeeedLayout(true);
-    setNeeedLayout(true);
-  }, [cond1, cond2]);
-
-  useEffect(() => {
-    if (needLayout) {
-      const nodes = layout(note.edges, note.blockMap, getNode);
-      setNodes(nodes);
-      setEdges(note.edges);
-      const active = nodes.find((n) => n.id === activeBlockId);
-      if (active && ref.current) {
-        const group = nodes.find((n) => n.id === active.parentId);
-        let xActive = active.position.x;
-        let yActive = active.position.y;
-        if (group) {
-          xActive += group.position.x;
-          yActive += group.position.y;
-        }
-        const bounds = ref.current.getBoundingClientRect();
-        const wActive = +(active.width || 600);
-        const hActive = +(active.height || 58);
-        const x = bounds.width / 2 - xActive - wActive / 2;
-        const y = bounds.height / 2 - yActive - hActive / 2 - 50;
-        const zoom = DefaultViewport.zoom;
-        console.log({ active, group });
-        setViewport({ x, y, zoom }, { duration: 800 });
-      }
-      setNeeedLayout(false);
-    }
-  }, [
-    needLayout,
-    note,
-    activeBlockId,
-    getNode,
-    setEdges,
-    setViewport,
-    setNodes,
-  ]);
+    setEdges(edges2);
+    console.log("edges 2:", edges2);
+  }, [edges2, setEdges]);
 
   const onConnect: OnConnect = useCallback(
     (conn) => {
@@ -224,7 +181,7 @@ function TreeFlow() {
       if (inEdge) return;
       setEdges((eds) => addEdgeToState(conn, eds));
       const newNodes = [];
-      let srcNode, tgtNode: Node<Block> | undefined;
+      let srcNode, tgtNode: Node | undefined;
       for (const node of nodes) {
         if (node.id === source) {
           srcNode = node;
@@ -239,7 +196,7 @@ function TreeFlow() {
         newNodes.push({
           ...tgtNode,
           position: {
-            x: srcNode.position.x + srcNode.width! + Layout.code.X,
+            x: srcNode.position.x + srcNode.width! + CODE_SIZE.X,
             y: srcNode.position.y + srcNode.height! / 2 - tgtNode.height! / 2,
           },
         });
@@ -249,7 +206,7 @@ function TreeFlow() {
           ...tgtNode,
           position: {
             x: srcNode.position.x + srcNode.width! / 2 - tgtNode.width! / 2,
-            y: srcNode.position.y + srcNode.height! + Layout.code.Y,
+            y: srcNode.position.y + srcNode.height! + CODE_SIZE.Y,
           },
         });
       }
@@ -257,30 +214,30 @@ function TreeFlow() {
     },
     [setEdges, nodes, edges, setNodes]
   );
-  const onNodesChange = useNodeChange(_onNodesChange, note);
-  const onEdgesChange = useEdgeChange(_onEdgesChange, note);
+  const onNodesChange = useNodeChange(_onNodesChange, dispatch);
+  const onEdgesChange = useEdgeChange(_onEdgesChange);
   const onEdgeClick = useCallback(
     (_event: React.MouseEvent, edge: Edge) => {
       const { source, target } = edge;
       console.log("on click edge: ", source, target, activeBlockId);
       if (activeBlockId === source) {
-        dispatch(activateBlock(target));
+        dispatch(actSetNodeActive(target));
       } else if (activeBlockId === target) {
-        dispatch(activateBlock(source));
+        dispatch(actSetNodeActive(source));
       }
-      dispatch(activateEdge(edge.id));
+      dispatch(actSetEdgeActive(edge.id));
     },
     [activeBlockId, dispatch]
   );
   const onEdgeMouseEnter = useCallback(
     (_event: MouseEvent, edge: Edge) => {
-      dispatch(setHighlightEdge(edge));
+      dispatch(actSetEdgeHighlight(edge));
     },
     [dispatch]
   );
   const onEdgeMouseLeave = useCallback(
     (_event: MouseEvent, _edge: Edge) => {
-      dispatch(setHighlightEdge());
+      dispatch(actSetEdgeHighlight());
     },
     [dispatch]
   );

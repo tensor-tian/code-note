@@ -1,16 +1,16 @@
-import { CodeBlock, MessageDataAddBlock } from "types";
+import { CodeBlock, Ext2Web } from "types";
 import { Panel, ReactFlowState, useStore } from "reactflow";
 import {
-  deleteEdge,
-  selectNote,
-  toggleSrollyBlock,
+  actDeleteEdge,
+  actToggleGroup,
+  selectNoteText,
 } from "../../service/note-slice";
 import { useAppDispatch, useAppSelector } from "../../service/store";
 
 import Markdown from "react-markdown";
 import { useCallback } from "react";
 
-const block: Omit<CodeBlock, "id"> = {
+const block: Ext2Web.AddBlock["data"] = {
   type: "Code",
   code: `if (this._isDisposed) {
     return;
@@ -36,17 +36,17 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   project:
     "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
   text: "`disposeAll` dispose by hand 5",
+  showCode: true,
 };
 const transformSelector = (state: ReactFlowState) => state.transform;
 type Props = {
   addBlock: (
-    action: MessageDataAddBlock["action"],
-    data: Omit<CodeBlock, "id">
+    action: Ext2Web.AddBlock["action"],
+    data: Ext2Web.AddBlock["data"]
   ) => void;
 };
 
 function Menu({ addBlock }: Props) {
-  const note = useAppSelector(selectNote);
   const dispatch = useAppDispatch();
   const addDetail = useCallback(() => {
     addBlock("add-detail", { ...block });
@@ -54,18 +54,19 @@ function Menu({ addBlock }: Props) {
   const addNext = useCallback(() => {
     addBlock("add-next", { ...block });
   }, [addBlock]);
-  const toggleScrolly = useCallback(() => {
-    dispatch(toggleSrollyBlock());
+  const toggleGroup = useCallback(() => {
+    dispatch(actToggleGroup());
   }, [dispatch]);
   const delEdge = useCallback(() => {
-    dispatch(deleteEdge());
+    dispatch(actDeleteEdge());
   }, [dispatch]);
   const [x, y, zoom] = useStore(transformSelector);
+  const text = useAppSelector(selectNoteText);
   return (
     <>
       <Panel position="top-left" className="border ">
         <div className="px-3">
-          <Markdown>{note.text}</Markdown>
+          <Markdown>{text}</Markdown>
         </div>
         <div className="flex justify-between align-middle h-10">
           <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray-400 rounded border px-3 text-gray-700">{`x: ${x.toFixed(
@@ -81,7 +82,7 @@ function Menu({ addBlock }: Props) {
             Del Edge
           </button>
           <button className="btn-blue h-6 mt-1">Del Node</button>
-          <button className="btn-blue h-6 mt-1" onClick={toggleScrolly}>
+          <button className="btn-blue h-6 mt-1" onClick={toggleGroup}>
             ScrollyBlock
           </button>
         </div>

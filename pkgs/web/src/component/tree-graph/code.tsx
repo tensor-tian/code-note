@@ -1,16 +1,15 @@
 import { Handle, NodeProps, Position } from "reactflow";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
-import { MouseEvent, memo, useCallback, useEffect, useMemo } from "react";
+import { MouseEvent, memo, useCallback, useMemo } from "react";
 import {
-  activateBlock,
-  selectEdgeHilight,
-  selectIsActive,
+  actEditNodeText,
+  actSetNodeActive,
+  actToggleCode,
+  actToggleNodeSelection,
+  selectHiglightEdge,
+  selectIsActiveNode,
   selectIsSeleced,
   selectShowCode,
-  setBlockText,
-  setForceLayout,
-  toggleBlockSelection,
-  toggleShowCode,
 } from "../../service/note-slice";
 
 import { CodeBlock } from "types";
@@ -24,7 +23,7 @@ import { useDispatch } from "react-redux";
 function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   const showCode = useAppSelector(selectShowCode(id));
   const isSelected = useAppSelector(selectIsSeleced(id));
-  const isActive = useAppSelector(selectIsActive(id));
+  const isActive = useAppSelector(selectIsActiveNode(id));
   const dispatch = useDispatch();
   const isX: IsValidConnection = useCallback(
     (edge) => edge.sourceHandle?.endsWith("right") ?? false,
@@ -35,22 +34,21 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     []
   );
   const toggleCode = useCallback(() => {
-    dispatch(toggleShowCode(id));
-    dispatch(activateBlock(id));
+    dispatch(actToggleCode(id));
   }, [id, dispatch]);
   const onActivate = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
       if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
         return;
       }
-      dispatch(activateBlock(id));
+      dispatch(actSetNodeActive(id));
     },
     [id, dispatch]
   );
   const onChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       dispatch(
-        setBlockText({
+        actEditNodeText({
           id,
           text: event.target.value,
         })
@@ -60,14 +58,9 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   );
   const checkboxId = "code-" + id;
   const toggleSelection = useCallback(() => {
-    dispatch(toggleBlockSelection(id));
+    dispatch(actToggleNodeSelection(id));
   }, [id, dispatch]);
 
-  useEffect(() => {
-    if (showCode) {
-      dispatch(setForceLayout(true));
-    }
-  }, [showCode, dispatch]);
   const showCodeIcon = useMemo(
     () => (
       <div className="w-100 flex" onClick={toggleCode}>
@@ -91,17 +84,21 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     [showCode, toggleCode]
   );
 
-  const { sourceHandle, targetHandle } = useAppSelector(selectEdgeHilight);
+  const hl = useAppSelector(selectHiglightEdge);
+  const idTop = id + "-top";
+  const idLeft = id + "-left";
+  const idRight = id + "-right";
+  const idBottom = id + "-bottom";
   return (
     <div>
       <Handle
-        id={id + "-top"}
+        id={idTop}
         type="target"
         isConnectableEnd
         isConnectableStart={false}
         position={Position.Top}
         className={
-          targetHandle === id + "-top"
+          hl?.targetHandle === idTop
             ? "code-handle-hl -top-1"
             : "code-handle -top-0.5"
         }
@@ -143,38 +140,38 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         {showCode ? <MDX block={data} /> : undefined}
       </div>
       <Handle
-        id={id + "-left"}
+        id={idLeft}
         type="target"
         isConnectableEnd
         isConnectableStart={false}
         position={Position.Left}
         className={
-          targetHandle === id + "-left"
+          hl?.targetHandle === idLeft
             ? "code-handle-hl -left-1"
             : "code-handle -left-0.5"
         }
         isValidConnection={isX}
       />
       <Handle
-        id={id + "-right"}
+        id={idRight}
         type="source"
         isConnectableStart
         isConnectableEnd={false}
         position={Position.Right}
         className={
-          sourceHandle === id + "-right"
+          hl?.sourceHandle === idRight
             ? "code-handle-hl -right-1"
             : "code-handle -right-0.5"
         }
       />
       <Handle
-        id={id + "-bottom"}
+        id={idBottom}
         type="source"
         position={Position.Bottom}
         isConnectableStart
         isConnectableEnd={false}
         className={
-          sourceHandle === id + "-bottom"
+          hl?.sourceHandle === idBottom
             ? "code-handle-hl -bottom-1"
             : "code-handle -bottom-0.5"
         }

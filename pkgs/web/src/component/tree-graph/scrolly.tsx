@@ -1,10 +1,9 @@
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import {
-  selectGroupShowCode,
-  selectIsActive,
+  actToggleCode,
+  actToggleNodeSelection,
   selectIsSeleced,
-  toggleBlockSelection,
-  toggleShowCode,
+  selectShowCode,
 } from "../../service/note-slice";
 import { useAppDispatch, useAppSelector } from "../../service/store";
 import { useCallback, useMemo } from "react";
@@ -15,15 +14,14 @@ import cx from "classnames";
 
 function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
   const dispatch = useAppDispatch();
-  const isActive = useAppSelector(selectIsActive(id));
   const isSelected = useAppSelector(selectIsSeleced(id));
-  const showCode = useAppSelector(selectGroupShowCode(id));
+  const showCode = useAppSelector(selectShowCode(id));
   const checkboxId = "scrolly-" + id;
   const toggleCode = useCallback(() => {
-    dispatch(toggleShowCode(id));
+    dispatch(actToggleCode(id));
   }, [dispatch, id]);
   const toggleSelection = useCallback(() => {
-    dispatch(toggleBlockSelection(id));
+    dispatch(actToggleNodeSelection(id));
   }, [id, dispatch]);
   const showCodeIcon = useMemo(
     () => (
