@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 
-import { CodeBlock, MessageDataAddBlock } from "types";
-import { DecorationKind, Highlight, currentSelection } from "./highlight";
+import { CodeBlock, Ext2Web } from "types";
 import { codeNoteWorkspaceDir, getOpenedCodeNoteFiles } from "./utils";
 
 import { CodeNoteEditorProvider } from "./code-note-editor";
+import { Highlight } from "./highlight";
 import { posix } from "path";
 
 // import { ReactPanel } from "./webview";
@@ -38,17 +38,11 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("vscode-note.open-file", () => {
       CodeNoteEditorProvider.openFile().catch(console.error);
     }),
-    vscode.commands.registerCommand("vscode-note.toggle-code", () => {
-      highlight.toggleHighlight(DecorationKind.Code);
+    vscode.commands.registerCommand("vscode-note.add-highlight", () => {
+      highlight.addHighlight();
     }),
-    vscode.commands.registerCommand("vscode-note.toggle-focus", () => {
-      highlight.toggleHighlight(DecorationKind.Focus);
-    }),
-    vscode.commands.registerCommand("vscode-note.toggle-mark", () => {
-      highlight.toggleHighlight(DecorationKind.Mark);
-    }),
-    vscode.commands.registerCommand("vscode-note.toggle-link", () => {
-      highlight.toggleHighlight(DecorationKind.Link);
+    vscode.commands.registerCommand("vscode-note.remove-highlight", () => {
+      highlight.removeHighlight();
     }),
     vscode.commands.registerCommand("vscode-note.remove-all", () => {
       highlight.removeAll();
@@ -66,7 +60,7 @@ export function deactivate() {}
 
 async function addBlock(
   highlight: Highlight,
-  action: MessageDataAddBlock["action"]
+  action: Ext2Web.AddCode["action"]
 ) {
   const files = getOpenedCodeNoteFiles();
   if (files.length !== 1) {
@@ -88,12 +82,10 @@ async function addBlock(
 async function submitNote(
   highlight: Highlight,
   webview: vscode.Webview,
-  action: MessageDataAddBlock["action"]
+  action: Ext2Web.AddCode["action"]
 ) {
   const note = highlight.block;
-  if (!note) {
-    return;
-  }
+  if (!note) return;
   const { links, marks } = note;
 
   const value = links.join(" ") + marks.join(" ");
@@ -110,19 +102,20 @@ async function submitNote(
     return;
   }
 
-  const block: Omit<CodeBlock, "id"> = {
-    type: "Code",
-    text,
-    code: note.code,
-    file: note.file,
-    focus: note.focus,
-    lineNums: note.lineNums,
-    lang: note.lang,
-    project: note.project,
-  };
-  const msg: MessageDataAddBlock = {
+  const msg: Ext2Web.AddCode = {
     action,
-    data: block,
+    data: {
+      type: "Code",
+      text,
+      code: note.code,
+      rows: note.rows,
+      file: note.file,
+      focus: note.focus,
+      lineNums: note.lineNums,
+      lang: note.lang,
+      project: note.project,
+      showCode: true,
+    },
   };
   await webview.postMessage(msg);
 }

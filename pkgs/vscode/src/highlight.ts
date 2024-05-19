@@ -68,9 +68,9 @@ export class Highlight {
     this._rangeMap.set(editor.document.uri.fsPath, ranges);
   }
 
-  private _mdx: CodeBlock | undefined;
   public get block(): CodeBlock | undefined {
-    return this._mdx;
+    if (!this._ranges) return;
+    return toMDx(this._ranges);
   }
 
   private _resetDecorations() {
@@ -90,42 +90,65 @@ export class Highlight {
     }
   }
 
-  public toggleHighlight(kind: DecorationKind) {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
+  private _findNextKind(
+    rangeOrPos: vscode.Range | vscode.Position
+  ): DecorationKind | undefined {
     const ranges = this._ranges;
-    if (!ranges) {
-      return;
+    if (!ranges) return;
+
+    let kind = 0;
+    while (
+      kind < 4 &&
+      ranges[kind].find((range) => range.contains(rangeOrPos))
+    ) {
+      kind++;
     }
-    const idxOfCursor = ranges[kind].findIndex((range) =>
-      range.contains(editor.selection.active)
-    );
-    const selection = currentSelection();
-    const idxOfSelection = ranges[kind].findIndex(
-      (range) => selection && range.contains(selection)
-    );
-    if (selection && idxOfSelection >= 0) {
-      this._removeHilight(editor, kind, idxOfSelection);
-    }
-    // add selection which is not a sub range
-    if (selection && idxOfSelection === -1) {
-      this._addHighlight(editor, kind);
-      return;
-    }
-    if (idxOfCursor !== -1) {
-      this._removeHilight(editor, kind, idxOfCursor);
-    }
+    if (kind === 4) return;
+
+    return kind;
   }
 
-  private _addHighlight(editor: vscode.TextEditor, kind: DecorationKind) {
+  public addHighlight() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const selection = currentSelection();
+    if (!selection) return;
+
+    const kind = this._findNextKind(selection);
+    if (typeof kind !== "number") return;
+
+    this._addHighlight(editor, kind, selection);
+  }
+
+  public removeHighlight() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const ranges = this._ranges;
+    if (!ranges) return;
+
+    let kind = this._findNextKind(editor.selection.active);
+    if (typeof kind !== "number" || kind <= 0) return;
+    kind--;
+
+    const idx = ranges[kind].findIndex((range) =>
+      range.contains(editor.selection.active)
+    );
+
+    this._removeHighlight(editor, kind, idx);
+  }
+
+  private _addHighlight(
+    editor: vscode.TextEditor,
+    kind: DecorationKind,
+    selection: vscode.Range
+  ) {
     const word = editor.document.getText(editor.selection);
     if (!word || word.length === 0) {
       vscode.window.showErrorMessage("Nothing selected");
       return;
     }
-    const selection = currentSelection();
     console.log("add highlight:", JSON.stringify(selection));
     if (!selection) {
       vscode.window.showErrorMessage("Empty selected");
@@ -151,7 +174,7 @@ export class Highlight {
       start = startWholeLine;
       end = endWholeLine;
     } else {
-      // exetend Code Kind ranges if Code range does not contain the new range
+      // extend Code Kind ranges if Code range does not contain the new range
       ranges[Code].push(new vscode.Range(startWholeLine, endWholeLine));
       ranges[Code] = mergeOverlap(ranges[Code]);
     }
@@ -162,15 +185,13 @@ export class Highlight {
     this._updateHighlights();
   }
 
-  private _removeHilight(
+  private _removeHighlight(
     editor: vscode.TextEditor,
     kind: DecorationKind,
     idx: number
   ) {
     const ranges = this._ranges;
-    if (!ranges) {
-      return;
-    }
+    if (!ranges) return;
     const [removed] = ranges[kind].splice(idx, 1);
     const Code = DecorationKind.Code;
     // hold the line where other kinds in
@@ -216,7 +237,6 @@ export class Highlight {
         }))
       );
     }
-    this._mdx = toMDx(ranges);
   }
 
   public subscribe(context: vscode.ExtensionContext) {

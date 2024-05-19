@@ -17,6 +17,7 @@
     }
   ],
   "settings": {
-    "typescript.tsc.autoDetect": "off"
+    "typescript.tsc.autoDetect": "off",
+    "cSpell.words": ["cnote", "pannable", "partialize"]
   }
 }

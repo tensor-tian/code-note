@@ -3,8 +3,6 @@ import "dayjs/locale/zh-cn";
 import * as fs from "fs";
 import * as vscode from "vscode";
 
-import type { CodeBlock, Note } from "types";
-
 import { posix } from "path";
 import toml from "toml";
 
@@ -127,18 +125,18 @@ export function getUserHomeDir(): string {
   return process.env.HOME || process.env.USERPROFILE || "";
 }
 
-export function readNote(extensionPath: string, id: string): Note<CodeBlock> {
-  return JSON.parse(
-    fs.readFileSync(filename(extensionPath, id), "utf-8")
-  ) as Note<CodeBlock>;
-}
+// export function readNote(extensionPath: string, id: string): Note {
+//   return JSON.parse(
+//     fs.readFileSync(filename(extensionPath, id), "utf-8")
+//   ) as Note;
+// }
 
-export function writeNote(extensionPath: string, note: Note<CodeBlock>) {
-  fs.writeFileSync(
-    filename(extensionPath, note.id),
-    JSON.stringify(note, null, 2)
-  );
-}
+// export function writeNote(extensionPath: string, note: Note) {
+//   fs.writeFileSync(
+//     filename(extensionPath, note.id),
+//     JSON.stringify(note, null, 2)
+//   );
+// }
 
 const isSubDirectory = (dir: string) => (fsPath: string) => {
   const relative = posix.relative(dir, fsPath);

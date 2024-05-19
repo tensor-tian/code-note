@@ -70,6 +70,10 @@ body,
   color: #2d3748;
 }
 
+.react-flow__panel {
+  background-color: white;
+}
+
 .react-flow__node input[type="text"] {
   display: block;
   width: 100%;
@@ -107,4 +111,9 @@ body,
 }
 .code-handle-hl {
   @apply bg-gray-900 border-gray-900 w-2 h-2;
+}
+.react-flow__devtools-nodeinspector {
+  pointer-events: none;
+  font-family: monospace, sans-serif;
+  font-size: 10px;
 }

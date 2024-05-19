@@ -46,20 +46,12 @@
         "title": "Code Note: Remove All"
       },
       {
-        "command": "vscode-note.toggle-code",
-        "title": "Code Note: Toggle Code"
+        "command": "vscode-note.add-highlight",
+        "title": "Code Note: Add Highlight"
       },
       {
-        "command": "vscode-note.toggle-focus",
-        "title": "Code Note: Toggle Focus"
-      },
-      {
-        "command": "vscode-note.toggle-mark",
-        "title": "Code Note: Toggle Mark"
-      },
-      {
-        "command": "vscode-note.toggle-link",
-        "title": "Code Note: Toggle Link"
+        "command": "vscode-note.remove-highlight",
+        "title": "Code Note: Remove Highlight"
       },
       {
         "command": "vscode-note.add-detail",
@@ -73,38 +65,30 @@
     "menus": {
       "editor/context": [
         {
-          "command": "vscode-note.remove-all",
-          "group": "code-note@7"
-        },
-        {
-          "command": "vscode-note.toggle-code",
-          "group": "code-note@3"
-        },
-        {
-          "command": "vscode-note.toggle-focus",
-          "group": "code-note@4"
-        },
-        {
-          "command": "vscode-note.toggle-mark",
-          "group": "code-note@5"
-        },
-        {
-          "command": "vscode-note.toggle-link",
-          "group": "code-note@6"
-        },
-        {
-          "command": "vscode-note.add-detail",
+          "command": "vscode-note.add-highlight",
           "group": "code-note@1"
         },
         {
-          "command": "vscode-note.add-next",
+          "command": "vscode-note.remove-highlight",
           "group": "code-note@2"
+        },
+        {
+          "command": "vscode-note.add-detail",
+          "group": "code-note@3"
+        },
+        {
+          "command": "vscode-note.add-next",
+          "group": "code-note@4"
+        },
+        {
+          "command": "vscode-note.remove-all",
+          "group": "code-note@5"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "vscode-note.highlight",
+        "command": "vscode-note.add-highlight",
         "key": "ctrl+h",
         "mac": "cmd+h"
       },

@@ -1,297 +1,327 @@
-import type { Block, CodeBlock, ScrollyCodeBlock, TreeBlock } from "types";
-import type { Edge, Node } from "reactflow";
+import type { CodeBlock, CodeNode, Edge, GroupNode, Node } from "types";
 
-import { Layout } from "../../utils";
+export const CODE_SIZE = {
+  X: 50,
+  Y: 46,
+  W: 600,
+  H: 58,
+};
+export const VIEWPORT = {
+  x: 0,
+  y: 0,
+  zoom: 1.0,
+};
 
-class LayoutNode {
-  id = "";
+enum VisitOrder {
+  PreOrder = 1,
+  PostOrder = 2,
+}
+type NodeLayout = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  treeH: number;
+  treeW: number;
+};
 
-  x = 0;
-  y = 0;
-  w = Layout.code.W;
-  h = Layout.code.H;
+const UNSET_NUMBER = -1;
 
-  totalH = 0;
-  totalW = 0;
+class TreeLayout {
+  edgeMap = new Map<string, Edge>();
+  nodeMap: Record<string, Node>;
+  layoutMap = new Map<string, NodeLayout>();
 
-  left?: LayoutNode;
-  right?: LayoutNode;
-  top?: LayoutNode;
-  bottom?: LayoutNode;
-
-  parentId?: string;
-  public static map = new Map<string, LayoutNode>();
-
-  public constructor(
-    id: string,
-    w: number | null | undefined,
-    h: number | null | undefined
-  ) {
-    this.id = id;
-    if (w) this.w = w;
-    if (h) this.h = h;
+  constructor(nodeMap: Record<string, Node>, edges: Edge[]) {
+    this.nodeMap = nodeMap;
+    edges.forEach((e) => {
+      this.edgeMap.set(e.sourceHandle!, e).set(e.targetHandle!, e);
+    });
   }
+  private right = (n: CodeNode | undefined) => {
+    if (!n) return;
+    const edge = this.edgeMap.get(n.id + "-right");
+    if (!edge) return;
+    return this.nodeMap[edge.target] as CodeNode;
+  };
+  private bottom = (n: CodeNode | undefined) => {
+    if (!n) return;
+    const edge = this.edgeMap.get(n.id + "-bottom");
+    if (!edge) return;
+    return this.nodeMap[edge.target] as CodeNode;
+  };
+  private left = (n: CodeNode | undefined) => {
+    if (!n) return;
+    const edge = this.edgeMap.get(n.id + "-left");
+    if (!edge?.targetHandle?.endsWith("left")) return;
+    return this.nodeMap[edge.source] as CodeNode;
+  };
+  private top = (n: CodeNode | undefined) => {
+    if (!n) return;
+    const edge = this.edgeMap.get(n.id + "-top");
+    if (!edge) return;
+    return this.nodeMap[edge.source] as CodeNode;
+  };
 
-  public calcTotalSize() {
-    this.right?.calcTotalSize();
-    this.bottom?.calcTotalSize();
+  private topRight = (n: CodeNode): CodeNode | undefined => {
+    if (!n) return;
+    const topEdge = this.edgeMap.get(n.id + "-top");
+    if (!topEdge) return;
+    const rightEdge = this.edgeMap.get(topEdge.source + "-right");
+    if (!rightEdge) return;
+    return this.nodeMap[rightEdge.target] as CodeNode;
+  };
 
-    this.totalH = this.h;
-    if (this.right && this.right.totalH > this.totalH) {
-      this.totalH = this.right.totalH;
+  private sizeOf = (
+    n: CodeNode,
+    relation: (x: CodeNode) => CodeNode | undefined
+  ): NodeLayout | undefined => {
+    const left = relation(n);
+    if (!left) return;
+    return this.layoutMap.get(left.id);
+  };
+
+  calcTotalSize = (n: CodeNode) => {
+    const sz = this.layoutMap.get(n.id)!;
+
+    sz.treeH = sz.h;
+    const right = this.sizeOf(n, this.right);
+    if (right && right.treeH > sz.treeH) {
+      sz.treeH = right.treeH;
     }
-    if (this.bottom) {
-      this.totalH += this.bottom.totalH + Layout.code.Y;
+    const bottom = this.sizeOf(n, this.bottom);
+    if (bottom) {
+      sz.treeH += bottom.treeH + CODE_SIZE.Y;
     }
 
-    this.totalW = this.w;
-    if (this.right) {
-      this.totalW += this.right.totalW + Layout.code.X;
+    sz.treeW = sz.w;
+    if (right) {
+      sz.treeW += right.treeW + CODE_SIZE.X;
     }
-    if (this.bottom && this.bottom.totalW > this.totalW) {
-      this.totalW = this.bottom.totalW;
+    if (bottom && bottom.treeW > sz.treeW) {
+      sz.treeW = bottom.treeW;
     }
-  }
-  public calcPosition() {
-    const { left, top } = this;
-    this.x = top?.x || (left ? left!.x + left!.w : 0) + Layout.code.X;
-    this.y =
+
+    this.layoutMap.set(n.id, sz)!;
+  };
+
+  calcPosition = (n: CodeNode) => {
+    const sz = this.layoutMap.get(n.id)!;
+
+    const top = this.sizeOf(n, this.top);
+    const left = this.sizeOf(n, this.left);
+    const topRight = this.sizeOf(n, this.topRight);
+
+    sz.x = top?.x || (left ? left!.x + left!.w : 0) + CODE_SIZE.X;
+    sz.y =
       left?.y ||
-      (top ? top!.y + Math.max(top!.right?.totalH || 0, top.h) : 0) +
-        Layout.code.Y;
+      (top ? top!.y + Math.max(topRight?.treeH || 0, top.h) : 50) + CODE_SIZE.Y;
+  };
 
-    this.right?.calcPosition();
-    this.bottom?.calcPosition();
-  }
-}
-
-function visitTree(
-  n: LayoutNode | undefined,
-  preOrPost: "pre" | "post",
-  visitor: (n: LayoutNode) => void
-) {
-  if (!n) return;
-  if (preOrPost === "pre") {
-    visitor(n);
-  }
-  visitTree(n.right, preOrPost, visitor);
-  visitTree(n.bottom, preOrPost, visitor);
-  if (preOrPost === "post") {
-    visitor(n);
-  }
-}
-
-function calcTotalSize(n: LayoutNode) {
-  n.totalH = n.h;
-  if (n.right && n.right.totalH > n.totalH) {
-    n.totalH = n.right.totalH;
-  }
-  if (n.bottom) {
-    n.totalH += n.bottom.totalH + Layout.code.Y;
-  }
-
-  n.totalW = n.w;
-  if (n.right) {
-    n.totalW += n.right.totalW + Layout.code.X;
-  }
-  if (n.bottom && n.bottom.totalW > n.totalW) {
-    n.totalW = n.bottom.totalW;
-  }
-}
-
-function calcPosition(n: LayoutNode) {
-  const { left, top } = n;
-  n.x = top?.x || (left ? left!.x + left!.w : 0) + Layout.code.X;
-  n.y =
-    left?.y ||
-    (top ? top!.y + Math.max(top!.right?.totalH || 0, top.h) : 0) +
-      Layout.code.Y;
-}
-
-class LayoutGraph {
-  private map = new Map<string, LayoutNode>();
-  private blockMap: Record<string, Block>;
-  private codeBlocks = new Array<CodeBlock>();
-  private groupBlocks = new Array<ScrollyCodeBlock>();
-
-  constructor(
-    edges: Edge[],
-    blockMap: Record<string, Block>,
-    getNode: (id: string) => Node<Block> | undefined
+  private visit(
+    node: CodeNode | undefined,
+    visitor: (n: CodeNode) => void,
+    order: VisitOrder
   ) {
-    this.blockMap = blockMap;
-    Object.values(blockMap).forEach((b) => {
-      if (b.type === "Code") {
-        this.codeBlocks.push(b);
-      } else if (b.type === "Scrolly") {
-        this.groupBlocks.push(b);
-      }
-    });
-
-    this.map = this.codeBlocks.reduce((map, block) => {
-      const node = getNode(block.id);
-      map.set(block.id, new LayoutNode(block.id, node?.width, node?.height));
-      return map;
-    }, new Map<string, LayoutNode>());
-    edges.forEach(({ source: sourceId, target: targetId, sourceHandle }) => {
-      const source = this.map.get(sourceId);
-      const target = this.map.get(targetId);
-      if (!source || !target) return;
-      if (sourceHandle?.endsWith("right")) {
-        source.right = target;
-        target.left = source;
-      } else {
-        source.bottom = target;
-        target.top = source;
-      }
-    });
+    if (!node) return;
+    if (order === VisitOrder.PreOrder) {
+      visitor(node);
+    }
+    this.visit(this.right(node), visitor, order);
+    this.visit(this.bottom(node), visitor, order);
+    if (order === VisitOrder.PostOrder) {
+      visitor(node);
+    }
   }
-
-  private _getRoot(
-    n: LayoutNode | undefined,
+  private getRoot(
+    n: CodeNode | undefined,
     visited: Set<string>
-  ): LayoutNode | undefined {
+  ): CodeNode | undefined {
     if (!n) return;
     if (visited.has(n.id)) return;
     visited.add(n.id);
-    if (!n.left && !n.top) return n;
-    return this._getRoot(n.left, visited) || this._getRoot(n.top, visited);
+    const left = this.left(n);
+    const top = this.top(n);
+    if (!left && !top) return n;
+    return this.getRoot(left, visited) || this.getRoot(top, visited);
   }
-  private _getRoots() {
+  private getRoots() {
     const visited = new Set<string>();
-    const roots = new Array<LayoutNode>();
-    for (const n of this.map.values()) {
-      const root = this._getRoot(n, visited);
-      if (root) roots.push(root);
+    const roots = new Array<CodeNode>();
+    for (const n of Object.values(this.nodeMap)) {
+      if (isCodeNode(n)) {
+        const root = this.getRoot(n, visited);
+        if (root) roots.push(root);
+      }
     }
     return roots;
   }
-  private _getGroupNode(
-    group: ScrollyCodeBlock,
-    nMap: Map<string, Node<Block>>
-  ): Node<ScrollyCodeBlock> {
+
+  private calcGroupNode = (g: GroupNode) => {
     let x = 0;
     let yFirst = -1;
     let yLast = -1;
     let hLast = 0;
     let w = 0;
+    const chain = g.data.chain;
 
-    const ns = group.chain.map((nID) => this.blockMap[nID] as CodeBlock);
-    group.chain.forEach((nID, i) => {
-      const n = this.map.get(nID);
-      if (!n) return;
+    chain.forEach((id, i) => {
+      const sz = this.layoutMap.get(id);
+      if (!sz) return;
       if (i === 0) {
-        x = n.x;
-        yFirst = n.y;
+        x = sz.x;
+        yFirst = sz.y;
       }
-      if (n.w > w) {
-        w = n.w;
+      if (sz.w > w) {
+        w = sz.w;
       }
-      if (i === group.chain.length - 1) {
-        yLast = n.y;
-        hLast = n.h;
+      if (i === chain.length - 1) {
+        yLast = sz.y;
+        hLast = sz.h;
       }
     });
 
-    const xGroup = x - 10;
-    const yGroup = yFirst - 28; // -10-16-2
+    const gsz = this.layoutMap.get(g.id)!;
+    gsz.x = x - 10;
+    gsz.y = yFirst - 28; // -10-16-2
+    gsz.w = w + 20;
+    gsz.h = yLast - yFirst + (hLast || CODE_SIZE.H) + 38; // 10 + 10 + 16 + 4
 
-    const node: Node<ScrollyCodeBlock> = {
-      id: group.id,
-      data: group,
-      type: group.type,
-      position: { x: xGroup, y: yGroup },
-      style: {
-        width: w + 20,
-        height: yLast - yFirst + (hLast || Layout.code.H) + 38, // 10 + 10 + 16 + 4
-      },
-      focusable: true,
-      deletable: false,
-    };
-    ns.forEach(({ id }) => {
-      // convert position of code node in group to position realative to parent
-      const n = nMap.get(id);
-      if (!n) return;
-      n.position.x = 10;
-      n.position.y -= yGroup;
-      n.extent = "parent";
+    chain.forEach((id) => {
+      const sz = this.layoutMap.get(id);
+      if (!sz) return;
+      sz.x = 10;
+      sz.y -= gsz.y;
     });
-    return node;
-  }
-
-  public layout() {
-    const roots = this._getRoots();
-    for (const root of roots) {
-      visitTree(root, "post", calcTotalSize);
-      visitTree(root, "pre", calcPosition);
-    }
-    roots.sort((a, b) => a.totalW - b.totalW);
-    const nMap = new Map<string, Node<CodeBlock>>();
-    for (let i = 0; i < roots.length; i++) {
-      visitTree(roots[i], "pre", (n: LayoutNode) => {
-        const code = newNode(
-          this.map.get(n.id)!,
-          this.blockMap[n.id] as CodeBlock
-        );
-        nMap.set(code.id, code);
-      });
-    }
-    const groups = this.groupBlocks.map((group: ScrollyCodeBlock) =>
-      this._getGroupNode(group, nMap)
-    );
-
-    const nodes = [...groups, ...nMap.values()];
-    console.log("layout output:", nodes);
-    return nodes;
-  }
-}
-
-export function layout(
-  edges: Edge[],
-  blockMap: Record<string, Block>,
-  getNode: (id: string) => Node<Block> | undefined
-) {
-  return new LayoutGraph(edges, blockMap, getNode).layout();
-}
-
-function newNode(n: LayoutNode, b: CodeBlock): Node<CodeBlock> {
-  const parentId = b.parentId;
-  return {
-    id: b.id,
-    type: b.type,
-    data: b,
-    position: { x: n.x, y: n.y },
-    // style: {
-    width: n.w,
-    height: n.h,
-    // },
-    ...(parentId ? { parentId } : {}),
-    focusable: true,
-    deletable: false,
-    draggable: false,
   };
+
+  public layout(): { nodeMap: Record<string, Node>; rootIds: string[] } {
+    const roots = this.getRoots();
+    const rootIds = roots.map((n) => n.id);
+    if (roots.length !== 1) {
+      console.log("skip layout: multiple tree root");
+      return {
+        rootIds,
+        nodeMap: this.nodeMap,
+      };
+    }
+    const nodes = Object.values(this.nodeMap);
+    nodes.forEach((n) => {
+      this.layoutMap.set(n.id, {
+        x: UNSET_NUMBER,
+        y: UNSET_NUMBER,
+        w: n.width || CODE_SIZE.W,
+        h: n.height || CODE_SIZE.H,
+        treeH: UNSET_NUMBER,
+        treeW: UNSET_NUMBER,
+      });
+    });
+
+    const groups = nodes.filter(isGroupNode);
+    const codes = nodes.filter(isCodeNode);
+
+    const root = roots[0];
+    this.visit(root, this.calcTotalSize, VisitOrder.PostOrder);
+    this.visit(root, this.calcPosition, VisitOrder.PreOrder);
+    groups.forEach(this.calcGroupNode);
+
+    const groupMap = groups.reduce((acc, n) => {
+      const sz = this.layoutMap.get(n.id)!;
+      if (
+        sz.x !== n.position.x ||
+        sz.y !== n.position.y ||
+        sz.w !== n.style?.width ||
+        sz.h !== n.style.height
+      ) {
+        acc[n.id] = {
+          ...n,
+          position: { x: sz.x, y: sz.y },
+          style: { ...n.style, width: sz.w, height: sz.h },
+          width: sz.w,
+          height: sz.h,
+        };
+      }
+      return acc;
+    }, {} as Record<string, GroupNode>);
+    const codeMap = codes.reduce((acc, n) => {
+      const sz = this.layoutMap.get(n.id)!;
+      if (
+        sz.x !== n.position.x ||
+        sz.y !== n.position.y ||
+        sz.w !== n.width ||
+        sz.h !== n.height
+      ) {
+        acc[n.id] = {
+          ...n,
+          position: { x: sz.x, y: sz.y },
+          width: sz.w,
+          height: sz.h,
+        };
+      }
+      return acc;
+    }, {} as Record<string, CodeNode>);
+
+    if (Object.keys(groupMap).length + Object.keys(codeMap).length === 0) {
+      return { nodeMap: this.nodeMap, rootIds };
+    }
+    return { nodeMap: { ...this.nodeMap, ...groupMap, ...codeMap }, rootIds };
+  }
 }
 
-// function newTreeNode(roots: LayoutNode[], index: number): Node<TreeBlock> {
-//   const root = roots[index];
-//   const x = roots
-//     .slice(0, index)
-//     .reduce((acc, root) => acc + Layout.code.X * 1.5 + root.totalW, 0);
-//   return {
-//     id: "tree-" + root.id,
-//     type: "Tree",
-//     data: {
-//       id: "tree-" + root.id,
-//       text: "",
-//       type: "Tree",
-//     },
-//     position: { x, y: -Layout.code.Y / 2 + 8 },
-//     style: {
-//       width: 2 * Layout.code.X + root.totalW,
-//       height: 2 * Layout.code.Y + root.totalH,
-//     },
-//     focusable: true,
-//     deletable: false,
-//     draggable: true,
-//   };
-// }
+export function isCodeNode(n: Node | undefined): n is CodeNode {
+  return n?.data.type === "Code";
+}
+
+export function isGroupNode(n: Node | undefined): n is GroupNode {
+  return n?.data.type === "Scrolly";
+}
+
+export function layout(nodeMap: Record<string, Node>, edges: Edge[]) {
+  return new TreeLayout(nodeMap, edges).layout();
+}
+
+enum Direction {
+  Start = 0,
+  Left = 1,
+  Right = 2,
+  Top = 3,
+  Bottom = 4,
+}
+export function hasCycle(edges: Edge[]): boolean {
+  const map = new Map<string, Edge>();
+  edges.forEach((e) => {
+    if (e.sourceHandle) map.set(e.sourceHandle!, e);
+    if (e.targetHandle) map.set(e.targetHandle!, e);
+  });
+
+  const dfs = (
+    id: string,
+    visited: Set<string>,
+    parent: string | undefined
+  ): boolean => {
+    if (visited.has(id)) {
+      return true;
+    }
+    visited.add(id);
+    const left = map.get(id + "-left");
+    if (left && left.source !== parent && dfs(left.source, visited, id))
+      return true;
+    const top = map.get(id + "-top");
+    if (top && top.source !== parent && dfs(top.source, visited, id))
+      return true;
+    const right = map.get(id + "-right");
+    if (right && right.target !== parent && dfs(right.target, visited, id))
+      return true;
+    const bottom = map.get(id + "-bottom");
+    if (bottom && bottom.target !== parent && dfs(bottom.target, visited, id))
+      return true;
+    return false;
+  };
+
+  const visited = new Set<string>();
+  for (const edge of edges) {
+    if (visited.has(edge.source)) continue;
+    if (dfs(edge.source, visited, undefined)) return true;
+  }
+  return false;
+}

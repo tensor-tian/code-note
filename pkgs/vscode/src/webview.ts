@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { MessageDataW2E } from "types";
+import type { Web2Ext } from "types";
 import fs from "fs";
 import path from "path";
 
@@ -63,15 +63,8 @@ export class ReactPanel {
 
     // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
-      (event: MessageDataW2E) => {
+      (event: Web2Ext.Message) => {
         switch (event.action) {
-          case "add-detail-done":
-          case "add-next-done":
-            break;
-          case "add-detail-fail":
-          case "add-next-fail":
-            vscode.window.showErrorMessage(event.message);
-            break;
           case "save-note":
             break;
         }

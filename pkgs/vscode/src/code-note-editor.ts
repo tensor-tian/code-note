@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { Block, Note } from "types";
+import type { Block, Ext2Web, Note, Web2Ext } from "types";
 import {
   codeNoteWorkspaceDir,
   ensureWorkspaceOpen,
@@ -148,41 +148,72 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     };
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    function updateWebview() {
-      webviewPanel.webview.postMessage({
-        type: "update",
-        text: document.getText(),
-      });
-    }
+    // function updateWebview() {
+    //   webviewPanel.webview.postMessage({
+    //     type: "reset-note",
+    //     data: document.getText(),
+    //   } as Ext2Web.InitTreeNote);
+    // }
 
-    const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(
-      (e) => {
-        if (e.document.uri.toString() === document.uri.toString()) {
-          updateWebview();
-        }
-      }
-    );
+    // const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(
+    //   (e) => {
+    //     if (e.document.uri.toString() === document.uri.toString()) {
+    //       updateWebview();
+    //     }
+    //   }
+    // );
 
     webviewPanel.onDidDispose(() => {
-      changeDocumentSubscription.dispose();
+      // changeDocumentSubscription.dispose();
     });
 
-    webviewPanel.webview.onDidReceiveMessage((event) => {
-      switch (event.action) {
-        case "add-detail-done":
-        case "add-next-done":
+    webviewPanel.webview.onDidReceiveMessage((message: Web2Ext.Message) => {
+      console.log("web to ext:", message);
+      switch (message.action) {
+        case "show-info":
+          vscode.window.showInformationMessage(message.data);
           break;
-        case "add-detail-fail":
-        case "add-next-fail":
-          vscode.window.showErrorMessage(event.message);
+        case "show-warn":
+          vscode.window.showWarningMessage(message.data);
           break;
-        case "save":
-          this.saveTextDocument(document);
+        case "show-error":
+          vscode.window.showErrorMessage(message.data);
           break;
+        case "save-note":
+          this.saveTextDocument(document, message.data);
+          break;
+        case "ask-init-tree-note":
+          let note: Note;
+          const getNote = async () => {
+            try {
+              note = JSON.parse(document.getText());
+            } catch (err) {
+              const pkgName = await getPackageName();
+              if (!pkgName) {
+                return;
+              }
+              note = {
+                id: await nanoid(),
+                type: "TreeNote",
+                text: `### Untitled`,
+                pkgName: pkgName,
+                nodeMap: {},
+                edges: [],
+                activeNodeId: "",
+              };
+            }
+            return note;
+          };
+          getNote().then((note) =>
+            webviewPanel.webview.postMessage({
+              action: "init-tree-note",
+              data: note,
+            })
+          );
       }
     });
 
-    updateWebview();
+    // updateWebview();
   }
 
   private getHtmlForWebview(webview: vscode.Webview): string {
@@ -220,7 +251,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         <link href="${styleUri}" rel="stylesheet" />
       </head>
       <body>
-        <h1>heading 1</h1>
+        <h1>Loading file...</h1>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
       </body>
@@ -228,45 +259,18 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
   `;
   }
 
-  private getDocumentAsJson(document: vscode.TextDocument): any {
-    const text = document.getText();
-    if (text.trim().length === 0) {
-      return {};
-    }
-
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw new Error(
-        "Could not get document as json. Content is not valid json"
-      );
-    }
-  }
-
-  private saveTextDocument(document: vscode.TextDocument) {
-    const json = this.getDocumentAsJson(document);
+  private saveTextDocument(document: vscode.TextDocument, text: string) {
     const edit = new vscode.WorkspaceEdit();
 
     edit.replace(
       document.uri,
       new vscode.Range(0, 0, document.lineCount, 0),
-      JSON.stringify(json, null, 2)
+      text
     );
 
     return vscode.workspace.applyEdit(edit);
   }
 }
-
-function getNonce() {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
-}
-
 const nanoid = async (): Promise<string> => {
   const newId = await import("nanoid").then(({ customAlphabet }) =>
     customAlphabet("01234567890abcdefghijklmnopqrstuvwxyz", 10)
@@ -275,21 +279,20 @@ const nanoid = async (): Promise<string> => {
 };
 
 async function initialCodeNoteFile(title: string): Promise<string | undefined> {
-  const id = await nanoid();
   const file = vscode.Uri.file(filename(codeNoteWorkspaceDir, title));
   if (!fs.existsSync(file.fsPath)) {
     const pkgName = await getPackageName();
     if (!pkgName) {
       return;
     }
-    const note: Note<Block> = {
-      id,
+    const note: Note = {
+      id: await nanoid(),
+      type: "TreeNote",
       text: `### ${title}`,
-      type: "CodeNote",
       pkgName: pkgName,
-      blockMap: {},
+      nodeMap: {},
       edges: [],
-      activeBlockId: null,
+      activeNodeId: "",
     };
     await fs.promises.writeFile(file.fsPath, JSON.stringify(note, null, 2));
   }
