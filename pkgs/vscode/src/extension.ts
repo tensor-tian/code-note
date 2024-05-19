@@ -1,10 +1,11 @@
 import * as vscode from "vscode";
 
-import { CodeBlock, Ext2Web } from "types";
 import { codeNoteWorkspaceDir, getOpenedCodeNoteFiles } from "./utils";
 
 import { CodeNoteEditorProvider } from "./code-note-editor";
+import { Ext2Web } from "types";
 import { Highlight } from "./highlight";
+import { MemFS } from "./file-system-provider";
 import { posix } from "path";
 
 // import { ReactPanel } from "./webview";
@@ -22,9 +23,17 @@ export function activate(context: vscode.ExtensionContext) {
     context.extensionUri
   );
 
-  const editorProvider = new CodeNoteEditorProvider(context);
+  const memFS = new MemFS();
+  const editorProvider = new CodeNoteEditorProvider(context, memFS);
 
   context.subscriptions.push(
+    vscode.workspace.registerFileSystemProvider(
+      CodeNoteEditorProvider.vDocSchema,
+      memFS,
+      {
+        isCaseSensitive: true,
+      }
+    ),
     vscode.window.registerCustomEditorProvider(
       CodeNoteEditorProvider.viewType,
       editorProvider
@@ -45,10 +54,10 @@ export function activate(context: vscode.ExtensionContext) {
       highlight.removeAll();
     }),
     vscode.commands.registerCommand("vscode-note.add-detail", () => {
-      addBlock(highlight, "add-detail").catch(console.error);
+      addBlock(editorProvider, highlight, "add-detail").catch(console.error);
     }),
     vscode.commands.registerCommand("vscode-note.add-next", () => {
-      addBlock(highlight, "add-next").catch(console.error);
+      addBlock(editorProvider, highlight, "add-next").catch(console.error);
     })
   );
 }
@@ -56,6 +65,7 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 async function addBlock(
+  provider: CodeNoteEditorProvider,
   highlight: Highlight,
   action: Ext2Web.AddCode["action"]
 ) {
@@ -66,7 +76,7 @@ async function addBlock(
     );
     return;
   }
-  const webview = CodeNoteEditorProvider.getWebView(
+  const webview = provider.getWebView(
     posix.relative(codeNoteWorkspaceDir, files[0])
   );
   if (!webview) {

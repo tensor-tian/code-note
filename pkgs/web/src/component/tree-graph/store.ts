@@ -23,6 +23,7 @@ namespace TreeNote {
     panToActiveMark: number;
     rootIds: string[];
     handshake: boolean;
+    debug: boolean;
   }
   export interface Actions {
     resetNote: (state: Note) => void;
@@ -57,6 +58,7 @@ const initialData: TreeNote.Store = {
   panToActiveMark: 0,
   rootIds: [],
   handshake: false,
+  debug: false,
 };
 
 export type { TreeNote };
@@ -471,7 +473,7 @@ export function newNode(
   activeNode: Node | undefined
 ) {
   const id = nanoid();
-  const block = { ...data, id, text: `${id} ${data.text}` };
+  const block = { ...data, id };
   let x = 0,
     y = 0;
   if (activeNode) {
@@ -579,9 +581,14 @@ export const selectEdges = (state: Store) => state.edges;
 export const selectSelectedNodes = (state: Store) => state.selectedNodes;
 export const selectActiveEdgeId = (state: Store) => state.activeEdgeId;
 export const selectActiveNodeId = (state: Store) => state.activeNodeId;
-export const selectNoteTitle = (state: Store) => `${state.id}. ${state.type}`;
+export const selectNoteTitle = (state: Store) => ({
+  text: state.text,
+  id: state.id,
+  type: state.type,
+});
 export const selectPanToActiveMark = (state: Store) => state.panToActiveMark;
 export const selectRootIds = (state: Store) => state.rootIds;
+export const selectDebug = (state: Store) => state.debug;
 
 export const selectNodes = createSelector(
   [selectNodeMap],

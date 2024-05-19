@@ -1,7 +1,12 @@
 import * as vscode from "vscode";
 
 import type { Block, Ext2Web, Note, Web2Ext } from "types";
-import { codeNoteWorkspaceDir, filename, getPackageName } from "./utils";
+import {
+  closeFileIfOpen,
+  codeNoteWorkspaceDir,
+  filename,
+  getPackageName,
+} from "./utils";
 
 import fs from "fs";
 import { nextCol } from "./webview";
@@ -12,10 +17,20 @@ type WebManifest = {
 };
 
 export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
-  private static webviewPanelMap: Map<string, vscode.WebviewPanel> = new Map();
+  private webviewPanelMap: Map<string, vscode.WebviewPanel> = new Map();
+  private vDocToNoteFileMap: Map<string, string> = new Map();
 
-  public static getWebView(filename: string): vscode.Webview | undefined {
-    return CodeNoteEditorProvider.webviewPanelMap.get(filename)?.webview;
+  public getWebviewPanel(filename: string): vscode.WebviewPanel | undefined {
+    return this.webviewPanelMap.get(filename);
+  }
+  public getWebView(filename: string): vscode.Webview | undefined {
+    return this.webviewPanelMap.get(filename)?.webview;
+  }
+
+  public getWebViewByVDoc(vDocUri: vscode.Uri): vscode.Webview | undefined {
+    const file = this.vDocToNoteFileMap.get(vDocUri.path);
+    if (!file) return;
+    return this.getWebView(file);
   }
 
   public static async openFile() {
@@ -44,11 +59,6 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       CodeNoteEditorProvider.viewType,
       nextCol(vscode.window.activeTextEditor?.viewColumn)
     );
-    // const doc = await vscode.workspace.openTextDocument(uri);
-    // vscode.window.showTextDocument(doc, {
-    //   preview: false,
-    //   viewColumn,
-    // });
   }
 
   public static async createFile(fsPath?: string) {
@@ -59,11 +69,6 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
 
     if (fsPath) {
       const uri = vscode.Uri.parse(`file://${fsPath}`);
-      // const doc = await vscode.workspace.openTextDocument(uri);
-      // vscode.window.showTextDocument(doc, {
-      //   preview: false,
-      //   viewColumn: nextCol(vscode.window.activeTextEditor?.viewColumn),
-      // });
       await vscode.commands.executeCommand(
         "vscode.openWith",
         uri,
@@ -97,26 +102,33 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       CodeNoteEditorProvider.viewType,
       nextCol(vscode.window.activeTextEditor?.viewColumn)
     );
-    // const doc = await vscode.workspace.openTextDocument(uri);
-    // await vscode.window.showTextDocument(doc, {
-    //   preview: false,
-    //   viewColumn: nextCol(vscode.window.activeTextEditor?.viewColumn),
-    // });
   }
 
   public static readonly viewType = "vscode-note";
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(
+    private readonly context: vscode.ExtensionContext,
+    private readonly memFS: vscode.FileSystemProvider
+  ) {
+    context.subscriptions.push(
+      vscode.workspace.onDidCloseTextDocument((doc: vscode.TextDocument) => {
+        const uri = doc.uri;
+        const { id, type: typ } = this.parseVDocUri(uri);
+        if (!id || !typ) return;
+        this.memFS.delete(uri, { recursive: true });
+        this.vDocToNoteFileMap.delete(uri.path);
+      }),
+      vscode.workspace.onDidChangeTextDocument(this.onDidChangeVDoc, this)
+    );
+  }
 
   resolveCustomTextEditor(
     document: vscode.TextDocument,
     webviewPanel: vscode.WebviewPanel,
     _: vscode.CancellationToken
   ): void | Thenable<void> {
-    CodeNoteEditorProvider.webviewPanelMap.set(
-      posix.relative(codeNoteWorkspaceDir, document.uri.fsPath),
-      webviewPanel
-    );
+    const webviewKey = document.uri.path;
+    this.webviewPanelMap.set(webviewKey, webviewPanel);
     webviewPanel.webview.options = {
       enableScripts: true,
       localResourceRoots: [
@@ -125,23 +137,18 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     };
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    // function updateWebview() {
-    //   webviewPanel.webview.postMessage({
-    //     type: "reset-note",
-    //     data: document.getText(),
-    //   } as Ext2Web.InitTreeNote);
-    // }
-
-    // const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(
-    //   (e) => {
-    //     if (e.document.uri.toString() === document.uri.toString()) {
-    //       updateWebview();
-    //     }
-    //   }
-    // );
-
     webviewPanel.onDidDispose(() => {
-      // changeDocumentSubscription.dispose();
+      this.webviewPanelMap.delete(webviewKey);
+
+      // close vdoc text editor
+      const docs = vscode.workspace.textDocuments;
+      for (const [vdoc, k] of this.vDocToNoteFileMap.entries()) {
+        // vdoc is the v-doc uri path
+        if (k !== webviewKey) continue;
+        const doc = docs.find((doc) => doc.uri.path === vdoc);
+        if (!doc) continue;
+        closeFileIfOpen(doc.uri); // close text file will trigger 'onDidCloseTextDocument'
+      }
     });
 
     webviewPanel.webview.onDidReceiveMessage((message: Web2Ext.Message) => {
@@ -160,37 +167,41 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
           this.saveTextDocument(document, message.data);
           break;
         case "ask-init-tree-note":
-          let note: Note;
-          const getNote = async () => {
-            try {
-              note = JSON.parse(document.getText());
-            } catch (err) {
-              const pkgName = await getPackageName();
-              if (!pkgName) {
-                return;
+          {
+            let note: Note;
+            const getNote = async () => {
+              try {
+                note = JSON.parse(document.getText());
+              } catch (err) {
+                const pkgName = await getPackageName();
+                if (!pkgName) {
+                  return;
+                }
+                note = {
+                  id: await nanoid(),
+                  type: "TreeNote",
+                  text: `### Untitled`,
+                  pkgName: pkgName,
+                  nodeMap: {},
+                  edges: [],
+                  activeNodeId: "",
+                };
               }
-              note = {
-                id: await nanoid(),
-                type: "TreeNote",
-                text: `### Untitled`,
-                pkgName: pkgName,
-                nodeMap: {},
-                edges: [],
-                activeNodeId: "",
-              };
-            }
-            return note;
-          };
-          getNote().then((note) =>
-            webviewPanel.webview.postMessage({
-              action: "init-tree-note",
-              data: note,
-            })
-          );
+              return note;
+            };
+            getNote().then((note) =>
+              webviewPanel.webview.postMessage({
+                action: "init-tree-note",
+                data: note,
+              })
+            );
+          }
+          break;
+        case "start-text-editor":
+          this.startVirtualDocument(message.data, webviewKey);
+          break;
       }
     });
-
-    // updateWebview();
   }
 
   private getHtmlForWebview(webview: vscode.Webview): string {
@@ -247,7 +258,63 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
 
     return vscode.workspace.applyEdit(edit);
   }
+  /**
+   *   virtual document
+   */
+  public static readonly vDocSchema = "vscode-note-vdoc";
+  private getVDocUri(id: string, typ: string): vscode.Uri {
+    return vscode.Uri.parse(
+      `${CodeNoteEditorProvider.vDocSchema}:/${typ}-${id}.md`
+    );
+  }
+  private parseVDocUri(uri: vscode.Uri): {
+    id?: string;
+    type?: string;
+  } {
+    if (uri.scheme !== CodeNoteEditorProvider.vDocSchema) return {};
+    if (!uri.path.endsWith(".md") || !uri.path.startsWith("/")) return {};
+    const parts = uri.path.slice(1, uri.path.length - 3).split("-");
+    if (parts.length !== 2) return {};
+    return { id: parts[1], type: parts[0] };
+  }
+
+  private async startVirtualDocument(
+    { text: content, id, type: typ }: Web2Ext.StartTextEditor["data"],
+    webviewKey: string
+  ) {
+    const uri = this.getVDocUri(id, typ);
+    console.log("uri.path", uri.path);
+    this.memFS.writeFile(uri, Buffer.from(content), {
+      create: true,
+      overwrite: true,
+    });
+    this.vDocToNoteFileMap.set(uri.path, webviewKey);
+    const doc = await vscode.workspace.openTextDocument(uri);
+    const webviewPanel = this.getWebviewPanel(webviewKey);
+    const activeColumn = webviewPanel?.viewColumn || 3;
+    console.log("active column:", activeColumn, vscode.window.activeTextEditor);
+    vscode.window.showTextDocument(doc, {
+      viewColumn: activeColumn + 1,
+      preserveFocus: false,
+      preview: false,
+    });
+  }
+
+  // post changed text to paired webview
+  private onDidChangeVDoc(event: vscode.TextDocumentChangeEvent) {
+    const uri = event.document.uri;
+    const { id, type: typ } = this.parseVDocUri(uri);
+    if (!id || !typ) return;
+
+    const text = event.document.getText();
+    const webview = this.getWebViewByVDoc(uri);
+    webview?.postMessage({
+      action: "text-change",
+      data: { id, type: typ, text },
+    } as Ext2Web.TextChange);
+  }
 }
+
 const nanoid = async (): Promise<string> => {
   const newId = await import("nanoid").then(({ customAlphabet }) =>
     customAlphabet("01234567890abcdefghijklmnopqrstuvwxyz", 10)
