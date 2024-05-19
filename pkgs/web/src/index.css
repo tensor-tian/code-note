@@ -958,6 +958,32 @@ body,
   font-size: 10px;
 }
 
+s,
+strike {
+  text-decoration: none;
+  /*we're replacing the default line-through*/
+  position: relative;
+  display: inline-block;
+  /* keeps it from wrapping across multiple lines */
+}
+
+s:after,
+strike:after {
+  content: "";
+  /* required property */
+  position: absolute;
+  bottom: 0;
+  left: -10%;
+  border-top: 1.5px solid red;
+  height: 45%;
+  /* adjust as necessary, depending on line thickness */
+  /* or use calc() if you don't need to support IE8: */
+  height: calc(50% - 1px);
+  /* 1px = half the line thickness */
+  width: 120%;
+  /* transform: rotateZ(-0deg); */
+}
+
 .hover\:scale-125:hover {
   --tw-scale-x: 1.25;
   --tw-scale-y: 1.25;

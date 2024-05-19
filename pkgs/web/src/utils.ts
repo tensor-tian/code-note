@@ -1,5 +1,3 @@
-import type { Block, Note } from "types";
-
 import { WebviewApi } from "vscode-webview";
 import { customAlphabet } from "nanoid";
 import debounce from "lodash.debounce";
@@ -21,7 +19,10 @@ const mock: WebviewApi<string> = {
   },
 };
 
+export let isVscode = true;
+
 if (!window.acquireVsCodeApi) {
+  isVscode = false;
   window.acquireVsCodeApi = () => mock;
 }
 

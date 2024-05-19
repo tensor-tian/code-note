@@ -1,10 +1,9 @@
-import { Edge, Ext2Web, GroupNode, Node } from "types";
-import { Panel, ReactFlowState, useReactFlow, useStore } from "reactflow";
+import { Panel, useStore } from "reactflow";
 import { selectNoteTitle, useTreeNoteStore } from "./store";
 
+import { Ext2Web } from "types";
 import Markdown from "react-markdown";
-import { isGroupNode } from "./layout";
-import { nanoid } from "../../utils";
+import { isVscode } from "../../utils";
 import { useCallback } from "react";
 
 const block: Ext2Web.AddCode["data"] = {
@@ -39,9 +38,10 @@ protected _register<T extends vscode.Disposable>(value: T): T {
 
 type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
+  toggleDebug: () => void;
 };
 
-function Menu({ addBlock }: Props) {
+function Menu({ addBlock, toggleDebug }: Props) {
   const addDetail = useCallback(() => {
     addBlock({ action: "add-detail", data: { ...block } });
   }, [addBlock]);
@@ -59,6 +59,7 @@ function Menu({ addBlock }: Props) {
       )}, zoom: ${s.transform[2].toFixed(2)}`
   );
 
+  console.log("is vscode:", isVscode);
   return (
     <>
       <Panel position="top-left" className="border ">
@@ -66,20 +67,29 @@ function Menu({ addBlock }: Props) {
           <Markdown>{title}</Markdown>
         </div>
         <div className="flex justify-between align-middle h-10">
-          <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray-400 rounded border px-3 text-gray-700">
+          {/* <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray-400 rounded border px-3 text-gray-700">
             {viewport}
-          </pre>
-          <button className="btn-blue h-6 mt-1" onClick={addDetail}>
-            Add Detail
-          </button>
-          <button className="btn-blue h-6 mt-1" onClick={addNext}>
-            Add Next
-          </button>
+          </pre> */}
+          {!isVscode && (
+            <button className="btn-blue h-6 mt-1" onClick={addDetail}>
+              Add Detail
+            </button>
+          )}
+          {!isVscode && (
+            <button className="btn-blue h-6 mt-1" onClick={addNext}>
+              Add Next
+            </button>
+          )}
+          {
+            <button className="btn-blue h-6 mt-1" onClick={toggleDebug}>
+              Debug
+            </button>
+          }
           <button className="btn-blue h-6 mt-1" onClick={deleteEdge}>
-            Del Edge
+            <s>Edge</s>
           </button>
           <button className="btn-blue h-6 mt-1" onClick={deleteNode}>
-            Del Node
+            <s>Node</s>
           </button>
           <button className="btn-blue h-6 mt-1" onClick={toggleGroup}>
             ScrollyBlock
