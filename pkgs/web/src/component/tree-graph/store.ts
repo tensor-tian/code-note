@@ -169,30 +169,14 @@ export const useTreeNoteStore = create<TreeNote.State>(
           const { nodeMap, edges, activeNodeId } = get();
           const nodes = Object.values(nodeMap);
 
+          // empty tree flow graph
           if (!activeNodeId && nodes.length > 0) return;
-
-          if (activeNodeId) {
-            const sourceEdges = edges.filter(({ sourceHandle }) =>
-              sourceHandle?.startsWith(activeNodeId)
-            );
-            if (sourceEdges && sourceEdges.length > 0)
-              if (
-                (action === "add-detail" &&
-                  sourceEdges.find(({ sourceHandle }) =>
-                    sourceHandle?.endsWith("right")
-                  )) ||
-                (action === "add-next" &&
-                  sourceEdges.find(({ sourceHandle }) =>
-                    sourceHandle?.endsWith("bottom")
-                  ))
-              )
-                return;
-          }
 
           // add node
           const activeNode = nodeMap[activeNodeId];
           const node = newNode({ data, action }, activeNode);
           const nextNodeMap = { ...nodeMap, [node.id]: node };
+
           if (!activeNode) {
             set(
               { activeNodeId: node.id, nodeMap: nextNodeMap },
@@ -203,8 +187,26 @@ export const useTreeNoteStore = create<TreeNote.State>(
             return;
           }
 
-          // add edge
           const nextEdges = [...edges, newEdge(activeNodeId, node.id, action)];
+          // add edges
+          if (action === "add-detail") {
+            const iR = edges.findIndex(
+              ({ sourceHandle }) => sourceHandle === `${activeNodeId}-right`
+            );
+            if (iR !== -1) {
+              const eR = nextEdges[iR];
+              nextEdges.splice(iR, 1, newEdge(node.id, eR.target, action));
+            }
+          } else if (action === "add-next") {
+            const iB = edges.findIndex(
+              ({ sourceHandle }) => sourceHandle === `${activeNodeId}-bottom`
+            );
+            if (iB !== -1) {
+              const eB = nextEdges[iB];
+              nextEdges.splice(iB, 1, newEdge(node.id, eB.target, action));
+            }
+          }
+
           set(
             { activeNodeId: node.id, nodeMap: nextNodeMap, edges: nextEdges },
             false,
