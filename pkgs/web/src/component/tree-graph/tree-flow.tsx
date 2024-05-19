@@ -9,6 +9,7 @@ import ReactFlow, {
   useReactFlow,
 } from "reactflow";
 import {
+  TreeNote,
   selectActiveNodeAndGroup,
   selectNodes,
   selectRootIds,
@@ -19,7 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import Code from "./code";
 import Menu from "./menu";
-// import NodeInspector from "./NodeInspector";
+import NodeInspector from "./NodeInspector";
 import Scrolly from "./scrolly";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
@@ -40,14 +41,12 @@ function TreeFlow() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { handshake, setKV, resetNote, onNodeChange, addCodeNode, onConnect } =
     useTreeNoteStore();
-  const { setViewport } = useReactFlow();
+
   const selectedNodes = useTreeNoteStore(selectSelectedNodes);
   const rootIds = useTreeNoteStore(selectRootIds);
   const nodes = useTreeNoteStore(selectNodes);
-  const { activeNode, activeGroup, activeMark } = useTreeNoteStore(
-    selectActiveNodeAndGroup
-  );
-  const [mark, setMark] = useState<number>(activeMark);
+
+  const [debug, toggleDebug] = useDebug();
 
   const {
     edges,
@@ -57,32 +56,8 @@ function TreeFlow() {
     onEdgeChange,
   } = useEdge();
 
-  useEffect(() => {
-    if (mark === activeMark) return;
-    console.log("pan to active.");
-    if (!containerRef.current) return;
-    if (!isCodeNode(activeNode)) return;
-
-    let { x: xActive, y: yActive } = activeNode.position;
-    if (activeGroup) {
-      xActive += activeGroup.position.x;
-      yActive += activeGroup.position.y;
-    }
-
-    const wActive = activeNode.width || CODE_SIZE.W;
-    const hActive = activeNode.height || CODE_SIZE.H;
-    const container = containerRef.current?.getBoundingClientRect();
-    const x = container.width / 2 - xActive - wActive / 2;
-    const y = container.height / 2 - yActive - hActive / 2;
-    setViewport({ x, y, zoom: VIEWPORT.zoom }, { duration: 800 });
-  }, [activeGroup, activeMark, activeNode, setViewport, mark]);
-
-  useEffect(() => {
-    setMark(activeMark);
-  }, [activeMark]);
-
   useNavKeys(edges);
-
+  usePanToActiveNode(containerRef, setKV, nodes.length);
   console.log("nodes:", nodes, "edges:", edges);
 
   const nodeColor = useCallback(
@@ -135,6 +110,7 @@ function TreeFlow() {
     };
   }, [addCodeNode, resetNote]);
 
+  const nodeStrokeWidth = nodes.length >= 5 ? 40 : 10;
   return (
     <div ref={containerRef} className="top-0 bottom-0 w-full absolute">
       <ReactFlow
@@ -159,13 +135,73 @@ function TreeFlow() {
         <MiniMap
           pannable
           nodeColor={nodeColor}
-          nodeStrokeWidth={30}
+          nodeStrokeWidth={nodeStrokeWidth}
           nodeStrokeColor={nodeStrokeColor}
         />
-        <Menu addBlock={addCodeNode} />
-        {/* <NodeInspector /> */}
+        <Menu addBlock={addCodeNode} toggleDebug={toggleDebug} />
+        {debug && <NodeInspector />}
       </ReactFlow>
     </div>
   );
 }
 export default TreeFlow;
+
+function useDebug(): [boolean, () => void] {
+  const [debug, setDebug] = useState<boolean>(false);
+
+  const toggleDebug = useCallback(() => {
+    setDebug(!debug);
+  }, [debug]);
+
+  return [debug, toggleDebug];
+}
+
+function usePanToActiveNode(
+  ref: React.RefObject<HTMLDivElement>,
+  setKV: <T extends keyof TreeNote.Store>(
+    key: T,
+    val: TreeNote.Store[T]
+  ) => void,
+  nLen: number
+) {
+  const { activeNode, activeGroup, activeMark } = useTreeNoteStore(
+    selectActiveNodeAndGroup
+  );
+  const { setViewport } = useReactFlow();
+  const [mark, setMark] = useState<number>(activeMark);
+  useEffect(() => {
+    if (mark === activeMark) return;
+    console.log("pan to active.");
+    if (!ref.current) return;
+    if (!isCodeNode(activeNode)) return;
+
+    let { x: xActive, y: yActive } = activeNode.position;
+    if (activeGroup) {
+      xActive += activeGroup.position.x;
+      yActive += activeGroup.position.y;
+    }
+
+    const wActive = activeNode.width || CODE_SIZE.W;
+    const hActive = activeNode.height || CODE_SIZE.H;
+    const container = ref.current?.getBoundingClientRect();
+    const x = container.width / 2 - xActive - wActive / 2;
+    const y = container.height / 2 - yActive - hActive / 2;
+    setViewport({ x, y, zoom: VIEWPORT.zoom }, { duration: 800 });
+    if (nLen === 1) {
+      setTimeout(() => setKV("panToActiveMark", 0), 800);
+    }
+  }, [
+    activeGroup,
+    activeMark,
+    activeNode,
+    setViewport,
+    mark,
+    setKV,
+    nLen,
+    ref,
+  ]);
+
+  useEffect(() => {
+    setMark(activeMark);
+  }, [activeMark]);
+}
