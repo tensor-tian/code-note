@@ -70,7 +70,15 @@ namespace Ext2Web {
     action: "init-tree-note";
     data: Note;
   };
-  export type Message = AddCode | InitTreeNote;
+  export type TextChange = {
+    action: "text-change";
+    data: {
+      id: string;
+      type: Note["type"] | Block["type"];
+      text: string;
+    };
+  };
+  export type Message = AddCode | InitTreeNote | TextChange;
 }
 
 namespace Web2Ext {
@@ -87,7 +95,17 @@ namespace Web2Ext {
     action: "ask-init-tree-note";
     data: "";
   };
-  export type Message = SaveNote | ShowMsg | AskInitTreeNote;
+
+  export type StartTextEditor = {
+    action: "start-text-editor";
+    data: {
+      id: string;
+      type: Note["type"] | Block["type"];
+      text: string;
+    };
+  };
+
+  export type Message = SaveNote | ShowMsg | AskInitTreeNote | StartTextEditor;
 }
 
 export type { Ext2Web, Web2Ext };

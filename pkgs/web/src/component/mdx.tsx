@@ -12,19 +12,6 @@ import { ErrorBoundary } from "react-error-boundary";
 import type { MDXContent } from "mdx/types";
 import { remarkCodeHike } from "@code-hike-local/mdx";
 
-function block2MDX(block: CodeBlock): string {
-  const rows = block.rows > 50 ? "" : "";
-  return `
-<CH.Code ${rows}>
-
-\`\`\`${block.lang} ${block.file} lineNums=${block.lineNums} focus=${block.focus}
-${block.code}
-\`\`\`
-
-</CH.Code>
-  `;
-}
-
 async function compileAndRun(input: string) {
   try {
     const c = await compile(input, {
@@ -122,8 +109,8 @@ const logError = (error: Error, info: ErrorInfo) => {
   console.log("error boundary:", error, info);
 };
 
-const MDX: FC<{ block: CodeBlock }> = ({ block }) => {
-  const mdx = useMemo(() => block2MDX(block), [block]);
+const MDX: FC<{ mdx: string }> = ({ mdx }) => {
+  // const mdx = useMemo(() => block2MDX(block), [block]);
   // console.log(mdx);
 
   return (
