@@ -44,9 +44,7 @@ export function useNavKeys(edges: Edge[]) {
               if (e.sourceHandle) acc.set(e.sourceHandle!, e);
               return acc;
             }, new Map<string, Edge>());
-            const moveTopLeft = (
-              id: string
-            ): { id: string | undefined; found: boolean } => {
+            const moveTopLeft = (id: string): string | undefined => {
               // move top
               let top = map.get(id + "-top")?.source;
               while (top) {
@@ -54,29 +52,10 @@ export function useNavKeys(edges: Edge[]) {
                 top = map.get(id + "-top")?.source;
               }
               // move left
-              let left = map.get(id + "-left")?.source;
-              while (left) {
-                const bottom = map.get(left + "-bottom")?.target;
-                console.log("bottom:", bottom);
-                if (bottom) {
-                  // found if has bottom
-                  return { id: bottom, found: true };
-                }
-                id = left;
-                left = map.get(id + "-left")?.source;
-              }
-              return { id, found: false };
+              return map.get(id + "-left")?.source;
             };
-            let { id, found } = moveTopLeft(activeId);
-            while (id && !found) {
-              const prevId = id;
-              ({ id, found } = moveTopLeft(id));
-              if (id === prevId) {
-                break;
-              }
-            }
-
-            if (found && id) activateNode(id);
+            const left = moveTopLeft(activeId);
+            if (left) activateNode(left);
           }
           break;
         }
