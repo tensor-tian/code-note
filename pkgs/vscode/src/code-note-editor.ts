@@ -95,7 +95,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       );
       return;
     }
-    const value = (await getPackageName()) + "-" || "";
+    const value = (await getPackageName())?.replaceAll("/", " | ") + "-" || "";
     const title = await vscode.window.showInputBox({
       value,
       valueSelection: [value.length, value.length],
