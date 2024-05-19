@@ -11,6 +11,7 @@ import ReactFlow, {
 import {
   TreeNote,
   selectActiveNodeAndGroup,
+  selectDebug,
   selectNodes,
   selectRootIds,
   selectSelectedNodes,
@@ -39,14 +40,20 @@ const DEFAULT_EDGE_OPTIONS = {
 
 function TreeFlow() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { handshake, setKV, resetNote, onNodeChange, addCodeNode, onConnect } =
-    useTreeNoteStore();
+  const {
+    handshake,
+    setKV,
+    resetNote,
+    onNodeChange,
+    addCodeNode,
+    onConnect,
+    updateNodeText,
+  } = useTreeNoteStore();
 
   const selectedNodes = useTreeNoteStore(selectSelectedNodes);
   const rootIds = useTreeNoteStore(selectRootIds);
   const nodes = useTreeNoteStore(selectNodes);
-
-  const [debug, toggleDebug] = useDebug();
+  const debug = useTreeNoteStore(selectDebug);
 
   const {
     edges,
@@ -97,6 +104,14 @@ function TreeFlow() {
           console.log("init tree note:", event.data.data);
           resetNote(event.data.data);
           break;
+        case "text-change":
+          const { data } = event.data;
+          if (data.type === "Code") {
+            updateNodeText(data.id, data.text);
+          } else if (data.type === "TreeNote") {
+            setKV("text", data.text);
+          }
+          break;
         case "add-detail":
         case "add-next":
           console.log("Receive message from extension:", event.data);
@@ -108,7 +123,7 @@ function TreeFlow() {
     return () => {
       window.removeEventListener("message", handler);
     };
-  }, [addCodeNode, resetNote]);
+  }, [addCodeNode, resetNote, setKV, updateNodeText]);
 
   const nodeStrokeWidth = nodes.length >= 5 ? 40 : 10;
   return (
@@ -138,23 +153,13 @@ function TreeFlow() {
           nodeStrokeWidth={nodeStrokeWidth}
           nodeStrokeColor={nodeStrokeColor}
         />
-        <Menu addBlock={addCodeNode} toggleDebug={toggleDebug} />
+        <Menu addBlock={addCodeNode} />
         {debug && <NodeInspector />}
       </ReactFlow>
     </div>
   );
 }
 export default TreeFlow;
-
-function useDebug(): [boolean, () => void] {
-  const [debug, setDebug] = useState<boolean>(false);
-
-  const toggleDebug = useCallback(() => {
-    setDebug(!debug);
-  }, [debug]);
-
-  return [debug, toggleDebug];
-}
 
 function usePanToActiveNode(
   ref: React.RefObject<HTMLDivElement>,

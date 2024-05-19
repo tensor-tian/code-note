@@ -1,9 +1,9 @@
+import { Ext2Web, Web2Ext } from "types";
 import { Panel, useStore } from "reactflow";
-import { selectNoteTitle, useTreeNoteStore } from "./store";
+import { isVscode, vscode } from "../../utils";
+import { selectDebug, selectNoteTitle, useTreeNoteStore } from "./store";
 
-import { Ext2Web } from "types";
-import Markdown from "react-markdown";
-import { isVscode } from "../../utils";
+import MDX from "../mdx";
 import { useCallback } from "react";
 
 const block: Ext2Web.AddCode["data"] = {
@@ -38,10 +38,9 @@ protected _register<T extends vscode.Disposable>(value: T): T {
 
 type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
-  toggleDebug: () => void;
 };
 
-function Menu({ addBlock, toggleDebug }: Props) {
+function Menu({ addBlock }: Props) {
   const addDetail = useCallback(() => {
     addBlock({ action: "add-detail", data: { ...block } });
   }, [addBlock]);
@@ -49,8 +48,8 @@ function Menu({ addBlock, toggleDebug }: Props) {
     addBlock({ action: "add-next", data: { ...block } });
   }, [addBlock]);
 
-  const { toggleGroup, deleteEdge, deleteNode } = useTreeNoteStore();
-  const title = useTreeNoteStore(selectNoteTitle);
+  const { setKV, toggleGroup, deleteEdge, deleteNode } = useTreeNoteStore();
+  const { id, text, type: typ } = useTreeNoteStore(selectNoteTitle);
 
   const viewport = useStore(
     (s) =>
@@ -58,18 +57,30 @@ function Menu({ addBlock, toggleDebug }: Props) {
         2
       )}, zoom: ${s.transform[2].toFixed(2)}`
   );
+  const debug = useTreeNoteStore(selectDebug);
+
+  const startEdit = useCallback(() => {
+    vscode.postMessage({
+      action: "start-text-editor",
+      data: { id, text, type: typ },
+    } as Web2Ext.StartTextEditor);
+  }, [id, text, typ]);
+
+  const toggleDebug = useCallback(() => {
+    setKV("debug", !debug);
+  }, [debug, setKV]);
 
   console.log("is vscode:", isVscode);
   return (
     <>
       <Panel position="top-left" className="border ">
         <div className="px-3">
-          <Markdown>{title}</Markdown>
+          <MDX mdx={text} />
         </div>
         <div className="flex justify-between align-middle h-10">
-          {/* <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray-400 rounded border px-3 text-gray-700">
-            {viewport}
-          </pre> */}
+          <button className="btn-blue h-6 mt-1" onClick={startEdit}>
+            Edit
+          </button>
           {!isVscode && (
             <button className="btn-blue h-6 mt-1" onClick={addDetail}>
               Add Detail
@@ -94,6 +105,12 @@ function Menu({ addBlock, toggleDebug }: Props) {
           <button className="btn-blue h-6 mt-1" onClick={toggleGroup}>
             ScrollyBlock
           </button>
+
+          {debug && (
+            <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray rounded border px-3  bg-gray-300">
+              {viewport}
+            </pre>
+          )}
         </div>
       </Panel>
     </>

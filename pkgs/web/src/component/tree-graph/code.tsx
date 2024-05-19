@@ -1,3 +1,4 @@
+import { CodeBlock, Web2Ext } from "types";
 import { Handle, NodeProps, Position } from "reactflow";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { MouseEvent, memo, useCallback, useMemo } from "react";
@@ -5,21 +6,21 @@ import { MouseEvent, memo, useCallback, useMemo } from "react";
 import {
   selectActiveEdge,
   selectActiveNodeId,
+  selectDebug,
   selectRootIds,
   selectSelectedNodes,
   useTreeNoteStore,
 } from "./store";
 
-import { CodeBlock } from "types";
-import { EditText } from "react-edit-text";
 import type { IsValidConnection } from "reactflow";
+import { LiaEdit } from "react-icons/lia";
 import MDX from "../mdx";
 import cx from "classnames";
+import { vscode } from "../../utils";
 
 function TreeNode({ id, data }: NodeProps<CodeBlock>) {
-  const { text, showCode } = data;
+  const { showCode } = data;
   const {
-    updateNodeText,
     toggleCode: _toggleCode,
     activateNode,
     toggleNodeSelection,
@@ -53,19 +54,30 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     },
     [activateNode, id]
   );
-  const onTextChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      updateNodeText(id, event.target.value);
-    },
-    [id, updateNodeText]
-  );
+  // const onTextChange = useCallback(
+  //   (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  //     updateNodeText(id, event.target.value);
+  //   },
+  //   [id, updateNodeText]
+  // );
+  const onStartTextEdit = useCallback(() => {
+    console.log("start text edit");
+    vscode.postMessage({
+      action: "start-text-editor",
+      data: {
+        id: data.id,
+        text: data.text,
+        type: data.type,
+      },
+    } as Web2Ext.StartTextEditor);
+  }, [data.id, data.text, data.type]);
   const checkboxId = "code-" + id;
 
   const toggleSelection = useCallback(() => {
     toggleNodeSelection(id);
   }, [id, toggleNodeSelection]);
 
-  const showCodeIcon = useMemo(
+  const ShowCodeIcon = useMemo(
     () => (
       <div className="w-100 flex" onClick={toggleCode}>
         {showCode ? (
@@ -87,11 +99,25 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     ),
     [showCode, toggleCode]
   );
+  const debug = useTreeNoteStore(selectDebug);
+  const ID = useMemo(() => {
+    if (!debug) return;
+    return (
+      <pre className=" text-xs border-none rounded-sm px-3 bg-gray-300">
+        {id}
+      </pre>
+    );
+  }, [id, debug]);
 
   const idTop = id + "-top";
   const idLeft = id + "-left";
   const idRight = id + "-right";
   const idBottom = id + "-bottom";
+
+  const mdx = useMemo(
+    () => (data.showCode ? block2MDX(data) : data.text),
+    [data]
+  );
   return (
     <div>
       <Handle
@@ -117,29 +143,31 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         onClick={onActivate}
       >
         <div className="flex justify-between ">
-          {showCodeIcon}
-          <div className="flex align-baseline px">
-            <label
-              htmlFor={checkboxId}
-              className="ignore-click text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 "
-            >
-              {isSelected ? "Deselect Block" : "Select Block"}
-            </label>
-            <input
-              id={checkboxId}
-              className="ignore-click"
-              type="checkbox"
-              checked={isSelected}
-              onChange={toggleSelection}
+          {ShowCodeIcon}
+          {ID}
+          <div className="flex w-30 justify-between">
+            <LiaEdit
+              className="mr-5 cursor-auto text-gray-600 hover:text-gray-900 hover:scale-125"
+              onClick={onStartTextEdit}
             />
+            <div className="flex align-baseline px">
+              <label
+                htmlFor={checkboxId}
+                className="ignore-click text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 "
+              >
+                {isSelected ? "Deselect Block" : "Select Block"}
+              </label>
+              <input
+                id={checkboxId}
+                className="ignore-click"
+                type="checkbox"
+                checked={isSelected}
+                onChange={toggleSelection}
+              />
+            </div>
           </div>
         </div>
-        <EditText
-          value={text}
-          className="note-text text-base px-1"
-          onChange={onTextChange}
-        />
-        {showCode ? <MDX block={data} /> : undefined}
+        <MDX mdx={mdx} />
       </div>
       <Handle
         id={idLeft}
@@ -183,3 +211,18 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
 }
 
 export default memo(TreeNode);
+
+function block2MDX(block: CodeBlock): string {
+  const rows = block.rows > 50 ? "" : "";
+  return `
+${block.text}
+
+<CH.Code ${rows}>
+
+\`\`\`${block.lang} ${block.file} lineNums=${block.lineNums} focus=${block.focus}
+${block.code}
+\`\`\`
+
+</CH.Code>
+  `;
+}
