@@ -1,12 +1,7 @@
 import * as vscode from "vscode";
 
 import type { Block, Ext2Web, Note, Web2Ext } from "types";
-import {
-  codeNoteWorkspaceDir,
-  ensureWorkspaceOpen,
-  filename,
-  getPackageName,
-} from "./utils";
+import { codeNoteWorkspaceDir, filename, getPackageName } from "./utils";
 
 import fs from "fs";
 import { nextCol } from "./webview";
@@ -23,24 +18,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     return CodeNoteEditorProvider.webviewPanelMap.get(filename)?.webview;
   }
 
-  public static openWorkspace() {
-    try {
-      if (!codeNoteWorkspaceDir) {
-        vscode.window.showErrorMessage("Code Note workspace is not defined");
-        return;
-      }
-      ensureWorkspaceOpen(codeNoteWorkspaceDir);
-    } catch (err) {
-      console.error("Failed to open workspace:", err);
-    }
-  }
-
   public static async openFile() {
-    if (!codeNoteWorkspaceDir) {
-      vscode.window.showErrorMessage("Code Note workspace is not defined");
-      return;
-    }
-    ensureWorkspaceOpen(codeNoteWorkspaceDir);
     if (!codeNoteWorkspaceDir) {
       vscode.window.showErrorMessage("Code Note workspace is not defined");
       return;
@@ -78,7 +56,6 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       vscode.window.showErrorMessage("Code Note workspace is not defined");
       return;
     }
-    ensureWorkspaceOpen(codeNoteWorkspaceDir);
 
     if (fsPath) {
       const uri = vscode.Uri.parse(`file://${fsPath}`);

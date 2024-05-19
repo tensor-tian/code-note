@@ -18,6 +18,9 @@ function getCodeNoteWorkspaceDir(): string {
       return "";
     }
   }
+  if (!fs.existsSync(workspaceDir)) {
+    fs.mkdirSync(workspaceDir, { recursive: true });
+  }
   return workspaceDir;
 }
 
@@ -103,22 +106,6 @@ async function fileExists(filePath: string): Promise<boolean> {
 
 export function filename(workspaceDir: string, id: string) {
   return posix.join(workspaceDir, id + ".cnote");
-}
-
-export function ensureWorkspaceOpen(dir: string) {
-  const isOpen = vscode.workspace.workspaceFolders?.find(
-    (folder) => folder.uri.fsPath === dir
-  );
-  if (isOpen) {
-    return;
-  }
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  vscode.workspace.updateWorkspaceFolders(0, 0, {
-    uri: vscode.Uri.file(dir),
-    name: "code-note",
-  });
 }
 
 export function getUserHomeDir(): string {

@@ -32,9 +32,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("vscode-note.create-file", () => {
       CodeNoteEditorProvider.createFile().catch(console.error);
     }),
-    vscode.commands.registerCommand("vscode-note.open-workspace", () => {
-      CodeNoteEditorProvider.openWorkspace();
-    }),
     vscode.commands.registerCommand("vscode-note.open-file", () => {
       CodeNoteEditorProvider.openFile().catch(console.error);
     }),
