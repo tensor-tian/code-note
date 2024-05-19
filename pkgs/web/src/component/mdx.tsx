@@ -13,8 +13,9 @@ import type { MDXContent } from "mdx/types";
 import { remarkCodeHike } from "@code-hike-local/mdx";
 
 function block2MDX(block: CodeBlock): string {
+  const rows = block.rows > 50 ? "" : "";
   return `
-<CH.Code>
+<CH.Code ${rows}>
 
 \`\`\`${block.lang} ${block.file} lineNums=${block.lineNums} focus=${block.focus}
 ${block.code}

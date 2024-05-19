@@ -1,16 +1,13 @@
-import { CodeBlock, Ext2Web } from "types";
-import { Panel, ReactFlowState, useStore } from "reactflow";
-import {
-  actDeleteEdge,
-  actToggleGroup,
-  selectNoteText,
-} from "../../service/note-slice";
-import { useAppDispatch, useAppSelector } from "../../service/store";
+import { Edge, Ext2Web, GroupNode, Node } from "types";
+import { Panel, ReactFlowState, useReactFlow, useStore } from "reactflow";
+import { selectNoteTitle, useTreeNoteStore } from "./store";
 
 import Markdown from "react-markdown";
+import { isGroupNode } from "./layout";
+import { nanoid } from "../../utils";
 import { useCallback } from "react";
 
-const block: Ext2Web.AddBlock["data"] = {
+const block: Ext2Web.AddCode["data"] = {
   type: "Code",
   code: `if (this._isDisposed) {
     return;
@@ -29,6 +26,7 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   return value;
 }
 `,
+  rows: 15,
   file: "src/dispose.ts",
   focus: "22[1:32],23:25,26[1:15]",
   lineNums: "18:32",
@@ -38,50 +36,51 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   text: "`disposeAll` dispose by hand 5",
   showCode: true,
 };
-const transformSelector = (state: ReactFlowState) => state.transform;
+
 type Props = {
-  addBlock: (
-    action: Ext2Web.AddBlock["action"],
-    data: Ext2Web.AddBlock["data"]
-  ) => void;
+  addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
 
 function Menu({ addBlock }: Props) {
-  const dispatch = useAppDispatch();
   const addDetail = useCallback(() => {
-    addBlock("add-detail", { ...block });
+    addBlock({ action: "add-detail", data: { ...block } });
   }, [addBlock]);
   const addNext = useCallback(() => {
-    addBlock("add-next", { ...block });
+    addBlock({ action: "add-next", data: { ...block } });
   }, [addBlock]);
-  const toggleGroup = useCallback(() => {
-    dispatch(actToggleGroup());
-  }, [dispatch]);
-  const delEdge = useCallback(() => {
-    dispatch(actDeleteEdge());
-  }, [dispatch]);
-  const [x, y, zoom] = useStore(transformSelector);
-  const text = useAppSelector(selectNoteText);
+
+  const { toggleGroup, deleteEdge, deleteNode } = useTreeNoteStore();
+  const title = useTreeNoteStore(selectNoteTitle);
+
+  const viewport = useStore(
+    (s) =>
+      `x: ${s.transform[0].toFixed(2)}, y: ${s.transform[1].toFixed(
+        2
+      )}, zoom: ${s.transform[2].toFixed(2)}`
+  );
+
   return (
     <>
       <Panel position="top-left" className="border ">
         <div className="px-3">
-          <Markdown>{text}</Markdown>
+          <Markdown>{title}</Markdown>
         </div>
         <div className="flex justify-between align-middle h-10">
-          <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray-400 rounded border px-3 text-gray-700">{`x: ${x.toFixed(
-            2
-          )}, y: ${y.toFixed(2)}, zoom: ${zoom.toFixed(2)}`}</pre>
+          <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray-400 rounded border px-3 text-gray-700">
+            {viewport}
+          </pre>
           <button className="btn-blue h-6 mt-1" onClick={addDetail}>
             Add Detail
           </button>
           <button className="btn-blue h-6 mt-1" onClick={addNext}>
             Add Next
           </button>
-          <button className="btn-blue h-6 mt-1" onClick={delEdge}>
+          <button className="btn-blue h-6 mt-1" onClick={deleteEdge}>
             Del Edge
           </button>
-          <button className="btn-blue h-6 mt-1">Del Node</button>
+          <button className="btn-blue h-6 mt-1" onClick={deleteNode}>
+            Del Node
+          </button>
           <button className="btn-blue h-6 mt-1" onClick={toggleGroup}>
             ScrollyBlock
           </button>

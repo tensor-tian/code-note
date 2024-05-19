@@ -32,6 +32,7 @@ export interface BaseBlock {
 export interface CodeBlock extends BaseBlock {
   type: "Code";
   code: string;
+  rows: number;
   file: string;
   focus: string;
   lineNums: string;
@@ -50,33 +51,43 @@ export interface EdgeData {
 }
 
 export interface Note {
-  type: "CodeNote";
+  id: string;
+  type: "TreeNote";
   text: string;
   pkgName: string;
   nodeMap: Record<string, Node>;
   edges: Edge[];
-  activeBlockId?: string;
+  activeNodeId: string;
 }
 
 namespace Ext2Web {
-  export type AddBlockData = Omit<CodeBlock, "id">;
-  export type AddBlock = {
+  export type AddCodeData = Omit<CodeBlock, "id">;
+  export type AddCode = {
     action: "add-detail" | "add-next";
-    data: AddBlockData;
+    data: AddCodeData;
   };
-  export type Message = AddBlock;
+  export type InitTreeNote = {
+    action: "init-tree-note";
+    data: Note;
+  };
+  export type Message = AddCode | InitTreeNote;
 }
 
 namespace Web2Ext {
   export type SaveNote = {
     action: "save-note";
-    data: Note;
+    data: string;
   };
   export type ShowMsg = {
     action: "show-info" | "show-warn" | "show-error";
     data: string;
   };
-  export type Message = SaveNote | ShowMsg;
+
+  export type AskInitTreeNote = {
+    action: "ask-init-tree-note";
+    data: "";
+  };
+  export type Message = SaveNote | ShowMsg | AskInitTreeNote;
 }
 
 export type { Ext2Web, Web2Ext };

@@ -24,15 +24,18 @@
     "react-scripts": "5.0.1",
     "react-split-pane": "^0.1.92",
     "react-time-ago": "^7.3.1",
+    "react-use-keypress": "^1.3.1",
     "reactflow": "11.11.3",
     "redux": "^5.0.1",
     "remark-gfm": "^4.0.0",
+    "reselect": "^5.1.0",
     "types": "0.0.1",
     "web-vitals": "^2.1.4",
-    "whatwg-fetch": "^3.6.20"
+    "whatwg-fetch": "^3.6.20",
+    "zustand": "^4.4.1"
   },
   "scripts": {
-    "watch:css": "npx tailwindcss -i ./src/input.css -o ./src/index.css --watch",
+    "css": "npx tailwindcss -i ./src/input.css -o ./src/index.css --watch",
     "build:css": "npx tailwindcss -i ./src/input.css -o ./src/index.css",
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",

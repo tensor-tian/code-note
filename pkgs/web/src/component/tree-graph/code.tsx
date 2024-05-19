@@ -1,30 +1,38 @@
 import { Handle, NodeProps, Position } from "reactflow";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { MouseEvent, memo, useCallback, useMemo } from "react";
+// import debounce from "lodash.debounce";
 import {
-  actEditNodeText,
-  actSetNodeActive,
-  actToggleCode,
-  actToggleNodeSelection,
-  selectHiglightEdge,
-  selectIsActiveNode,
-  selectIsSeleced,
-  selectShowCode,
-} from "../../service/note-slice";
+  selectActiveEdge,
+  selectActiveNodeId,
+  selectRootIds,
+  selectSelectedNodes,
+  useTreeNoteStore,
+} from "./store";
 
 import { CodeBlock } from "types";
 import { EditText } from "react-edit-text";
 import type { IsValidConnection } from "reactflow";
 import MDX from "../mdx";
 import cx from "classnames";
-import { useAppSelector } from "../../service/store";
-import { useDispatch } from "react-redux";
 
 function TreeNode({ id, data }: NodeProps<CodeBlock>) {
-  const showCode = useAppSelector(selectShowCode(id));
-  const isSelected = useAppSelector(selectIsSeleced(id));
-  const isActive = useAppSelector(selectIsActiveNode(id));
-  const dispatch = useDispatch();
+  const { text, showCode } = data;
+  const {
+    updateNodeText,
+    toggleCode: _toggleCode,
+    activateNode,
+    toggleNodeSelection,
+  } = useTreeNoteStore();
+  // const { setNodes, getNodes, getEdge } = useReactFlow();
+  const activeEdge = useTreeNoteStore(selectActiveEdge);
+  const activeNodeId = useTreeNoteStore(selectActiveNodeId);
+  const selectedNodes = useTreeNoteStore(selectSelectedNodes);
+  const rootIds = useTreeNoteStore(selectRootIds);
+  const isSelected = selectedNodes.includes(id);
+  const isActive = activeNodeId === id;
+  const isRoot = rootIds.includes(id);
+
   const isX: IsValidConnection = useCallback(
     (edge) => edge.sourceHandle?.endsWith("right") ?? false,
     []
@@ -34,32 +42,28 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     []
   );
   const toggleCode = useCallback(() => {
-    dispatch(actToggleCode(id));
-  }, [id, dispatch]);
+    _toggleCode(id);
+  }, [id, _toggleCode]);
   const onActivate = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
       if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
         return;
       }
-      dispatch(actSetNodeActive(id));
+      activateNode(id);
     },
-    [id, dispatch]
+    [activateNode, id]
   );
-  const onChange = useCallback(
+  const onTextChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      dispatch(
-        actEditNodeText({
-          id,
-          text: event.target.value,
-        })
-      );
+      updateNodeText(id, event.target.value);
     },
-    [id, dispatch]
+    [id, updateNodeText]
   );
   const checkboxId = "code-" + id;
+
   const toggleSelection = useCallback(() => {
-    dispatch(actToggleNodeSelection(id));
-  }, [id, dispatch]);
+    toggleNodeSelection(id);
+  }, [id, toggleNodeSelection]);
 
   const showCodeIcon = useMemo(
     () => (
@@ -84,7 +88,6 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     [showCode, toggleCode]
   );
 
-  const hl = useAppSelector(selectHiglightEdge);
   const idTop = id + "-top";
   const idLeft = id + "-left";
   const idRight = id + "-right";
@@ -98,7 +101,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         isConnectableStart={false}
         position={Position.Top}
         className={
-          hl?.targetHandle === idTop
+          activeEdge?.targetHandle === idTop
             ? "code-handle-hl -top-1"
             : "code-handle -top-0.5"
         }
@@ -107,9 +110,8 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
       <div
         className={cx(
           "border rounded px-2 py-2 bg-white",
-          isActive
-            ? "border-gray-900 shadow-lg shadow-gray-900"
-            : "border-gray",
+          isRoot ? "border-red" : isActive ? "border-gray-900" : "border-gray",
+          isActive ? "shadow-lg shadow-gray-900" : "",
           isSelected ? "bg-gray-200" : "bg-white"
         )}
         onClick={onActivate}
@@ -133,9 +135,9 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
           </div>
         </div>
         <EditText
-          value={data.text}
+          value={text}
           className="note-text text-base px-1"
-          onChange={onChange}
+          onChange={onTextChange}
         />
         {showCode ? <MDX block={data} /> : undefined}
       </div>
@@ -146,7 +148,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         isConnectableStart={false}
         position={Position.Left}
         className={
-          hl?.targetHandle === idLeft
+          activeEdge?.targetHandle === idLeft
             ? "code-handle-hl -left-1"
             : "code-handle -left-0.5"
         }
@@ -159,7 +161,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         isConnectableEnd={false}
         position={Position.Right}
         className={
-          hl?.sourceHandle === idRight
+          activeEdge?.sourceHandle === idRight
             ? "code-handle-hl -right-1"
             : "code-handle -right-0.5"
         }
@@ -171,7 +173,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         isConnectableStart
         isConnectableEnd={false}
         className={
-          hl?.sourceHandle === idBottom
+          activeEdge?.sourceHandle === idBottom
             ? "code-handle-hl -bottom-1"
             : "code-handle -bottom-0.5"
         }

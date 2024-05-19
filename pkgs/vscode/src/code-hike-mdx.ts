@@ -9,6 +9,7 @@ export type CodeBlock = {
   file: string;
   project: string;
   code: string;
+  rows: number;
   focus: string;
   lineNums: string;
   links: string[];
@@ -37,7 +38,7 @@ export function toMDx(ranges: vscode.Range[][]): CodeBlock | undefined {
   const ext = posix.extname(file).substring(1);
   const filename = posix.basename(file);
 
-  const code = codeStr(
+  const { code, rows } = codeStr(
     doc,
     ext,
     ranges[DecorationKind.Code],
@@ -68,7 +69,17 @@ export function toMDx(ranges: vscode.Range[][]): CodeBlock | undefined {
     (range) => "`" + doc.getText(range) + "`"
   );
 
-  return { project, file, code, focus, lineNums, links, marks, lang: ext };
+  return {
+    project,
+    file,
+    code,
+    rows,
+    focus,
+    lineNums,
+    links,
+    marks,
+    lang: ext,
+  };
 }
 
 function codeStr(
@@ -84,23 +95,26 @@ function codeStr(
     .split("\n");
   const codeLines = new Array<string>();
   const startLine = codeRanges[0].start.line;
-  let i = 0;
+  let iMark = 0;
+  let rows = 0;
   for (const range of codeRanges) {
-    for (let j = range.start.line; j <= range.end.line; j++) {
+    rows += range.end.line - range.start.line + 1;
+    for (let i = range.start.line; i <= range.end.line; i++) {
       // only support one line mark
-      if (markRanges[i] && markRanges[i].start.line === j) {
+      const mRange = markRanges[iMark];
+      if (mRange && mRange.start.line === i) {
         codeLines.push(
           inlineComment(
             ext,
-            `mark[${range.start.character + 1}:${range.end.character}]`
+            `mark[${mRange.start.character + 1}:${mRange.end.character}]`
           )
         );
-        i++;
+        iMark++;
       }
-      codeLines.push(origCodeLines[j - startLine]);
+      codeLines.push(origCodeLines[i - startLine]);
     }
   }
-  return codeLines.join("\n");
+  return { code: codeLines.join("\n"), rows };
 }
 
 function rangeToStr(doc: vscode.TextDocument, range: vscode.Range): string {

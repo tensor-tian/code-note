@@ -9,22 +9,6 @@ export const nanoid = customAlphabet(
   10
 );
 
-export const Layout = {
-  code: {
-    X: 50,
-    Y: 46,
-    W: 600,
-    H: 58,
-  },
-  tree: 100,
-};
-
-export const DefaultViewport = {
-  x: 0,
-  y: 0,
-  zoom: 1.0,
-};
-
 const mock: WebviewApi<string> = {
   postMessage(message: unknown) {
     console.log("post message to extension:", message);
@@ -43,9 +27,9 @@ if (!window.acquireVsCodeApi) {
 
 export const vscode = acquireVsCodeApi();
 
-export const saveNote = debounce((note: Note) => {
+export const saveNote = debounce((data: string) => {
   vscode.postMessage({
     action: "save-note",
-    data: note,
+    data,
   });
-}, 300);
+}, 500);
