@@ -4,13 +4,13 @@ import * as runtime from "react/jsx-runtime";
 
 import type { ErrorInfo, FC } from "react";
 import { compile, run } from "@mdx-js/mdx";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { CH } from "@code-hike-local/mdx/components";
-import { CodeBlock } from "types";
 import { ErrorBoundary } from "react-error-boundary";
 import type { MDXContent } from "mdx/types";
 import { remarkCodeHike } from "@code-hike-local/mdx";
+import remarkGfm from "remark-gfm";
 
 async function compileAndRun(input: string) {
   try {
@@ -27,6 +27,7 @@ async function compileAndRun(input: string) {
             autoLink: false,
           },
         ],
+        [remarkGfm],
       ],
     });
     // @ts-ignore

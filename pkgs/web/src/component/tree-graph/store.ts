@@ -48,7 +48,7 @@ const initialData: TreeNote.Store = {
   id: nanoid(),
   type: "TreeNote",
   pkgName: "decorator-sample",
-  text: "",
+  text: "## loading...",
   nodeMap: {},
   edges: [],
   activeNodeId: "", // highlight node, central in viewport, parent for adding node

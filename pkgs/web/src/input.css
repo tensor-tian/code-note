@@ -143,3 +143,43 @@ strike:after {
   width: 120%;
   /* transform: rotateZ(-0deg); */
 }
+
+.preview-container h4 {
+  @apply text-base font-bold dark:text-white mb-1;
+}
+
+.preview-container h3 {
+  @apply text-lg font-bold dark:text-white mb-2;
+}
+
+.preview-container h2 {
+  @apply text-xl font-bold dark:text-white mb-3;
+}
+
+.preview-container h1 {
+  @apply text-2xl font-bold dark:text-white mb-4;
+}
+
+.preview-container a {
+  @apply text-blue-600 dark:text-blue-500 hover:underline;
+}
+
+.preview-container ul {
+  @apply max-w-md space-y-1 list-disc list-inside dark:text-gray-400;
+}
+
+.preview-container ol {
+  @apply max-w-md space-y-1  list-decimal list-inside dark:text-gray-400;
+}
+
+.preview-container li > p {
+  @apply inline-block;
+}
+
+.preview-container li > ul {
+  @apply ps-5;
+}
+
+.preview-container li > ol {
+  @apply ps-5;
+}

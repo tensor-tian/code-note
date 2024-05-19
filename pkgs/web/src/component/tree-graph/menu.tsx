@@ -32,7 +32,40 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   lang: "ts",
   project:
     "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
-  text: "`disposeAll` dispose by hand 5",
+  text: `#### \`disposeAll\` dispose by hand 5 [baidu](http://baidu.com)
+  
+  Emphasis, aka italics, with *asterisks* or _underscores_.
+
+  # h1
+  Strong emphasis, aka bold, with **asterisks** or __underscores__.
+  
+  ## h2
+  Combined emphasis with **asterisks and _underscores_**.
+  
+  ### h3
+  Strikethrough uses two tildes. ~~Scratch this.~~
+
+  > Text that is a quote
+
+  #### h4
+  Use \`git status\` to list all new or modified files that haven't yet been committed.
+
+
+- George Washington
+* John Adams
++ Thomas Jefferson
+
+
+1. James Madison
+2. James Monroe
+3. John Quincy Adams
+
+## h2
+
+1. First list item
+   - First nested list item
+     - Second nested list item
+`,
   showCode: true,
 };
 
