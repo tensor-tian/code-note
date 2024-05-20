@@ -17,8 +17,9 @@ type WebManifest = {
 };
 
 export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
-  private webviewPanelMap: Map<string, vscode.WebviewPanel> = new Map();
-  private vDocToNoteFileMap: Map<string, string> = new Map();
+  private webviewPanelMap: Map<string, vscode.WebviewPanel> = new Map(); // webview panel key -> webview panel
+  private vDocToNoteFileMap: Map<string, string> = new Map(); // vdoc uri path -> webview panel key
+  private textChangeMsgMap = new Map<string, Ext2Web.TextChange>(); // webview panel key -> text change message
 
   public getWebviewPanel(filename: string): vscode.WebviewPanel | undefined {
     return this.webviewPanelMap.get(filename);
@@ -27,10 +28,12 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     return this.webviewPanelMap.get(filename)?.webview;
   }
 
-  public getWebViewByVDoc(vDocUri: vscode.Uri): vscode.Webview | undefined {
+  public getWebViewByVDoc(
+    vDocUri: vscode.Uri
+  ): vscode.WebviewPanel | undefined {
     const file = this.vDocToNoteFileMap.get(vDocUri.path);
     if (!file) return;
-    return this.getWebView(file);
+    return this.getWebviewPanel(file);
   }
 
   public static async openFile() {
@@ -138,6 +141,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
     webviewPanel.onDidDispose(() => {
+      console.log("on dispose:", webviewKey);
       this.webviewPanelMap.delete(webviewKey);
 
       // close vdoc text editor
@@ -190,10 +194,18 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
               return note;
             };
             getNote().then((note) =>
-              webviewPanel.webview.postMessage({
-                action: "init-tree-note",
-                data: note,
-              })
+              webviewPanel.webview
+                .postMessage({
+                  action: "init-tree-note",
+                  data: note,
+                })
+                .then(() => {
+                  const msg = this.textChangeMsgMap.get(webviewKey);
+                  if (msg) {
+                    this.textChangeMsgMap.delete(webviewKey);
+                    return webviewPanel.webview.postMessage(msg);
+                  }
+                })
             );
           }
           break;
@@ -307,11 +319,21 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     if (!id || !typ) return;
 
     const text = event.document.getText();
-    const webview = this.getWebViewByVDoc(uri);
-    webview?.postMessage({
+    const webviewPanel = this.getWebViewByVDoc(uri);
+    const message = {
       action: "text-change",
       data: { id, type: typ, text },
-    } as Ext2Web.TextChange);
+    } as Ext2Web.TextChange;
+    if (webviewPanel?.visible) {
+      console.log("webview panel is visible:", id, typ, text);
+      webviewPanel.webview?.postMessage(message);
+    } else {
+      console.log("webview panel is not visible");
+      const webviewKey = this.vDocToNoteFileMap.get(uri.path);
+      if (webviewKey) {
+        this.textChangeMsgMap.set(webviewKey, message);
+      }
+    }
   }
 }
 

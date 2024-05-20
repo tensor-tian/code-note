@@ -99,6 +99,7 @@ function TreeFlow() {
 
   useEffect(() => {
     const handler = (event: MessageEvent<Ext2Web.Message>) => {
+      console.log("ext to web:", event.data);
       switch (event.data.action) {
         case "init-tree-note":
           console.log("init tree note:", event.data.data);
@@ -114,7 +115,6 @@ function TreeFlow() {
           break;
         case "add-detail":
         case "add-next":
-          console.log("Receive message from extension:", event.data);
           addCodeNode(event.data);
           break;
       }
