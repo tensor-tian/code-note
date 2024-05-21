@@ -2,15 +2,12 @@ import * as vscode from "vscode";
 
 import type { Web2Ext } from "types";
 import fs from "fs";
+import { nextCol } from "./utils";
 import path from "path";
 
 type WebManifest = {
   files: Record<"main.css" | "main.js", string>;
 };
-
-export function nextCol(col: vscode.ViewColumn | undefined): vscode.ViewColumn {
-  return col ? col! + 1 : vscode.ViewColumn.Two;
-}
 
 export class ReactPanel {
   public static currentPanel: ReactPanel | undefined;

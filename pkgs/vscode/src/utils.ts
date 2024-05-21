@@ -157,3 +157,7 @@ export async function closeFileIfOpen(file: vscode.Uri): Promise<void> {
     await vscode.window.tabGroups.close(tabs[index]);
   }
 }
+
+export function nextCol(col: vscode.ViewColumn | undefined): vscode.ViewColumn {
+  return col ? col! + 1 : vscode.ViewColumn.Two;
+}

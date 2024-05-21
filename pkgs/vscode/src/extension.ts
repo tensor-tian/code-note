@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
       CodeNoteEditorProvider.createFile().catch(console.error);
     }),
     vscode.commands.registerCommand("vscode-note.open-file", () => {
-      CodeNoteEditorProvider.openFile().catch(console.error);
+      CodeNoteEditorProvider.openFile().catch(console.log);
     }),
     vscode.commands.registerCommand("vscode-note.add-highlight", () => {
       highlight.addHighlight();

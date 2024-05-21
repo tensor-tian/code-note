@@ -9,7 +9,6 @@ import {
 } from "./utils";
 
 import fs from "fs";
-import { nextCol } from "./webview";
 import { posix } from "path";
 
 type WebManifest = {
@@ -60,7 +59,8 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       "vscode.openWith",
       uri,
       CodeNoteEditorProvider.viewType,
-      nextCol(vscode.window.activeTextEditor?.viewColumn)
+      // nextCol(vscode.window.activeTextEditor?.viewColumn)
+      vscode.ViewColumn.Beside
     );
   }
 
@@ -76,7 +76,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         "vscode.openWith",
         uri,
         CodeNoteEditorProvider.viewType,
-        nextCol(vscode.window.activeTextEditor?.viewColumn)
+        vscode.ViewColumn.Beside
       );
       return;
     }
@@ -103,7 +103,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       "vscode.openWith",
       uri,
       CodeNoteEditorProvider.viewType,
-      nextCol(vscode.window.activeTextEditor?.viewColumn)
+      vscode.ViewColumn.Beside
     );
   }
 
@@ -131,6 +131,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     _: vscode.CancellationToken
   ): void | Thenable<void> {
     const webviewKey = document.uri.path;
+    if (this.getWebView(webviewKey)) return;
     this.webviewPanelMap.set(webviewKey, webviewPanel);
     webviewPanel.webview.options = {
       enableScripts: true,
@@ -305,11 +306,20 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     const webviewPanel = this.getWebviewPanel(webviewKey);
     const activeColumn = webviewPanel?.viewColumn || 3;
     console.log("active column:", activeColumn, vscode.window.activeTextEditor);
-    vscode.window.showTextDocument(doc, {
-      viewColumn: activeColumn + 1,
+    await vscode.commands.executeCommand("workbench.action.splitEditorDown");
+    await vscode.window.showTextDocument(doc, {
+      viewColumn: vscode.ViewColumn.Active,
       preserveFocus: false,
       preview: false,
     });
+    await vscode.commands.executeCommand(
+      "workbench.action.closeEditorsToTheLeft"
+    );
+    for (let i = 0; i < 4; i++) {
+      await vscode.commands.executeCommand(
+        "workbench.action.decreaseViewHeight"
+      );
+    }
   }
 
   // post changed text to paired webview
