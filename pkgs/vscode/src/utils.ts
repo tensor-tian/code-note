@@ -3,146 +3,97 @@ import "dayjs/locale/zh-cn";
 import * as fs from "fs";
 import * as vscode from "vscode";
 
-import { posix } from "path";
+import path from "path";
 import toml from "toml";
 
-function getCodeNoteWorkspaceDir(): string {
-  const config = vscode.workspace.getConfiguration("vscode-note");
-  let workspaceDir: string = config.get("workspaceDir") || "";
-  if (!workspaceDir) {
-    workspaceDir = posix.join(getUserHomeDir(), "code-note", "data");
-    if (!workspaceDir) {
-      vscode.window.showErrorMessage(
-        "Could not determine user's home directory. You should define vscode-note.workspaceDir in settings.json instead"
-      );
-      return "";
-    }
-  }
-  if (!fs.existsSync(workspaceDir)) {
-    fs.mkdirSync(workspaceDir, { recursive: true });
-  }
-  return workspaceDir;
+export const isSubDirectory = (dir: string) => (p: string) => {
+  const relative = path.relative(dir, p);
+  return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+};
+
+async function fileExists(filePath: string): Promise<boolean> {
+  const stat = await fs.promises.stat(filePath);
+  return stat.isFile();
 }
 
-export const codeNoteWorkspaceDir = getCodeNoteWorkspaceDir();
+type PackageInfo = { rootPath: string; name: string };
 
-export function getProjectRoot(): string | undefined {
+export async function getActiveWorkspacePackageInfo(): Promise<
+  Partial<PackageInfo>
+> {
   const project = vscode.workspace.workspaceFolders?.find((wsFolder) => {
-    const currentFile = vscode.window.activeTextEditor?.document.uri.fsPath;
+    const currentFile = vscode.window.activeTextEditor?.document.uri.path;
     if (!currentFile) {
-      return;
+      return {};
     }
-    const relative = posix.relative(wsFolder.uri.fsPath, currentFile);
-    return (
-      relative && !relative.startsWith("..") && !posix.isAbsolute(relative)
-    );
+    const relative = path.relative(wsFolder.uri.path, currentFile);
+    return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
   });
-  return project?.uri.fsPath;
+  const rootPath = project?.uri.path;
+  if (!rootPath) return {};
+  const name = await findPackageName(rootPath);
+  return { rootPath, name };
 }
 
-export async function getPackageName(): Promise<string | undefined> {
-  // Get the workspace folders
-  const project = getProjectRoot();
-  if (!project) {
-    return;
+export async function getPackageInfo(
+  file: string
+): Promise<Partial<PackageInfo>> {
+  let rootPath = path.dirname(file);
+  let name = await findPackageName(rootPath);
+  while (!name && rootPath !== "/") {
+    rootPath = path.dirname(rootPath);
+    name = await findPackageName(rootPath);
   }
+  if (!name) return {};
+  if (rootPath === "/") return {};
+  return { name, rootPath };
+}
 
-  // Check if package.json in the root directory
-  const packageJsonPath = posix.join(project, "package.json");
-  if (await fileExists(packageJsonPath)) {
-    const packageJsonContent = await fs.promises.readFile(
-      packageJsonPath,
-      "utf8"
-    );
-    try {
+async function findPackageName(dir: string): Promise<string | undefined> {
+  try {
+    // Check if package.json in the root directory
+    const packageJsonPath = path.join(dir, "package.json");
+    if (await fileExists(packageJsonPath)) {
+      const packageJsonContent = await fs.promises.readFile(
+        packageJsonPath,
+        "utf8"
+      );
       const packageJson = JSON.parse(packageJsonContent);
       if (packageJson && packageJson.name) {
         return packageJson.name;
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        vscode.window.showErrorMessage(
-          "Error parsing package.json: " + error.message
-        );
-      }
       return;
     }
-  }
 
-  // Check if go.mod in the root directory
-  const goModPath = posix.join(project, "go.mod");
-  if (await fileExists(goModPath)) {
-    const goModContent = await fs.promises.readFile(goModPath, "utf8");
-    const moduleNameMatch = goModContent.match(/^module\s+([^\s]+)/m);
-    if (moduleNameMatch && moduleNameMatch[1]) {
-      return moduleNameMatch[1];
+    // Check if go.mod in the root directory
+    const goModPath = path.join(dir, "go.mod");
+    if (await fileExists(goModPath)) {
+      const goModContent = await fs.promises.readFile(goModPath, "utf8");
+      const moduleNameMatch = goModContent.match(/^module\s+([^\s]+)/m);
+      if (moduleNameMatch && moduleNameMatch[1]) {
+        return moduleNameMatch[1];
+      }
     }
-  }
 
-  // Check if Cargo.toml in the root directory
-  const cargoTomlPath = posix.join(project, "Cargo.toml");
-  if (await fileExists(cargoTomlPath)) {
-    const cargoTomlContent = await fs.promises.readFile(cargoTomlPath, "utf8");
-    const cargoToml = toml.parse(cargoTomlContent);
-    if (cargoToml && cargoToml.package && cargoToml.package.name) {
-      return cargoToml.package.name;
+    // Check if Cargo.toml in the root directory
+    const cargoTomlPath = path.join(dir, "Cargo.toml");
+    if (await fileExists(cargoTomlPath)) {
+      const cargoTomlContent = await fs.promises.readFile(
+        cargoTomlPath,
+        "utf8"
+      );
+      const cargoToml = toml.parse(cargoTomlContent);
+      if (cargoToml && cargoToml.package && cargoToml.package.name) {
+        return cargoToml.package.name;
+      }
     }
-  }
-
-  vscode.window.showErrorMessage(
-    "No supported project file found in the current workspace."
-  );
-  return;
-}
-
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.promises.access(filePath, fs.constants.F_OK);
-    return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.log("Error parsing package config file: " + error.message, dir);
+    }
+    return;
   }
 }
-
-export function filename(workspaceDir: string, id: string) {
-  return posix.join(workspaceDir, id + ".cnote");
-}
-
-export function getUserHomeDir(): string {
-  return process.env.HOME || process.env.USERPROFILE || "";
-}
-
-// export function readNote(extensionPath: string, id: string): Note {
-//   return JSON.parse(
-//     fs.readFileSync(filename(extensionPath, id), "utf-8")
-//   ) as Note;
-// }
-
-// export function writeNote(extensionPath: string, note: Note) {
-//   fs.writeFileSync(
-//     filename(extensionPath, note.id),
-//     JSON.stringify(note, null, 2)
-//   );
-// }
-
-const isSubDirectory = (dir: string) => (fsPath: string) => {
-  const relative = posix.relative(dir, fsPath);
-  return relative && !relative.startsWith("..") && !posix.isAbsolute(relative);
-};
-
-const isCodeNoteFile = isSubDirectory(codeNoteWorkspaceDir);
-
-export function getOpenedCodeNoteFiles(): string[] {
-  return vscode.workspace.textDocuments
-    .map((doc) => doc.uri.fsPath)
-    .filter(isCodeNoteFile);
-}
-
-// export function getVisibleCodeNoteFiles(): string[] {
-//   return vscode.window.visibleTextEditors
-//     .map((editor) => editor.document.uri.fsPath)
-//     .filter(isCodeNoteFile);
-// }
 
 export async function closeFileIfOpen(file: vscode.Uri): Promise<void> {
   const tabs: vscode.Tab[] = vscode.window.tabGroups.all

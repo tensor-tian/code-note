@@ -160,6 +160,11 @@ strike:after {
   @apply text-2xl font-bold dark:text-white mb-4;
 }
 
+.preview-container p,
+.preview-container li {
+  @apply text-base;
+}
+
 .preview-container a {
   @apply text-blue-600 dark:text-blue-500 hover:underline;
 }

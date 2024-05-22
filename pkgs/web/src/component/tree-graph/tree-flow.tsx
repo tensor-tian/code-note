@@ -21,8 +21,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import Code from "./code";
 import Menu from "./menu";
+import MiniMapNode from "./minimap-node";
 import NodeInspector from "./NodeInspector";
 import Scrolly from "./scrolly";
+import minimapNode from "./minimap-node";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
 
@@ -66,26 +68,19 @@ function TreeFlow() {
   useNavKeys(edges);
   usePanToActiveNode(containerRef, setKV, nodes.length);
   console.log("nodes:", nodes, "edges:", edges);
-
-  const nodeColor = useCallback(
-    (node: Node): string => {
-      if (selectedNodes.includes(node.id)) {
-        return "#bee3f8";
-      }
-      return "#edf2f7";
-    },
-    [selectedNodes]
-  );
-
-  const nodeStrokeColor = useCallback(
-    (node: Node): string => {
+  const nodeClassName = useCallback(
+    (node: Node) => {
+      let cls = "";
       if (rootIds.includes(node.id)) {
-        return "#fc8181";
+        cls += "root";
       }
       if (selectedNodes.includes(node.id)) {
-        return "#bee3f8";
+        cls += " selected";
       }
-      return "#edf2f7";
+      if (node.type === "Scrolly") {
+        cls += " group";
+      }
+      return cls;
     },
     [selectedNodes, rootIds]
   );
@@ -125,7 +120,6 @@ function TreeFlow() {
     };
   }, [addCodeNode, resetNote, setKV, updateNodeText]);
 
-  const nodeStrokeWidth = nodes.length >= 5 ? 40 : 10;
   return (
     <div ref={containerRef} className="top-0 bottom-0 w-full absolute">
       <ReactFlow
@@ -149,9 +143,8 @@ function TreeFlow() {
         <Controls />
         <MiniMap
           pannable
-          nodeColor={nodeColor}
-          nodeStrokeWidth={nodeStrokeWidth}
-          nodeStrokeColor={nodeStrokeColor}
+          nodeClassName={nodeClassName}
+          nodeComponent={MiniMapNode}
         />
         <Menu addBlock={addCodeNode} />
         {debug && <NodeInspector />}
@@ -190,7 +183,11 @@ function usePanToActiveNode(
     const hActive = activeNode.height || CODE_SIZE.H;
     const container = ref.current?.getBoundingClientRect();
     const x = container.width / 2 - xActive - wActive / 2;
-    const y = container.height / 2 - yActive - hActive / 2;
+    let y = container.height / 2 - yActive - hActive / 2;
+    console.log("setViewport", hActive, container.height - 120);
+    if (hActive > container.height - 120) {
+      y = -yActive + 120;
+    }
     setViewport({ x, y, zoom: VIEWPORT.zoom }, { duration: 800 });
     if (nLen === 1) {
       setTimeout(() => setKV("panToActiveMark", 0), 800);

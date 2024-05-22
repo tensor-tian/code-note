@@ -1,4 +1,4 @@
-import type { CodeBlock, CodeNode, Edge, GroupNode, Node } from "types";
+import type { CodeNode, Edge, GroupNode, Node } from "types";
 
 export const CODE_SIZE = {
   X: 50,
@@ -280,13 +280,6 @@ export function layout(nodeMap: Record<string, Node>, edges: Edge[]) {
   return new TreeLayout(nodeMap, edges).layout();
 }
 
-enum Direction {
-  Start = 0,
-  Left = 1,
-  Right = 2,
-  Top = 3,
-  Bottom = 4,
-}
 export function hasCycle(edges: Edge[]): boolean {
   const map = new Map<string, Edge>();
   edges.forEach((e) => {

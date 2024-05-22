@@ -45,8 +45,9 @@ namespace TreeNote {
 }
 
 const initialData: TreeNote.Store = {
-  id: nanoid(),
+  id: "",
   type: "TreeNote",
+  pkgPath: "/pkg/path",
   pkgName: "decorator-sample",
   text: "## loading...",
   nodeMap: {},
@@ -74,7 +75,19 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
       return {
         ...initialData,
-        resetNote: (note) => set(note),
+        resetNote: (note) => {
+          set(note);
+          const { activeNodeId, nodeMap, edges } = get();
+          if (!activeNodeId) {
+            if (Object.keys(nodeMap).length === 0) return;
+            const { nodeMap: nextNodeMap, rootIds } = layout(nodeMap, edges);
+            set({
+              nodeMap: nextNodeMap,
+              rootIds,
+              activeNodeId: rootIds[0],
+            });
+          }
+        },
         setKV: (key, val) => set({ [key]: val }, false, "setKV:" + key),
         activateNode: (id) => {
           set({ activeNodeId: id }, false, "activateNode");
@@ -170,7 +183,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         addCodeNode: ({ action, data }) => {
           const { nodeMap, edges, activeNodeId } = get();
           const nodes = Object.values(nodeMap);
-
+          console.log("add code node:", activeNodeId, nodes.length);
           // empty tree flow graph
           if (!activeNodeId && nodes.length > 0) return;
 
@@ -181,7 +194,11 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
           if (!activeNode) {
             set(
-              { activeNodeId: node.id, nodeMap: nextNodeMap },
+              {
+                activeNodeId: node.id,
+                nodeMap: nextNodeMap,
+                rootIds: [node.id],
+              },
               false,
               "addCodeNode"
             );
@@ -408,48 +425,27 @@ export const useTreeNoteStore = create<TreeNote.State>(
       skipHydration: true,
       partialize: (state) => {
         console.log("partialize:", state);
-        return cache({
+        return {
           id: state.id,
           type: state.type,
           pkgName: state.pkgName,
           text: state.text,
           nodeMap: state.nodeMap,
           edges: state.edges,
-        });
+        };
       },
       storage: {
         getItem: (_name) => ({ state: {} }),
         setItem: (_name, value) => {
           const { state } = value;
           console.log("set item:", state);
-          if (state) {
-            saveNote(JSON.stringify(state, null, 2));
-          }
+          saveNote(state);
         },
         removeItem: (_name) => {},
       },
     }
   )
 );
-
-function cache<T extends Record<string, any>>(state: T) {
-  return createCache<T>()(state);
-}
-
-function createCache<T extends Record<string, any>>() {
-  let prevState: T | null = null;
-  return (state: T): T | null => {
-    console.log("cache state: ", state);
-    if (
-      Object.entries(state).every(
-        ([key, value]) => prevState && prevState[key] === value
-      )
-    )
-      return null;
-    prevState = state;
-    return state;
-  };
-}
 
 export function newEdge(
   source: string,
@@ -469,11 +465,9 @@ export function newEdge(
 }
 
 export function newNode(
-  { action, data }: Ext2Web.AddCode,
+  { action, data: block }: Ext2Web.AddCode,
   activeNode: Node | undefined
 ) {
-  const id = nanoid();
-  const block = { ...data, id };
   let x = 0,
     y = 0;
   if (activeNode) {

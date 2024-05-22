@@ -1,0 +1,38 @@
+<CH.Section>
+
+use _`viewType`_ webview to render file matched _`filenamePattern`_
+
+<CH.Code>
+
+```json package.json lineNums=1:2,21:41,64 focus=23[1:4],24:30,31[1:5]
+{
+	"name": "cat-customs",
+	"contributes": {
+		"customEditors": [
+			{
+// mark[6:13]
+				"viewType": "catCustoms.catScratch",
+				"displayName": "Cat Scratch",
+				"selector": [
+					{
+// mark[8:22]
+						"filenamePattern": "*.cscratch"
+					}
+				]
+			},
+			{
+				"viewType": "catCustoms.pawDraw",
+				"displayName": "Paw Draw",
+				"selector": [
+					{
+						"filenamePattern": "*.pawdraw"
+					}
+				]
+			}
+		],
+}
+```
+
+</CH.Code>
+
+</CH.Section>

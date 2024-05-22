@@ -20,7 +20,7 @@ async function compileAndRun(input: string) {
         [
           remarkCodeHike,
           {
-            theme: "github-light", // https://codehike.org/docs/themes
+            theme: "light-plus", // https://codehike.org/docs/themes
             lineNumbers: true, // https://codehike.org/docs/configuration
             showCopyButton: false,
             autoImport: false,
@@ -67,6 +67,7 @@ function useInput(input: string) {
         Component: content,
         error: error,
       });
+      console.log("compile error: ", input, error);
       setLoading(false);
     });
     return () => {
@@ -94,7 +95,7 @@ const InnerPreview: FC<{ input: string }> = ({ input }) => {
     <>
       {error ? (
         <div className="compile-error">
-          <h3>Compliation Error:</h3>
+          <h3>Compilation Error:</h3>
           <pre>{error}</pre>
         </div>
       ) : null}
@@ -111,9 +112,6 @@ const logError = (error: Error, info: ErrorInfo) => {
 };
 
 const MDX: FC<{ mdx: string }> = ({ mdx }) => {
-  // const mdx = useMemo(() => block2MDX(block), [block]);
-  // console.log(mdx);
-
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback} onError={logError}>
       <InnerPreview input={mdx} />

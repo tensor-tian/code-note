@@ -85,30 +85,30 @@
     "keybindings": [
       {
         "command": "vscode-note.add-highlight",
-        "key": "ctrl+h ctrl+h",
-        "mac": "cmd+h cmd+h",
+        "key": "ctrl+h h",
+        "mac": "cmd+h h",
         "when": "editorTextFocus"
       },
       {
         "command": "vscode-note.remove-highlight",
-        "key": "ctrl+h ctrl+r",
-        "mac": "cmd+h cmd+r",
+        "key": "ctrl+k r",
+        "mac": "cmd+h r",
         "when": "editorTextFocus"
       },
       {
         "command": "vscode-note.add-next",
-        "key": "ctrl+h ctrl+n",
-        "mac": "cmd+h cmd+n"
+        "key": "ctrl+h n",
+        "mac": "cmd+h n"
       },
       {
         "command": "vscode-note.add-detail",
-        "key": "ctrl+h ctrl+n",
-        "mac": "cmd+h cmd+n"
+        "key": "ctrl+h d",
+        "mac": "cmd+h d"
       },
       {
         "command": "vscode-note.remove-all",
-        "key": "ctrl+h ctrl+c",
-        "mac": "cmd+h cmd+c"
+        "key": "ctrl+h x",
+        "mac": "cmd+h x"
       }
     ]
   },
