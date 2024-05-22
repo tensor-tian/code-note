@@ -29,15 +29,16 @@ export interface BaseBlock {
   type: BlockType;
 }
 
+type Pos = { line: number; character: number };
+
 export interface CodeBlock extends BaseBlock {
   type: "Code";
-  code: string;
-  rows: number;
-  file: string;
-  focus: string;
-  lineNums: string;
-  lang: string;
-  project: string;
+  code: string; // code block string
+  rowCount: number;
+  filePath: string; // source code file path relative to pkgPath
+  pkgPath: string; // package root path of source code
+  pkgName: string; // package name defined in module config file
+  ranges: { start: Pos; end: Pos }[][]; // highlight ranges in source code
   showCode: boolean;
 }
 
@@ -54,14 +55,15 @@ export interface Note {
   id: string;
   type: "TreeNote";
   text: string;
-  pkgName: string;
+  pkgPath: string; // package root of workspace which include active editor document file
+  pkgName: string; // package name of workspace which include active editor document file
   nodeMap: Record<string, Node>;
   edges: Edge[];
   activeNodeId: string;
 }
 
 namespace Ext2Web {
-  export type AddCodeData = Omit<CodeBlock, "id">;
+  export type AddCodeData = CodeBlock;
   export type AddCode = {
     action: "add-detail" | "add-next";
     data: AddCodeData;

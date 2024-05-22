@@ -28,9 +28,9 @@ if (!window.acquireVsCodeApi) {
 
 export const vscode = acquireVsCodeApi();
 
-export const saveNote = debounce((data: string) => {
+export const saveNote = debounce((data: any) => {
   vscode.postMessage({
     action: "save-note",
-    data,
+    data: JSON.stringify(data, null, 2),
   });
-}, 500);
+}, 800);

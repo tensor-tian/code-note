@@ -1,6 +1,6 @@
 import { Ext2Web, Web2Ext } from "types";
 import { Panel, useStore } from "reactflow";
-import { isVscode, vscode } from "../../utils";
+import { isVscode, nanoid, vscode } from "../../utils";
 import { selectDebug, selectNoteTitle, useTreeNoteStore } from "./store";
 
 import MDX from "../mdx";
@@ -8,7 +8,8 @@ import { useCallback } from "react";
 
 const block: Ext2Web.AddCode["data"] = {
   type: "Code",
-  code: `if (this._isDisposed) {
+  code: `\`\`\`ts src/dispose.ts lineNums=18:32 focus=22[1:32],23:25,26[1:15]
+if (this._isDisposed) {
     return;
   }
   this._isDisposed = true;
@@ -24,13 +25,12 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   }
   return value;
 }
+\`\`\`
 `,
-  rows: 15,
-  file: "src/dispose.ts",
-  focus: "22[1:32],23:25,26[1:15]",
-  lineNums: "18:32",
-  lang: "ts",
-  project:
+  rowCount: 15,
+  filePath: "src/dispose.ts",
+  pkgName: "custom-editor-sample",
+  pkgPath:
     "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
   text: `#### \`disposeAll\` dispose by hand 5 [baidu](http://baidu.com)
   
@@ -67,6 +67,8 @@ protected _register<T extends vscode.Disposable>(value: T): T {
      - Second nested list item
 `,
   showCode: true,
+  ranges: [],
+  id: "",
 };
 
 type Props = {
@@ -75,10 +77,10 @@ type Props = {
 
 function Menu({ addBlock }: Props) {
   const addDetail = useCallback(() => {
-    addBlock({ action: "add-detail", data: { ...block } });
+    addBlock({ action: "add-detail", data: { ...block, id: nanoid() } });
   }, [addBlock]);
   const addNext = useCallback(() => {
-    addBlock({ action: "add-next", data: { ...block } });
+    addBlock({ action: "add-next", data: { ...block, id: nanoid() } });
   }, [addBlock]);
 
   const { setKV, toggleGroup, deleteEdge, deleteNode } = useTreeNoteStore();
@@ -103,7 +105,6 @@ function Menu({ addBlock }: Props) {
     setKV("debug", !debug);
   }, [debug, setKV]);
 
-  console.log("is vscode:", isVscode);
   return (
     <>
       <Panel position="top-left" className="border ">

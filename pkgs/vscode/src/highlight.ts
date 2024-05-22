@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 
-import { CodeBlock, toMDx } from "./code-hike-mdx";
+import type { PartialBlock } from "./code-hike-mdx";
+import { Store } from "./store";
+import { createPartialBlock } from "./code-hike-mdx";
+import { getPackageInfo } from "./utils";
 
 export enum DecorationKind {
   Code = 0,
@@ -12,13 +15,15 @@ export enum DecorationKind {
 const DecorationStyles: vscode.DecorationRenderOptions[] = [
   {
     // Code
-    backgroundColor: "#fef9c34d", // yellow-100
+    isWholeLine: true,
+    backgroundColor: "#fef9c380", // yellow-100
     overviewRulerColor: "#4ade80", // green-400
     overviewRulerLane: vscode.OverviewRulerLane.Right,
   },
   {
     // Focus
-    backgroundColor: "#fecaca4d", // red-200
+    isWholeLine: true,
+    backgroundColor: "#fecaca80", // red-200
     overviewRulerColor: "#4ade80", // green-400
     overviewRulerLane: vscode.OverviewRulerLane.Right,
   },
@@ -28,13 +33,13 @@ const DecorationStyles: vscode.DecorationRenderOptions[] = [
     borderWidth: "1px",
     borderColor: "#ea580c", // orange 600
     borderRadius: "4px",
-    backgroundColor: "#fcd34d4d", // yellow 300
+    backgroundColor: "#fcd34d80", // yellow 300
     overviewRulerColor: "#4ade80", // green-400
     overviewRulerLane: vscode.OverviewRulerLane.Right,
   },
   {
     // Link
-    backgroundColor: "#86efac4d", // green 300
+    backgroundColor: "#86efac80", // green 300
     overviewRulerColor: "#4ade80", // green-400
     overviewRulerLane: vscode.OverviewRulerLane.Right,
   },
@@ -68,9 +73,61 @@ export class Highlight {
     this._rangeMap.set(editor.document.uri.fsPath, ranges);
   }
 
-  public get block(): CodeBlock | undefined {
+  public async createBlock(): Promise<PartialBlock | void> {
     if (!this._ranges) return;
-    return toMDx(this._ranges);
+    const activeFile = vscode.window.activeTextEditor?.document.uri.path;
+    if (!activeFile) return;
+    const { rootPath: pkgPath, name: pkgName } = await getPackageInfo(
+      activeFile
+    );
+    if (!pkgName || !pkgPath) return;
+    return createPartialBlock({
+      pkgName,
+      pkgPath,
+      store: this.store,
+      ranges: this._ranges,
+    });
+  }
+
+  public constructor(private store: Store) {
+    this._resetDecorations();
+    for (let kind = 0; kind < N; kind++) {
+      this._decorators[kind] = vscode.window.createTextEditorDecorationType(
+        DecorationStyles[kind]
+      );
+    }
+  }
+
+  public subscribe(context: vscode.ExtensionContext) {
+    context.subscriptions.push(
+      vscode.workspace.onDidCloseTextDocument((doc) => {
+        const file = doc.uri.fsPath;
+        const found = vscode.workspace.textDocuments.find(
+          (doc) => doc.uri.fsPath === file
+        );
+        if (!found) {
+          this._rangeMap.delete(file);
+          console.log("did close doc:", file, [...this._rangeMap.keys()]);
+        }
+      }),
+      vscode.workspace.onDidOpenTextDocument((doc) => {
+        this._updateHighlights();
+        console.log(
+          "did open doc",
+          doc.uri.fsPath,
+          Array.from(this._rangeMap.keys())
+        );
+      }),
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        this._updateHighlights();
+        console.log([...this._rangeMap.keys()]);
+        console.log(
+          "change active editor:",
+          editor?.document.uri.fsPath,
+          Array.from(this._rangeMap.keys())
+        );
+      })
+    );
   }
 
   private _resetDecorations() {
@@ -79,15 +136,6 @@ export class Highlight {
       ranges[kind] = [];
     }
     this._ranges = ranges;
-  }
-
-  constructor() {
-    this._resetDecorations();
-    for (let kind = 0; kind < N; kind++) {
-      this._decorators[kind] = vscode.window.createTextEditorDecorationType(
-        DecorationStyles[kind]
-      );
-    }
   }
 
   private _findNextKind(
@@ -112,8 +160,15 @@ export class Highlight {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
-    const selection = currentSelection();
-    if (!selection) return;
+    let selection = currentSelection();
+    // select the whole line where the cursor at if no selection
+    if (!selection) {
+      const line = editor.selection.active.line;
+      selection = new vscode.Range(
+        new vscode.Position(line, 0),
+        new vscode.Position(line, lastCharOfLine(editor.document, line))
+      );
+    }
 
     const kind = this._findNextKind(selection);
     if (typeof kind !== "number") return;
@@ -144,16 +199,12 @@ export class Highlight {
     kind: DecorationKind,
     selection: vscode.Range
   ) {
-    const word = editor.document.getText(editor.selection);
+    const word = editor.document.getText(selection);
     if (!word || word.length === 0) {
       vscode.window.showErrorMessage("Nothing selected");
       return;
     }
     console.log("add highlight:", JSON.stringify(selection));
-    if (!selection) {
-      vscode.window.showErrorMessage("Empty selected");
-      return;
-    }
     let { start, end } = selection;
     if (kind === DecorationKind.Mark && end.line !== start.line) {
       vscode.window.showErrorMessage("'Mark' does not allow cross-line");
@@ -168,12 +219,13 @@ export class Highlight {
     if (!ranges) {
       return;
     }
-    const Code = DecorationKind.Code;
-    if (kind === Code) {
-      // highlight the whole line for Code kind
+    const { Code, Focus } = DecorationKind;
+    if (kind === Code || kind === Focus) {
+      // highlight the whole line for Code or Focus kind
       start = startWholeLine;
       end = endWholeLine;
-    } else {
+    }
+    if (kind !== Code) {
       // extend Code Kind ranges if Code range does not contain the new range
       ranges[Code].push(new vscode.Range(startWholeLine, endWholeLine));
       ranges[Code] = mergeOverlap(ranges[Code]);
@@ -238,38 +290,6 @@ export class Highlight {
       );
     }
   }
-
-  public subscribe(context: vscode.ExtensionContext) {
-    context.subscriptions.push(
-      vscode.workspace.onDidCloseTextDocument((doc) => {
-        const file = doc.uri.fsPath;
-        const found = vscode.workspace.textDocuments.find(
-          (doc) => doc.uri.fsPath === file
-        );
-        if (!found) {
-          this._rangeMap.delete(file);
-          console.log("did close doc:", file, [...this._rangeMap.keys()]);
-        }
-      }),
-      vscode.workspace.onDidOpenTextDocument((doc) => {
-        this._updateHighlights();
-        console.log(
-          "did open doc",
-          doc.uri.fsPath,
-          Array.from(this._rangeMap.keys())
-        );
-      }),
-      vscode.window.onDidChangeActiveTextEditor((editor) => {
-        this._updateHighlights();
-        console.log([...this._rangeMap.keys()]);
-        console.log(
-          "change active editor:",
-          editor?.document.uri.fsPath,
-          Array.from(this._rangeMap.keys())
-        );
-      })
-    );
-  }
 }
 
 function mergeOverlap(ranges: vscode.Range[]): vscode.Range[] {
@@ -305,7 +325,7 @@ export function currentSelection(): vscode.Range | undefined {
   if (start.character === lastCharOfLine(editor.document, start.line)) {
     start = new vscode.Position(start.line + 1, 0);
   }
-  if (end.character === 0) {
+  if (end.character === 0 && end.line > 0) {
     end = new vscode.Position(
       end.line - 1,
       lastCharOfLine(editor.document, end.line - 1)

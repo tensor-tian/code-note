@@ -12,8 +12,10 @@ import {
   useTreeNoteStore,
 } from "./store";
 
+import { BiText } from "react-icons/bi";
+import { IoCode } from "react-icons/io5";
 import type { IsValidConnection } from "reactflow";
-import { LiaEdit } from "react-icons/lia";
+// import { LiaEdit } from "react-icons/lia";
 import MDX from "../mdx";
 import cx from "classnames";
 import { vscode } from "../../utils";
@@ -54,12 +56,6 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     },
     [activateNode, id]
   );
-  // const onTextChange = useCallback(
-  //   (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  //     updateNodeText(id, event.target.value);
-  //   },
-  //   [id, updateNodeText]
-  // );
   const onStartTextEdit = useCallback(() => {
     console.log("start text edit");
     vscode.postMessage({
@@ -136,8 +132,9 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
       <div
         className={cx(
           "border rounded px-2 py-2 bg-white",
-          isRoot ? "border-red" : isActive ? "border-gray-900" : "border-gray",
-          isActive ? "shadow-lg shadow-gray-900" : "",
+          isActive ? "border-gray-600" : "border-gray-200",
+          isRoot ? "bg-indigo-100" : "bg-white",
+          isActive ? "shadow-md shadow-gray-900" : "",
           isSelected ? "bg-gray-200" : "bg-white"
         )}
         onClick={onActivate}
@@ -146,7 +143,15 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
           {ShowCodeIcon}
           {ID}
           <div className="flex w-30 justify-between">
-            <LiaEdit
+            {/* <LiaEdit
+              className="mr-5 cursor-auto text-gray-600 hover:text-gray-900 hover:scale-125"
+              onClick={onStartTextEdit}
+            /> */}
+            <BiText
+              className="mr-5 cursor-auto text-gray-600 hover:text-gray-900 hover:scale-125"
+              onClick={onStartTextEdit}
+            />
+            <IoCode
               className="mr-5 cursor-auto text-gray-600 hover:text-gray-900 hover:scale-125"
               onClick={onStartTextEdit}
             />
@@ -213,16 +218,19 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
 export default memo(TreeNode);
 
 function block2MDX(block: CodeBlock): string {
-  const rows = block.rows > 50 ? "" : "";
+  const rows = block.rowCount > 50 ? "" : "";
   return `
+<CH.Section>
+
+
 ${block.text}
 
-<CH.Code ${rows}>
+<CH.Code rows="${rows}">
 
-\`\`\`${block.lang} ${block.file} lineNums=${block.lineNums} focus=${block.focus}
 ${block.code}
-\`\`\`
 
 </CH.Code>
+
+</CH.Section>
   `;
 }

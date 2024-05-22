@@ -6,7 +6,7 @@ import { ScrollyCodeBlock } from "types";
 import cx from "classnames";
 import { useCallback } from "react";
 
-function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
+function ScrollyNode({ id }: NodeProps<ScrollyCodeBlock>) {
   const { selectedNodes, toggleNodeSelection, hideGroupCode } =
     useTreeNoteStore();
 

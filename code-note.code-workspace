@@ -14,10 +14,13 @@
     },
     {
       "path": "pkgs/web"
+    },
+    {
+      "path": "pkgs/demo-next"
     }
   ],
   "settings": {
     "typescript.tsc.autoDetect": "off",
-    "cSpell.words": ["cnote", "pannable", "partialize"]
+    "cSpell.words": ["cnote", "nodeinspector", "pannable", "partialize"]
   }
 }
