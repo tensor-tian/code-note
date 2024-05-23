@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import type { Ext2Web, Note, Web2Ext } from "types";
 import { closeFileIfOpen, getActiveWorkspacePackageInfo } from "./utils";
 
+import { Highlight } from "./highlight";
 import { Store } from "./store";
 import fs from "fs";
 import { initCodeNote } from "./store";
@@ -20,7 +21,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
   public getWebviewPanel(webviewKey: string): vscode.WebviewPanel | undefined {
     return this.webviewPanelMap.get(webviewKey);
   }
-  public getWebView(webviewKey: string): vscode.Webview | undefined {
+  public getWebview(webviewKey: string): vscode.Webview | undefined {
     return this.webviewPanelMap.get(webviewKey)?.webview;
   }
 
@@ -79,16 +80,29 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
   private disposables: vscode.Disposable[] = [];
 
   constructor(
-    private readonly context: vscode.ExtensionContext,
-    private readonly store: Store
-  ) {
+    // private readonly context: vscode.ExtensionContext,
+    private readonly extensionUri: vscode.Uri,
+    private readonly store: Store,
+    private readonly highlight: Highlight
+  ) {}
+
+  register(context: vscode.ExtensionContext) {
     context.subscriptions.push(
       vscode.workspace.onDidCloseTextDocument((doc: vscode.TextDocument) => {
         const uri = doc.uri;
         this.store.removeVDoc(doc.uri);
         this.vDocToNoteFileMap.delete(uri.path);
       }),
-      vscode.workspace.onDidChangeTextDocument(this.onDidChangeVDoc, this)
+      vscode.workspace.onDidChangeTextDocument(this.onDidChangeVDoc, this),
+      vscode.window.registerCustomEditorProvider(
+        CodeNoteEditorProvider.viewType,
+        this,
+        {
+          webviewOptions: {
+            retainContextWhenHidden: true,
+          },
+        }
+      )
     );
   }
 
@@ -99,15 +113,13 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
   ): void | Thenable<void> {
     const webviewKey = document.uri.path;
     // only allow one webview
-    if (this.getWebView(webviewKey)) return;
+    if (this.getWebview(webviewKey)) return;
 
     this.webviewPanelMap.set(webviewKey, webviewPanel);
     webviewPanel.options.retainContextWhenHidden;
     webviewPanel.webview.options = {
       enableScripts: true,
-      localResourceRoots: [
-        vscode.Uri.joinPath(this.context.extensionUri, "dist/web"),
-      ],
+      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, "dist/web")],
     };
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
@@ -182,6 +194,13 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         case "start-text-editor":
           this.startEditText(message.data, webviewKey);
           break;
+        case "start-code-range-editor":
+          const getWebview = (filePath: string) => this.getWebview(filePath);
+          this.highlight.startCodeRangeEdit(message.data, getWebview);
+          break;
+        case "stop-code-range-editor":
+          this.highlight.stopCodeRangeEdit(message.data.id);
+          break;
       }
     };
   private sendCachedTextChangeMsg(
@@ -198,25 +217,15 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
   private getHtmlForWebview(webview: vscode.Webview): string {
     const manifest = JSON.parse(
       fs.readFileSync(
-        posix.join(
-          this.context.extensionUri.path,
-          "dist/web",
-          "asset-manifest.json"
-        ),
+        posix.join(this.extensionUri.path, "dist/web", "asset-manifest.json"),
         "utf-8"
       )
     ) as WebManifest;
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(
-        this.context.extensionUri,
-        manifest["files"]["main.js"]
-      )
+      vscode.Uri.joinPath(this.extensionUri, manifest["files"]["main.js"])
     );
     const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(
-        this.context.extensionUri,
-        manifest["files"]["main.css"]
-      )
+      vscode.Uri.joinPath(this.extensionUri, manifest["files"]["main.css"])
     );
 
     return `<!DOCTYPE html>

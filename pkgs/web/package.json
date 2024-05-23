@@ -4,8 +4,6 @@
   "private": true,
   "dependencies": {
     "@mdx-js/mdx": "2.3.0",
-    "@reduxjs/toolkit": "^2.2.2",
-    "antd": "^5.15.4",
     "classnames": "^2.5.1",
     "dayjs": "^1.11.10",
     "events": "^3.3.0",

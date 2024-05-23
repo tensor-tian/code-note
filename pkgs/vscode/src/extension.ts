@@ -10,31 +10,28 @@ import { Store } from "./store";
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "vscode-note" is now active!');
 
-  console.log("env", process.env);
+  // console.log("env", process.env);
 
-  console.log(
-    "extension context:",
-    context.extensionPath,
-    context.extensionUri,
-    context.globalStorageUri.path
-  );
+  // console.log(
+  //   "extension context:",
+  //   context.extensionPath,
+  //   context.extensionUri,
+  //   context.globalStorageUri.path
+  // );
 
   const store = new Store(context);
 
   const highlight = new Highlight(store);
   highlight.subscribe(context);
 
-  const editorProvider = new CodeNoteEditorProvider(context, store);
+  const editorProvider = new CodeNoteEditorProvider(
+    context.extensionUri,
+    store,
+    highlight
+  );
+  editorProvider.register(context);
+
   context.subscriptions.push(
-    vscode.window.registerCustomEditorProvider(
-      CodeNoteEditorProvider.viewType,
-      editorProvider,
-      {
-        webviewOptions: {
-          retainContextWhenHidden: true,
-        },
-      }
-    ),
     vscode.commands.registerCommand("vscode-note.create-file", () => {
       editorProvider.createFile().catch(console.error);
     }),
@@ -78,7 +75,7 @@ async function addBlock(
     );
     return;
   }
-  const webview = provider.getWebView(files[0]);
+  const webview = provider.getWebview(files[0]);
   if (!webview) {
     vscode.window.showErrorMessage("Webview is not ready");
     return;

@@ -40,6 +40,7 @@ export interface CodeBlock extends BaseBlock {
   pkgName: string; // package name defined in module config file
   ranges: { start: Pos; end: Pos }[][]; // highlight ranges in source code
   showCode: boolean;
+  isCodeRangeEditing?: boolean;
 }
 
 export interface ScrollyCodeBlock extends BaseBlock {
@@ -80,7 +81,20 @@ namespace Ext2Web {
       text: string;
     };
   };
-  export type Message = AddCode | InitTreeNote | TextChange;
+  export type CodeRangeChange = {
+    action: "code-range-change";
+    data: Pick<CodeBlock, "id" | "ranges" | "code" | "rowCount">;
+  };
+  export type CodeRangeEditStopped = {
+    action: "code-range-edit-stopped";
+    data: { id: string };
+  };
+  export type Message =
+    | AddCode
+    | InitTreeNote
+    | TextChange
+    | CodeRangeChange
+    | CodeRangeEditStopped;
 }
 
 namespace Web2Ext {
@@ -106,8 +120,22 @@ namespace Web2Ext {
       text: string;
     };
   };
+  export type StartCodeRangeEditor = {
+    action: "start-code-range-editor";
+    data: Pick<CodeBlock, "id" | "type" | "filePath" | "pkgPath" | "ranges">;
+  };
+  export type StopCodeRangeEditor = {
+    action: "stop-code-range-editor";
+    data: { id: string };
+  };
 
-  export type Message = SaveNote | ShowMsg | AskInitTreeNote | StartTextEditor;
+  export type Message =
+    | SaveNote
+    | ShowMsg
+    | AskInitTreeNote
+    | StartTextEditor
+    | StartCodeRangeEditor
+    | StopCodeRangeEditor;
 }
 
 export type { Ext2Web, Web2Ext };

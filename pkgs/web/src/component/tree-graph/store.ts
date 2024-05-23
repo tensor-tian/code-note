@@ -1,5 +1,13 @@
 import { CODE_SIZE, hasCycle, isCodeNode, isGroupNode } from "./layout";
-import { CodeNode, Edge, Ext2Web, GroupNode, Node, Note } from "types";
+import {
+  CodeBlock,
+  CodeNode,
+  Edge,
+  Ext2Web,
+  GroupNode,
+  Node,
+  Note,
+} from "types";
 import {
   EdgeChange,
   NodeChange,
@@ -34,7 +42,13 @@ namespace TreeNote {
     onEdgeChange: (changes: EdgeChange[]) => void;
     onConnect: OnConnect;
     addCodeNode: (msg: Ext2Web.AddCode) => void;
+    updateCodeBlock: (
+      data: Pick<CodeBlock, "id"> & Partial<CodeBlock>,
+      action: string
+    ) => void;
     updateNodeText: (id: string, text: string) => void;
+    updateNodeCodeRange: (data: Ext2Web.CodeRangeChange["data"]) => void;
+    stopNodeCodeRangeEditing: (id: string) => void;
     toggleCode: (id: string) => void;
     hideGroupCode: (id: string) => void;
     toggleGroup: () => void;
@@ -71,6 +85,24 @@ export const useTreeNoteStore = create<TreeNote.State>(
       const panToActive = () => {
         const { panToActiveMark: panToActive } = get();
         set({ panToActiveMark: panToActive + 1 }, false, "panToActive");
+      };
+      const updateCodeBlock = (
+        { id, ...rest }: Pick<CodeBlock, "id"> & Partial<CodeBlock>,
+        action: string
+      ) => {
+        const { nodeMap } = get();
+        const node = nodeMap[id];
+        if (!isCodeNode(node)) return;
+        set(
+          {
+            nodeMap: {
+              ...nodeMap,
+              [id]: { ...node, data: { ...node.data, ...rest } },
+            },
+          },
+          false,
+          action
+        );
       };
 
       return {
@@ -234,36 +266,26 @@ export const useTreeNoteStore = create<TreeNote.State>(
           panToActive();
           return;
         },
-        updateNodeText: (id, text) =>
-          set(
-            ({ nodeMap }) => {
-              const node = nodeMap[id] as CodeNode;
-              return {
-                nodeMap: {
-                  ...nodeMap,
-                  [id]: { ...node, data: { ...node.data, text } },
-                },
-              };
-            },
-            false,
-            "updateNodeText"
-          ),
+        updateCodeBlock: (data, action) => updateCodeBlock(data, action),
+        updateNodeText: (id, text) => {
+          updateCodeBlock({ id, text }, "updateNodeText");
+        },
+
+        updateNodeCodeRange: (data) => {
+          updateCodeBlock(data, "updateNodeCodeRange");
+        },
+
+        stopNodeCodeRangeEditing: (id) => {
+          updateCodeBlock(
+            { id, isCodeRangeEditing: false },
+            "stopNodeCodeRangeEditing"
+          );
+        },
+
         toggleCode: (id) => {
           const { nodeMap } = get();
           const node = nodeMap[id] as CodeNode;
-          set(
-            {
-              nodeMap: {
-                ...nodeMap,
-                [id]: {
-                  ...node,
-                  data: { ...node.data, showCode: !node.data.showCode },
-                },
-              },
-            },
-            false,
-            "toggleCode"
-          );
+          updateCodeBlock({ id, showCode: !node.data.showCode }, "toggleCode");
         },
         hideGroupCode: (id) => {
           const { nodeMap } = get();

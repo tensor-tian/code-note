@@ -1,8 +1,10 @@
 import * as vscode from "vscode";
 
+import { Ext2Web, Web2Ext } from "types";
+import { getPartialBlock, getCodeRangeChange } from "./code-hike-mdx";
+
 import type { PartialBlock } from "./code-hike-mdx";
 import { Store } from "./store";
-import { createPartialBlock } from "./code-hike-mdx";
 import { getPackageInfo } from "./utils";
 
 export enum DecorationKind {
@@ -50,12 +52,12 @@ const N = Object.values(DecorationKind).length / 2;
 export class Highlight {
   private _decorators: vscode.TextEditorDecorationType[] = new Array(N);
   private _rangeMap: Map<string, vscode.Range[][]> = new Map();
+  private _editingMap: Map<string, string> = new Map(); // file uri.path -> code block id
+  private _getWebview?: (filePath: string) => vscode.Webview | undefined;
 
   get _ranges(): vscode.Range[][] | undefined {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
+    if (!editor) return;
     const file = editor.document.uri.fsPath;
     let ranges = this._rangeMap.get(file);
     if (!ranges) {
@@ -81,7 +83,7 @@ export class Highlight {
       activeFile
     );
     if (!pkgName || !pkgPath) return;
-    return createPartialBlock({
+    return getPartialBlock({
       pkgName,
       pkgPath,
       store: this.store,
@@ -101,33 +103,111 @@ export class Highlight {
   public subscribe(context: vscode.ExtensionContext) {
     context.subscriptions.push(
       vscode.workspace.onDidCloseTextDocument((doc) => {
-        const file = doc.uri.fsPath;
+        const file = doc.uri.path;
         const found = vscode.workspace.textDocuments.find(
-          (doc) => doc.uri.fsPath === file
+          (doc) => doc.uri.path === file
         );
         if (!found) {
           this._rangeMap.delete(file);
-          console.log("did close doc:", file, [...this._rangeMap.keys()]);
+          // stop code range editing if need
+          this.stopCodeRangeEdit(file);
+          // console.log("did close doc:", file, [...this._rangeMap.keys()]);
         }
       }),
       vscode.workspace.onDidOpenTextDocument((doc) => {
         this._updateHighlights();
-        console.log(
-          "did open doc",
-          doc.uri.fsPath,
-          Array.from(this._rangeMap.keys())
-        );
+        // console.log(
+        //   "did open doc",
+        //   doc.uri.fsPath,
+        //   Array.from(this._rangeMap.keys())
+        // );
       }),
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         this._updateHighlights();
-        console.log([...this._rangeMap.keys()]);
-        console.log(
-          "change active editor:",
-          editor?.document.uri.fsPath,
-          Array.from(this._rangeMap.keys())
-        );
+        // console.log([...this._rangeMap.keys()]);
+        // console.log(
+        //   "change active editor:",
+        //   editor?.document.uri.fsPath,
+        //   Array.from(this._rangeMap.keys())
+        // );
       })
     );
+  }
+
+  // editing
+  public startCodeRangeEdit(
+    {
+      filePath,
+      pkgPath,
+      ranges: _ranges,
+      id,
+    }: Web2Ext.StartCodeRangeEditor["data"],
+    getWebview: (filePath: string) => vscode.Webview | undefined
+  ) {
+    const uri = vscode.Uri.joinPath(vscode.Uri.file(pkgPath), filePath);
+    vscode.workspace.openTextDocument(uri).then((doc) => {
+      vscode.window.showTextDocument(doc).then((editor) => {
+        const firstLine = editor.document.lineAt(0);
+        const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        const { Code, Focus, Mark, Link } = DecorationKind;
+        const ranges = _ranges.map((list) =>
+          list.map(
+            (range) =>
+              new vscode.Range(
+                new vscode.Position(range.start.line, range.start.character),
+                new vscode.Position(range.end.line, range.end.character)
+              )
+          )
+        );
+        this._ranges = ranges;
+        this._updateHighlights(true);
+        this._editingMap.set(uri.path, id);
+        this._getWebview = getWebview;
+
+        // reveal highlight code
+        let start = lastLine.range.end;
+        let end = firstLine.range.start;
+        var collectRange = (range: vscode.Range) => {
+          if (start.isAfter(range.start)) start = range.start;
+          if (end.isBefore(range.end)) end = range.end;
+        };
+        let revealType = vscode.TextEditorRevealType.InCenter;
+        if (ranges[Mark].length > 0 || ranges[Link].length > 0) {
+          ranges[Mark].forEach(collectRange);
+          ranges[Link].forEach(collectRange);
+        } else if (ranges[Focus].length > 0) {
+          ranges[Focus].forEach(collectRange);
+        } else if (ranges[Code].length > 0) {
+          ranges[Code].forEach(collectRange);
+          revealType = vscode.TextEditorRevealType.AtTop;
+        }
+        editor.revealRange(new vscode.Range(start, end), revealType);
+      });
+    });
+  }
+  private isEditing(): boolean {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return false;
+    return this._editingMap.has(editor.document.uri.path);
+  }
+  public stopCodeRangeEdit(filePathOrId: string) {
+    let id: string | undefined;
+    let filePath: string | undefined;
+    if (filePathOrId.startsWith("/")) {
+      filePath = filePathOrId;
+      if (!this._editingMap.has(filePath)) return;
+      id = this._editingMap.get(filePath);
+    } else {
+      id = filePathOrId;
+      [filePath] =
+        [...this._editingMap.entries()].find(([, _id]) => _id === id) || [];
+      if (!filePath) return;
+    }
+    this._editingMap.delete(filePath);
+    this._getWebview?.(filePath)?.postMessage({
+      action: "code-range-edit-stopped",
+      data: { id },
+    } as Ext2Web.CodeRangeEditStopped);
   }
 
   private _resetDecorations() {
@@ -176,24 +256,6 @@ export class Highlight {
     this._addHighlight(editor, kind, selection);
   }
 
-  public removeHighlight() {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
-
-    const ranges = this._ranges;
-    if (!ranges) return;
-
-    let kind = this._findNextKind(editor.selection.active);
-    if (typeof kind !== "number" || kind <= 0) return;
-    kind--;
-
-    const idx = ranges[kind].findIndex((range) =>
-      range.contains(editor.selection.active)
-    );
-
-    this._removeHighlight(editor, kind, idx);
-  }
-
   private _addHighlight(
     editor: vscode.TextEditor,
     kind: DecorationKind,
@@ -219,7 +281,7 @@ export class Highlight {
     if (!ranges) {
       return;
     }
-    const { Code, Focus } = DecorationKind;
+    const { Code, Focus, Mark, Link } = DecorationKind;
     if (kind === Code || kind === Focus) {
       // highlight the whole line for Code or Focus kind
       start = startWholeLine;
@@ -230,11 +292,34 @@ export class Highlight {
       ranges[Code].push(new vscode.Range(startWholeLine, endWholeLine));
       ranges[Code] = mergeOverlap(ranges[Code]);
     }
+    const newRange = new vscode.Range(start, end);
+    if (kind === Link) {
+      // remove Mark range contains the link
+      ranges[Mark] = ranges[Mark].filter((range) => !range.contains(newRange));
+    }
 
-    ranges[kind].push(new vscode.Range(start, end));
+    ranges[kind].push(newRange);
     ranges[kind] = mergeOverlap(ranges[kind]);
     this._ranges = ranges;
     this._updateHighlights();
+  }
+
+  public removeHighlight() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const ranges = this._ranges;
+    if (!ranges) return;
+
+    let kind = this._findNextKind(editor.selection.active);
+    if (typeof kind !== "number" || kind <= 0) return;
+    kind--;
+
+    const idx = ranges[kind].findIndex((range) =>
+      range.contains(editor.selection.active)
+    );
+
+    this._removeHighlight(editor, kind, idx);
   }
 
   private _removeHighlight(
@@ -270,11 +355,13 @@ export class Highlight {
   }
 
   public removeAll() {
+    if (this.isEditing()) return;
+
     this._resetDecorations();
     this._updateHighlights();
   }
 
-  private _updateHighlights() {
+  private async _updateHighlights(stopSyncOnEditing = false) {
     const editor = vscode.window.activeTextEditor;
     const ranges = this._ranges;
     if (!editor || !ranges) {
@@ -289,6 +376,21 @@ export class Highlight {
         }))
       );
     }
+    // sync code range change to webview node
+    if (!this.isEditing() || stopSyncOnEditing || !this._ranges) return;
+    const filePath = editor.document.uri.path;
+    const id = this._editingMap.get(filePath)!;
+    const { code, rowCount } = (await getCodeRangeChange(this._ranges)) || {};
+    if (!code || !rowCount) return;
+    this._getWebview?.(filePath)?.postMessage({
+      action: "code-range-change",
+      data: {
+        id,
+        code,
+        rowCount,
+        ranges,
+      },
+    } as Ext2Web.CodeRangeChange);
   }
 }
 

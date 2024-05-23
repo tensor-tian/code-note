@@ -26,6 +26,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     toggleCode: _toggleCode,
     activateNode,
     toggleNodeSelection,
+    updateCodeBlock,
   } = useTreeNoteStore();
   // const { setNodes, getNodes, getEdge } = useReactFlow();
   const activeEdge = useTreeNoteStore(selectActiveEdge);
@@ -67,6 +68,41 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
       },
     } as Web2Ext.StartTextEditor);
   }, [data.id, data.text, data.type]);
+
+  const onCodeRangeEditClick = useCallback(() => {
+    if (!data.isCodeRangeEditing) {
+      updateCodeBlock(
+        {
+          id: data.id,
+          isCodeRangeEditing: true,
+        },
+        "startCodeRangeEditor"
+      );
+      vscode.postMessage({
+        action: "start-code-range-editor",
+        data: {
+          id: data.id,
+          type: data.type,
+          filePath: data.filePath,
+          pkgPath: data.pkgPath,
+          ranges: data.ranges,
+        },
+      } as Web2Ext.StartCodeRangeEditor);
+    } else {
+      vscode.postMessage({
+        action: "stop-code-range-editor",
+        data: { id: data.id },
+      } as Web2Ext.StopCodeRangeEditor);
+    }
+  }, [
+    data.filePath,
+    data.id,
+    data.pkgPath,
+    data.ranges,
+    data.type,
+    updateCodeBlock,
+    data.isCodeRangeEditing,
+  ]);
   const checkboxId = "code-" + id;
 
   const toggleSelection = useCallback(() => {
@@ -143,18 +179,18 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
           {ShowCodeIcon}
           {ID}
           <div className="flex w-30 justify-between">
-            {/* <LiaEdit
-              className="mr-5 cursor-auto text-gray-600 hover:text-gray-900 hover:scale-125"
-              onClick={onStartTextEdit}
-            /> */}
             <BiText
-              className="mr-5 cursor-auto text-gray-600 hover:text-gray-900 hover:scale-125"
+              className="mr-5 cursor-auto text-gray-500 hover:text-gray-900 hover:scale-125"
               onClick={onStartTextEdit}
             />
             <IoCode
-              className="mr-5 cursor-auto text-gray-600 hover:text-gray-900 hover:scale-125"
-              onClick={onStartTextEdit}
+              className={cx(
+                "mr-5 cursor-auto hover:text-gray-900 hover:scale-125",
+                data.isCodeRangeEditing ? "text-red scale-125" : "text-gray-500"
+              )}
+              onClick={onCodeRangeEditClick}
             />
+
             <div className="flex align-baseline px">
               <label
                 htmlFor={checkboxId}

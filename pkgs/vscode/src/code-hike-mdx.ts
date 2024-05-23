@@ -4,14 +4,14 @@ import { DecorationKind, lastCharOfLine } from "./highlight";
 
 import type { CodeBlock } from "types";
 import { Store } from "./store";
-import { posix } from "path";
+import path from "path";
 
 export type PartialBlock = Omit<CodeBlock, "showCode" | "text"> & {
   links: string[];
   marks: string[];
 };
 
-export async function createPartialBlock({
+export async function getPartialBlock({
   store,
   pkgName,
   pkgPath,
@@ -30,22 +30,22 @@ export async function createPartialBlock({
   if (ranges[DecorationKind.Code].length === 0) return;
   const doc = editor.document;
   const file = doc.uri.path;
-  const filePath = posix.relative(pkgPath, file);
-  const ext = posix.extname(file).substring(1);
-  const filename = posix.basename(file);
+  const filePath = path.relative(pkgPath, file);
+  const ext = path.extname(file).substring(1);
+  const filename = path.basename(file);
 
   const { code, count: rowCount } = codeStr({ doc, ext, ranges, filename });
 
   const links = ranges[DecorationKind.Link].map(
     (range) =>
-      `[\`${doc.getText(range)}\`](focus://${filename}#${rangeToStr(
+      `[_\`${doc.getText(range)}\`_](focus://${filename}#${rangeToStr(
         doc,
         range
       )})`
   );
 
   const marks = ranges[DecorationKind.Mark].map(
-    (range) => "`" + doc.getText(range) + "`"
+    (range) => "_`" + doc.getText(range) + "`_"
   );
 
   return {
@@ -59,6 +59,21 @@ export async function createPartialBlock({
     ranges,
     links,
     marks,
+  };
+}
+
+export async function getCodeRangeChange(ranges: vscode.Range[][]) {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) return;
+  if (ranges[DecorationKind.Code].length === 0) return;
+  const doc = editor.document;
+  const file = doc.uri.path;
+  const ext = path.extname(file).substring(1);
+  const filename = path.basename(file);
+  const { code, count: rowCount } = codeStr({ doc, ext, ranges, filename });
+  return {
+    code,
+    rowCount,
   };
 }
 
