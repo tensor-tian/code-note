@@ -103,11 +103,18 @@ export const useTreeNoteStore = create<TreeNote.State>(
           false,
           action
         );
-      };
+    };
 
       return {
         ...initialData,
         resetNote: (note) => {
+          note.nodeMap = Object.values(note.nodeMap).reduce((acc, node) => {
+            if (isCodeNode(node)) {
+              node.data.isCodeRangeEditing = false;
+            }
+            acc[node.id] = node;
+            return acc;
+          }, {} as Record<string, Node>);
           set(note);
           const { activeNodeId, nodeMap, edges } = get();
           if (!activeNodeId) {

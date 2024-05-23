@@ -56,7 +56,12 @@ export async function getPartialBlock({
     filePath,
     pkgPath,
     pkgName,
-    ranges,
+    ranges: ranges.map((list) =>
+      list.map((range) => ({
+        start: { line: range.start.line, character: range.start.character },
+        end: { line: range.end.line, character: range.end.character },
+      }))
+    ),
     links,
     marks,
   };
@@ -74,6 +79,12 @@ export async function getCodeRangeChange(ranges: vscode.Range[][]) {
   return {
     code,
     rowCount,
+    ranges: ranges.map((list) =>
+      list.map((range) => ({
+        start: { line: range.start.line, character: range.start.character },
+        end: { line: range.end.line, character: range.end.character },
+      }))
+    ),
   };
 }
 
@@ -88,7 +99,7 @@ function codeStr({
   filename: string;
   ranges: vscode.Range[][];
 }) {
-  const [codeRanges, focusRanges, markRanges, linkRanges] = ranges;
+  const [codeRanges, focusRanges, markRanges] = ranges;
   const codeStartPos = codeRanges[0].start;
   const codeEndPos = codeRanges[codeRanges.length - 1].end;
   const origCodeLines = doc
@@ -98,12 +109,12 @@ function codeStr({
   const startLine = codeRanges[0].start.line;
   let iMark = 0;
   let count = 0;
+  let mRange = markRanges[iMark];
   for (const range of codeRanges) {
     count += range.end.line - range.start.line + 1;
     for (let i = range.start.line; i <= range.end.line; i++) {
       // only support one line mark
-      const mRange = markRanges[iMark];
-      if (mRange && mRange.start.line === i) {
+      while (mRange && mRange.start.line === i) {
         codeLines.push(
           inlineComment(
             ext,
@@ -111,6 +122,7 @@ function codeStr({
           )
         );
         iMark++;
+        mRange = markRanges[iMark];
       }
       codeLines.push(origCodeLines[i - startLine]);
     }

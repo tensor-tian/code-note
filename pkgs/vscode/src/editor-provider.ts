@@ -195,8 +195,8 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
           this.startEditText(message.data, webviewKey);
           break;
         case "start-code-range-editor":
-          const getWebview = (filePath: string) => this.getWebview(filePath);
-          this.highlight.startCodeRangeEdit(message.data, getWebview);
+          const getWebviewPanel = () => this.getWebviewPanel(webviewKey);
+          this.highlight.startCodeRangeEdit(message.data, getWebviewPanel);
           break;
         case "stop-code-range-editor":
           this.highlight.stopCodeRangeEdit(message.data.id);

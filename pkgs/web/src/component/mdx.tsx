@@ -67,7 +67,7 @@ function useInput(input: string) {
         Component: content,
         error: error,
       });
-      console.log("compile error: ", input, error);
+      // console.log("compile error: ", input, error);
       setLoading(false);
     });
     return () => {

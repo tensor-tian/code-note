@@ -53,7 +53,7 @@ export class Highlight {
   private _decorators: vscode.TextEditorDecorationType[] = new Array(N);
   private _rangeMap: Map<string, vscode.Range[][]> = new Map();
   private _editingMap: Map<string, string> = new Map(); // file uri.path -> code block id
-  private _getWebview?: (filePath: string) => vscode.Webview | undefined;
+  private _getWebviewPanel?: () => vscode.WebviewPanel | undefined;
 
   get _ranges(): vscode.Range[][] | undefined {
     const editor = vscode.window.activeTextEditor;
@@ -108,14 +108,16 @@ export class Highlight {
           (doc) => doc.uri.path === file
         );
         if (!found) {
-          this._rangeMap.delete(file);
-          // stop code range editing if need
-          this.stopCodeRangeEdit(file);
+          if (this.isEditing(file)) {
+            this._rangeMap.delete(file);
+            // stop code range editing if need
+            this.stopCodeRangeEdit(file);
+          }
           // console.log("did close doc:", file, [...this._rangeMap.keys()]);
         }
       }),
       vscode.workspace.onDidOpenTextDocument((doc) => {
-        this._updateHighlights();
+        this._updateHighlights(true);
         // console.log(
         //   "did open doc",
         //   doc.uri.fsPath,
@@ -123,7 +125,7 @@ export class Highlight {
         // );
       }),
       vscode.window.onDidChangeActiveTextEditor((editor) => {
-        this._updateHighlights();
+        this._updateHighlights(true);
         // console.log([...this._rangeMap.keys()]);
         // console.log(
         //   "change active editor:",
@@ -135,60 +137,80 @@ export class Highlight {
   }
 
   // editing
-  public startCodeRangeEdit(
+  public async startCodeRangeEdit(
     {
       filePath,
       pkgPath,
       ranges: _ranges,
       id,
     }: Web2Ext.StartCodeRangeEditor["data"],
-    getWebview: (filePath: string) => vscode.Webview | undefined
+    getWebviewPanel: () => vscode.WebviewPanel | undefined
   ) {
     const uri = vscode.Uri.joinPath(vscode.Uri.file(pkgPath), filePath);
-    vscode.workspace.openTextDocument(uri).then((doc) => {
-      vscode.window.showTextDocument(doc).then((editor) => {
-        const firstLine = editor.document.lineAt(0);
-        const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-        const { Code, Focus, Mark, Link } = DecorationKind;
-        const ranges = _ranges.map((list) =>
-          list.map(
-            (range) =>
-              new vscode.Range(
-                new vscode.Position(range.start.line, range.start.character),
-                new vscode.Position(range.end.line, range.end.character)
-              )
-          )
-        );
-        this._ranges = ranges;
-        this._updateHighlights(true);
-        this._editingMap.set(uri.path, id);
-        this._getWebview = getWebview;
-
-        // reveal highlight code
-        let start = lastLine.range.end;
-        let end = firstLine.range.start;
-        var collectRange = (range: vscode.Range) => {
-          if (start.isAfter(range.start)) start = range.start;
-          if (end.isBefore(range.end)) end = range.end;
-        };
-        let revealType = vscode.TextEditorRevealType.InCenter;
-        if (ranges[Mark].length > 0 || ranges[Link].length > 0) {
-          ranges[Mark].forEach(collectRange);
-          ranges[Link].forEach(collectRange);
-        } else if (ranges[Focus].length > 0) {
-          ranges[Focus].forEach(collectRange);
-        } else if (ranges[Code].length > 0) {
-          ranges[Code].forEach(collectRange);
-          revealType = vscode.TextEditorRevealType.AtTop;
-        }
-        editor.revealRange(new vscode.Range(start, end), revealType);
+    this._getWebviewPanel = getWebviewPanel;
+    const column = getWebviewPanel()?.viewColumn || 1;
+    console.log("editor view column:", column);
+    const doc = await vscode.workspace.openTextDocument(uri);
+    let editor: vscode.TextEditor;
+    if (column === 1) {
+      await vscode.commands.executeCommand("workbench.action.splitEditorLeft");
+      editor = await vscode.window.showTextDocument(doc, {
+        viewColumn: vscode.ViewColumn.Active,
+        preserveFocus: false,
+        preview: false,
       });
-    });
+      await vscode.commands.executeCommand(
+        "workbench.action.closeEditorsToTheLeft"
+      );
+    } else {
+      editor = await vscode.window.showTextDocument(doc, {
+        viewColumn: column - 1,
+        preserveFocus: false,
+        preview: false,
+      });
+    }
+    const firstLine = editor.document.lineAt(0);
+    const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+    const { Code, Focus, Mark, Link } = DecorationKind;
+    const ranges = _ranges.map((list) =>
+      list.map(
+        (range) =>
+          new vscode.Range(
+            new vscode.Position(range.start.line, range.start.character),
+            new vscode.Position(range.end.line, range.end.character)
+          )
+      )
+    );
+    this._ranges = ranges;
+    this._updateHighlights(true);
+    this._editingMap.set(uri.path, id);
+
+    // reveal highlight code
+    let start = lastLine.range.end;
+    let end = firstLine.range.start;
+    var collectRange = (range: vscode.Range) => {
+      if (start.isAfter(range.start)) start = range.start;
+      if (end.isBefore(range.end)) end = range.end;
+    };
+    let revealType = vscode.TextEditorRevealType.InCenter;
+    if (ranges[Mark].length > 0 || ranges[Link].length > 0) {
+      ranges[Mark].forEach(collectRange);
+      ranges[Link].forEach(collectRange);
+    } else if (ranges[Focus].length > 0) {
+      ranges[Focus].forEach(collectRange);
+    } else if (ranges[Code].length > 0) {
+      ranges[Code].forEach(collectRange);
+      revealType = vscode.TextEditorRevealType.AtTop;
+    }
+    editor.revealRange(new vscode.Range(start, end), revealType);
   }
-  private isEditing(): boolean {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return false;
-    return this._editingMap.has(editor.document.uri.path);
+  private isEditing(filePath?: string): boolean {
+    if (!filePath) {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return false;
+      filePath = editor.document.uri.path;
+    }
+    return this._editingMap.has(filePath);
   }
   public stopCodeRangeEdit(filePathOrId: string) {
     let id: string | undefined;
@@ -204,7 +226,7 @@ export class Highlight {
       if (!filePath) return;
     }
     this._editingMap.delete(filePath);
-    this._getWebview?.(filePath)?.postMessage({
+    this._getWebviewPanel?.()?.webview.postMessage({
       action: "code-range-edit-stopped",
       data: { id },
     } as Ext2Web.CodeRangeEditStopped);
@@ -330,13 +352,13 @@ export class Highlight {
     const ranges = this._ranges;
     if (!ranges) return;
     const [removed] = ranges[kind].splice(idx, 1);
-    const Code = DecorationKind.Code;
-    // hold the line where other kinds in
-    if (kind === Code) {
-      for (let k = 1; k < N; k++) {
+    const { Focus } = DecorationKind;
+    // hold the Code or Focus line where other kinds in
+    if (kind <= Focus) {
+      for (let k = kind + 1; k < N; k++) {
         for (const range of ranges[k]) {
           if (range.intersection(removed)) {
-            ranges[Code].push(
+            ranges[kind].push(
               new vscode.Range(
                 new vscode.Position(range.start.line, 0),
                 new vscode.Position(
@@ -348,7 +370,7 @@ export class Highlight {
           }
         }
       }
-      ranges[Code] = mergeOverlap(ranges[Code]);
+      ranges[kind] = mergeOverlap(ranges[kind]);
     }
     this._ranges = ranges;
     this._updateHighlights();
@@ -377,18 +399,24 @@ export class Highlight {
       );
     }
     // sync code range change to webview node
-    if (!this.isEditing() || stopSyncOnEditing || !this._ranges) return;
+    const isEditing = this.isEditing();
+    if (!isEditing || stopSyncOnEditing || !this._ranges) return;
     const filePath = editor.document.uri.path;
     const id = this._editingMap.get(filePath)!;
-    const { code, rowCount } = (await getCodeRangeChange(this._ranges)) || {};
+    const {
+      code,
+      rowCount,
+      ranges: _ranges,
+    } = (await getCodeRangeChange(this._ranges)) || {};
     if (!code || !rowCount) return;
-    this._getWebview?.(filePath)?.postMessage({
+    const webview = this._getWebviewPanel?.()?.webview;
+    webview?.postMessage({
       action: "code-range-change",
       data: {
         id,
         code,
         rowCount,
-        ranges,
+        ranges: _ranges,
       },
     } as Ext2Web.CodeRangeChange);
   }

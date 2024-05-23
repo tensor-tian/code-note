@@ -155,20 +155,20 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
   createNote = async (title: string): Promise<Uri | undefined> => {
     const note = await initCodeNote(title);
     if (!note) return;
-    const uriDir = Uri.joinPath(
+    const dir = Uri.joinPath(
       this.context.globalStorageUri,
       workDir,
       note.pkgName
     );
-    if (!(await this.existsDir(uriDir))) {
-      await workspace.fs.createDirectory(uriDir);
+    if (!(await this.existsDir(dir))) {
+      await workspace.fs.createDirectory(dir);
     }
-    const uriNote = this.noteUri(note.pkgName, title);
+    const file = this.noteUri(note.pkgName, title);
     await workspace.fs.writeFile(
-      uriNote,
+      file,
       new TextEncoder().encode(JSON.stringify(note))
     );
-    return uriNote;
+    return file;
   };
   updateNote = debounce(async (uri: Uri, note: Note) => {
     return workspace.fs.writeFile(
