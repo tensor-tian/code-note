@@ -24,7 +24,6 @@ import Menu from "./menu";
 import MiniMapNode from "./minimap-node";
 import NodeInspector from "./NodeInspector";
 import Scrolly from "./scrolly";
-import minimapNode from "./minimap-node";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
 
@@ -42,21 +41,13 @@ const DEFAULT_EDGE_OPTIONS = {
 
 function TreeFlow() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const {
-    handshake,
-    setKV,
-    resetNote,
-    onNodeChange,
-    addCodeNode,
-    onConnect,
-    updateNodeText,
-  } = useTreeNoteStore();
-
+  const { setKV, onNodeChange, addCodeNode, onConnect } = useTreeNoteStore();
   const selectedNodes = useTreeNoteStore(selectSelectedNodes);
   const rootIds = useTreeNoteStore(selectRootIds);
   const nodes = useTreeNoteStore(selectNodes);
   const debug = useTreeNoteStore(selectDebug);
 
+  // edge operation
   const {
     edges,
     onEdgeClick,
@@ -65,9 +56,14 @@ function TreeFlow() {
     onEdgeChange,
   } = useEdge();
 
+  // arrow key to focus node
   useNavKeys(edges);
+  // auto focus node by reset viewport
   usePanToActiveNode(containerRef, setKV, nodes.length);
-  console.log("nodes:", nodes, "edges:", edges);
+  // init note and handle message from extension
+  useExt2WebMessage();
+
+  // minimap
   const nodeClassName = useCallback(
     (node: Node) => {
       let cls = "";
@@ -85,40 +81,7 @@ function TreeFlow() {
     [selectedNodes, rootIds]
   );
 
-  useEffect(() => {
-    if (!handshake) {
-      vscode.postMessage({ action: "ask-init-tree-note" });
-      setKV("handshake", true);
-    }
-  }, [handshake, setKV]);
-
-  useEffect(() => {
-    const handler = (event: MessageEvent<Ext2Web.Message>) => {
-      console.log("ext to web:", event.data);
-      switch (event.data.action) {
-        case "init-tree-note":
-          console.log("init tree note:", event.data.data);
-          resetNote(event.data.data);
-          break;
-        case "text-change":
-          const { data } = event.data;
-          if (data.type === "Code") {
-            updateNodeText(data.id, data.text);
-          } else if (data.type === "TreeNote") {
-            setKV("text", data.text);
-          }
-          break;
-        case "add-detail":
-        case "add-next":
-          addCodeNode(event.data);
-          break;
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => {
-      window.removeEventListener("message", handler);
-    };
-  }, [addCodeNode, resetNote, setKV, updateNodeText]);
+  console.log("<TreeFlow> nodes:", nodes, "edges:", edges);
 
   return (
     <div ref={containerRef} className="top-0 bottom-0 w-full absolute">
@@ -206,4 +169,63 @@ function usePanToActiveNode(
   useEffect(() => {
     setMark(activeMark);
   }, [activeMark]);
+}
+
+function useExt2WebMessage() {
+  const {
+    handshake,
+    setKV,
+    resetNote,
+    addCodeNode,
+    updateNodeText,
+    updateNodeCodeRange,
+    stopNodeCodeRangeEditing,
+  } = useTreeNoteStore();
+  useEffect(() => {
+    const handler = (event: MessageEvent<Ext2Web.Message>) => {
+      const { action, data } = event.data;
+      console.log("ext to web:", { action, data });
+      switch (action) {
+        case "init-tree-note":
+          console.log("init tree note:", data);
+          resetNote(data);
+          break;
+        case "text-change":
+          if (data.type === "Code") {
+            updateNodeText(data.id, data.text);
+          } else if (data.type === "TreeNote") {
+            setKV("text", data.text);
+          }
+          break;
+        case "add-detail":
+        case "add-next":
+          addCodeNode(event.data);
+          break;
+        case "code-range-change":
+          updateNodeCodeRange(data);
+          break;
+        case "code-range-edit-stopped":
+          stopNodeCodeRangeEditing(data.id);
+          break;
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => {
+      window.removeEventListener("message", handler);
+    };
+  }, [
+    addCodeNode,
+    resetNote,
+    setKV,
+    stopNodeCodeRangeEditing,
+    updateNodeCodeRange,
+    updateNodeText,
+  ]);
+
+  useEffect(() => {
+    if (!handshake) {
+      vscode.postMessage({ action: "ask-init-tree-note" });
+      setKV("handshake", true);
+    }
+  }, [handshake, setKV]);
 }
