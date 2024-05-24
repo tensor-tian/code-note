@@ -1,5 +1,5 @@
 import { CodeBlock, Web2Ext } from "types";
-import { Handle, NodeProps, Position } from "reactflow";
+import { Handle, NodeProps, Position, NodeToolbar } from "reactflow";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { MouseEvent, memo, useCallback, useMemo } from "react";
 // import debounce from "lodash.debounce";
@@ -150,8 +150,24 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     () => (data.showCode ? block2MDX(data) : data.text),
     [data]
   );
+  // const Toolbar = useMemo(() => {
+  //   return (
+  //     <NodeToolbar offset={10} position={Position.Right}>
+  //       <button className="btn-gray" onClick={toggleCode}>
+  //         {showCode ? "Hide Code" : "Show Code"}
+  //       </button>
+  //       <button className="btn-gray" onClick={toggleCode}>
+  //         {showCode ? "Hide Code" : "Show Code"}
+  //       </button>
+  //       <button className="btn-gray" onClick={toggleCode}>
+  //         {showCode ? "Hide Code" : "Show Code"}
+  //       </button>
+  //     </NodeToolbar>
+  //   );
+  // }, [toggleCode, showCode]);
   return (
     <div>
+      {/* {Toolbar} */}
       <Handle
         id={idTop}
         type="target"
@@ -167,15 +183,16 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
       />
       <div
         className={cx(
-          "border rounded px-2 py-2 bg-white",
-          isActive ? "border-gray-600" : "border-gray-200",
+          "border px-4 py-4 bg-white",
+          isActive
+            ? "border-gray-600 shadow-md shadow-gray-900"
+            : "border-gray-300",
           isRoot ? "bg-indigo-100" : "bg-white",
-          isActive ? "shadow-md shadow-gray-900" : "",
           isSelected ? "bg-gray-200" : "bg-white"
         )}
         onClick={onActivate}
       >
-        <div className="flex justify-between ">
+        <div className="flex justify-between mb-3">
           {ShowCodeIcon}
           {ID}
           <div className="flex w-30 justify-between">
@@ -208,7 +225,9 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
             </div>
           </div>
         </div>
-        <MDX mdx={mdx} />
+        <div className="px-1">
+          <MDX mdx={mdx} />
+        </div>
       </div>
       <Handle
         id={idLeft}

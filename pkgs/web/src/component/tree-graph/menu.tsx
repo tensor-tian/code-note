@@ -112,31 +112,31 @@ function Menu({ addBlock }: Props) {
           <MDX mdx={text} />
         </div>
         <div className="flex justify-between align-middle h-10">
-          <button className="btn-blue h-6 mt-1" onClick={startEdit}>
+          <button className="btn-gray h-6 mt-1" onClick={startEdit}>
             Edit
           </button>
           {!isVscode && (
-            <button className="btn-blue h-6 mt-1" onClick={addDetail}>
+            <button className="btn-gary h-6 mt-1" onClick={addDetail}>
               Add Detail
             </button>
           )}
           {!isVscode && (
-            <button className="btn-blue h-6 mt-1" onClick={addNext}>
+            <button className="btn-gray h-6 mt-1" onClick={addNext}>
               Add Next
             </button>
           )}
           {
-            <button className="btn-blue h-6 mt-1" onClick={toggleDebug}>
+            <button className="btn-gray h-6 mt-1" onClick={toggleDebug}>
               Debug
             </button>
           }
-          <button className="btn-blue h-6 mt-1" onClick={deleteEdge}>
+          <button className="btn-gray h-6 mt-1" onClick={deleteEdge}>
             <s>Edge</s>
           </button>
-          <button className="btn-blue h-6 mt-1" onClick={deleteNode}>
+          <button className="btn-gray h-6 mt-1" onClick={deleteNode}>
             <s>Node</s>
           </button>
-          <button className="btn-blue h-6 mt-1" onClick={toggleGroup}>
+          <button className="btn-gray h-6 mt-1" onClick={toggleGroup}>
             ScrollyBlock
           </button>
 
