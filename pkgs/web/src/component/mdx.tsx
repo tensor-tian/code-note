@@ -11,6 +11,8 @@ import { ErrorBoundary } from "react-error-boundary";
 import type { MDXContent } from "mdx/types";
 import { remarkCodeHike } from "@code-hike-local/mdx";
 import remarkGfm from "remark-gfm";
+import { selectWidthSetting, useTreeNoteStore } from "./tree-graph/store";
+import cls from "classnames";
 
 async function compileAndRun(input: string) {
   try {
@@ -44,7 +46,7 @@ async function compileAndRun(input: string) {
 }
 
 let effectId = 0;
-function useInput(input: string) {
+function useInput(input: string, width?: number) {
   const [{ Component, error }, setState] = useState<{
     Component: MDXContent | undefined;
     error: string | undefined;
@@ -74,7 +76,7 @@ function useInput(input: string) {
       // console.log("cancelling", id);
       effectId++;
     };
-  }, [input]);
+  }, [input, width]);
 
   return { Component, error, loading };
 }
@@ -88,9 +90,13 @@ function ErrorFallback({ error }: { error: string }) {
   );
 }
 
-const InnerPreview: FC<{ input: string }> = ({ input }) => {
-  const { Component, error, loading } = useInput(input);
+const InnerPreview: FC<{ input: string; width?: number }> = ({
+  input,
+  width,
+}) => {
+  const { Component, error, loading } = useInput(input, width);
   // console.log("error:", error, typeof Component);
+  const style = typeof width === "number" ? { maxWidth: width } : {};
   return (
     <>
       {error ? (
@@ -99,7 +105,12 @@ const InnerPreview: FC<{ input: string }> = ({ input }) => {
           <pre>{error}</pre>
         </div>
       ) : null}
-      <div className={`preview-container ${error ? "with-error" : ""}`}>
+      <div
+        className={cls("preview-container", {
+          "with-error": error,
+        })}
+        style={style}
+      >
         <div style={{ opacity: loading ? 1 : 0 }} className="loading-border" />
         {Component ? <Component components={{ CH }} /> : null}
       </div>
@@ -111,10 +122,10 @@ const logError = (error: Error, info: ErrorInfo) => {
   console.log("error boundary:", error, info);
 };
 
-const MDX: FC<{ mdx: string }> = ({ mdx }) => {
+const MDX: FC<{ mdx: string; width?: number }> = ({ mdx, width }) => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback} onError={logError}>
-      <InnerPreview input={mdx} />
+      <InnerPreview input={mdx} width={width} />
     </ErrorBoundary>
   );
 };

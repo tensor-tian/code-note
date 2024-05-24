@@ -83,8 +83,20 @@ body,
   padding-right: 4px;
 }
 
-.react-flow__node-Code {
-  width: 600px;
+.settings-w-500 ch-code-scroll-parent .ch-code-scroll-content {
+  width: 500px !important;
+}
+.settings-w-600 ch-code-scroll-parent .ch-code-scroll-content {
+  width: 600px !important;
+}
+.settings-w-700 ch-code-scroll-parent .ch-code-scroll-content {
+  width: 700px !important;
+}
+.settings-w-800 ch-code-scroll-parent .ch-code-scroll-content {
+  width: 800px !important;
+}
+.settings-w-900 ch-code-scroll-parent .ch-code-scroll-content {
+  width: 900px !important;
 }
 
 .react-flow__edge-edge:hover {
@@ -111,7 +123,7 @@ body,
 }
 
 .code-handle {
-  @apply bg-gray-600 border-gray-600 w-1 h-1;
+  @apply bg-gray-900 border-gray-900 w-1 h-1;
 }
 .code-handle-hl {
   @apply bg-gray-900 border-gray-900 w-2 h-2;
@@ -147,21 +159,8 @@ strike:after {
   width: 120%;
   /* transform: rotateZ(-0deg); */
 }
-
-.preview-container h4 {
-  @apply text-base font-bold dark:text-white mb-1;
-}
-
-.preview-container h3 {
-  @apply text-lg font-bold dark:text-white mb-2;
-}
-
-.preview-container h2 {
-  @apply text-xl font-bold dark:text-white mb-3;
-}
-
-.preview-container h1 {
-  @apply text-2xl font-bold dark:text-white mb-4;
+.preview-container {
+  overflow-wrap: break-word;
 }
 
 .preview-container p,

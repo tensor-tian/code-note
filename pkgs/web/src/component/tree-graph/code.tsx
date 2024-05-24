@@ -6,9 +6,12 @@ import { MouseEvent, memo, useCallback, useMemo } from "react";
 import {
   selectActiveEdge,
   selectActiveNodeId,
+  selectCodeBlockState,
   selectDebug,
   selectRootIds,
+  selectSelectedEdge,
   selectSelectedNodes,
+  selectWidthSetting,
   useTreeNoteStore,
 } from "./store";
 
@@ -30,9 +33,10 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   } = useTreeNoteStore();
   // const { setNodes, getNodes, getEdge } = useReactFlow();
   const activeEdge = useTreeNoteStore(selectActiveEdge);
-  const activeNodeId = useTreeNoteStore(selectActiveNodeId);
-  const selectedNodes = useTreeNoteStore(selectSelectedNodes);
-  const rootIds = useTreeNoteStore(selectRootIds);
+  const { activeNodeId, selectedNodes, rootIds, width } =
+    useTreeNoteStore(selectCodeBlockState);
+  const selectedEdge = useTreeNoteStore(selectSelectedEdge);
+
   const isSelected = selectedNodes.includes(id);
   const isActive = activeNodeId === id;
   const isRoot = rootIds.includes(id);
@@ -150,45 +154,32 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     () => (data.showCode ? block2MDX(data) : data.text),
     [data]
   );
-  // const Toolbar = useMemo(() => {
-  //   return (
-  //     <NodeToolbar offset={10} position={Position.Right}>
-  //       <button className="btn-gray" onClick={toggleCode}>
-  //         {showCode ? "Hide Code" : "Show Code"}
-  //       </button>
-  //       <button className="btn-gray" onClick={toggleCode}>
-  //         {showCode ? "Hide Code" : "Show Code"}
-  //       </button>
-  //       <button className="btn-gray" onClick={toggleCode}>
-  //         {showCode ? "Hide Code" : "Show Code"}
-  //       </button>
-  //     </NodeToolbar>
-  //   );
-  // }, [toggleCode, showCode]);
   return (
     <div>
-      {/* {Toolbar} */}
       <Handle
         id={idTop}
         type="target"
         isConnectableEnd
         isConnectableStart={false}
         position={Position.Top}
-        className={
+        className={cx(
+          "code-handle -top-0.5",
           activeEdge?.targetHandle === idTop
             ? "code-handle-hl -top-1"
-            : "code-handle -top-0.5"
-        }
+            : selectedEdge?.targetHandle === idTop
+            ? "!bg-blue !border-blue"
+            : "bg-gray-900"
+        )}
         isValidConnection={isY}
       />
       <div
         className={cx(
           "border px-4 py-4 bg-white",
           isActive
-            ? "border-gray-600 shadow-md shadow-gray-900"
+            ? "border-gray-600 shadow-lg shadow-gray-900"
             : "border-gray-300",
           isRoot ? "bg-indigo-100" : "bg-white",
-          isSelected ? "bg-gray-200" : "bg-white"
+          isSelected ? "!border-blue-600 !shadow-blue-600" : "bg-white"
         )}
         onClick={onActivate}
       >
@@ -226,7 +217,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
           </div>
         </div>
         <div className="px-1">
-          <MDX mdx={mdx} />
+          <MDX mdx={mdx} width={width} />
         </div>
       </div>
       <Handle
@@ -235,11 +226,14 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         isConnectableEnd
         isConnectableStart={false}
         position={Position.Left}
-        className={
+        className={cx(
+          "code-handle -left-0.5",
           activeEdge?.targetHandle === idLeft
             ? "code-handle-hl -left-1"
-            : "code-handle -left-0.5"
-        }
+            : selectedEdge?.targetHandle === idLeft
+            ? "!bg-blue !border-blue"
+            : "bg-gray-900"
+        )}
         isValidConnection={isX}
       />
       <Handle
@@ -248,11 +242,14 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         isConnectableStart
         isConnectableEnd={false}
         position={Position.Right}
-        className={
+        className={cx(
+          "code-handle -right-0.5",
           activeEdge?.sourceHandle === idRight
             ? "code-handle-hl -right-1"
-            : "code-handle -right-0.5"
-        }
+            : selectedEdge?.sourceHandle === idRight
+            ? "!bg-blue !border-blue"
+            : "bg-gray-900"
+        )}
       />
       <Handle
         id={idBottom}
@@ -260,11 +257,14 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         position={Position.Bottom}
         isConnectableStart
         isConnectableEnd={false}
-        className={
+        className={cx(
+          "code-handle -bottom-0.5",
           activeEdge?.sourceHandle === idBottom
             ? "code-handle-hl -bottom-1"
-            : "code-handle -bottom-0.5"
-        }
+            : selectedEdge?.sourceHandle === idBottom
+            ? "!bg-blue !border-blue"
+            : "bg-gray-900"
+        )}
       />
     </div>
   );

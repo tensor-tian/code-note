@@ -1,4 +1,4 @@
-import { CODE_SIZE, VIEWPORT, isCodeNode } from "./layout";
+import { VIEWPORT, isCodeNode } from "./layout";
 import CodeEdge, { useEdge } from "./edge";
 import type { Ext2Web, Node } from "types";
 import ReactFlow, {
@@ -13,6 +13,7 @@ import {
   selectActiveNodeAndGroup,
   selectDebug,
   selectNodes,
+  selectSettings,
   selectRootIds,
   selectSelectedNodes,
   useTreeNoteStore,
@@ -22,7 +23,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Code from "./code";
 import Menu from "./menu";
 import MiniMapNode from "./minimap-node";
-import NodeInspector from "./NodeInspector";
+import NodeInspector from "./node-inspector";
 import Scrolly from "./scrolly";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
@@ -128,6 +129,7 @@ function usePanToActiveNode(
   const { activeNode, activeGroup, activeMark } = useTreeNoteStore(
     selectActiveNodeAndGroup
   );
+  const settings = useTreeNoteStore(selectSettings);
   const { setViewport } = useReactFlow();
   const [mark, setMark] = useState<number>(activeMark);
   useEffect(() => {
@@ -142,8 +144,8 @@ function usePanToActiveNode(
       yActive += activeGroup.position.y;
     }
 
-    const wActive = activeNode.width || CODE_SIZE.W;
-    const hActive = activeNode.height || CODE_SIZE.H;
+    const wActive = activeNode.width || settings.W;
+    const hActive = activeNode.height || settings.H;
     const container = ref.current?.getBoundingClientRect();
     const x = container.width / 2 - xActive - wActive / 2;
     let y = container.height / 2 - yActive - hActive / 2;
@@ -164,6 +166,8 @@ function usePanToActiveNode(
     setKV,
     nLen,
     ref,
+    settings.W,
+    settings.H,
   ]);
 
   useEffect(() => {
