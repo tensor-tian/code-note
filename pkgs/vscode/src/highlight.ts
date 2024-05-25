@@ -240,30 +240,30 @@ export class Highlight {
     this._ranges = ranges;
   }
 
-  private _findNextKind(
-    rangeOrPos: vscode.Range | vscode.Position
+  private _findAddKind(
+    ranges: vscode.Range[][],
+    range: vscode.Range
   ): DecorationKind | undefined {
-    const ranges = this._ranges;
-    if (!ranges) return;
-
-    let kind = 0;
-    while (
-      kind < 4 &&
-      ranges[kind].find((range) => range.contains(rangeOrPos))
+    let res: number | undefined = undefined;
+    for (
+      let kind = 0;
+      kind < 4 && ranges[kind].find((_range) => _range.contains(range));
+      kind++
     ) {
-      kind++;
+      res = kind;
     }
-    if (kind === 4) return;
-
-    return kind;
+    return res;
   }
 
   public addHighlight() {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
+    const ranges = this._ranges;
+    if (!ranges) return;
+
     let selection = currentSelection();
-    // select the whole line where the cursor at if no selection
+    // if no selection, select the whole line where the cursor at
     if (!selection) {
       const line = editor.selection.active.line;
       selection = new vscode.Range(
@@ -272,7 +272,7 @@ export class Highlight {
       );
     }
 
-    const kind = this._findNextKind(selection);
+    const kind = this._findAddKind(ranges, selection);
     if (typeof kind !== "number") return;
 
     this._addHighlight(editor, kind, selection);
@@ -326,6 +326,19 @@ export class Highlight {
     this._updateHighlights();
   }
 
+  private _findRemoveKind(ranges: vscode.Range[][], pos: vscode.Position) {
+    let res: number | undefined = undefined;
+
+    for (
+      let kind = 3;
+      kind >= 0 && ranges[kind].find((range) => range.contains(pos));
+      kind--
+    ) {
+      res = kind;
+    }
+    return res;
+  }
+
   public removeHighlight() {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
@@ -333,7 +346,7 @@ export class Highlight {
     const ranges = this._ranges;
     if (!ranges) return;
 
-    let kind = this._findNextKind(editor.selection.active);
+    let kind = this._findRemoveKind(ranges, editor.selection.active);
     if (typeof kind !== "number" || kind <= 0) return;
     kind--;
 
