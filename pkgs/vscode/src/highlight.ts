@@ -244,15 +244,13 @@ export class Highlight {
     ranges: vscode.Range[][],
     range: vscode.Range
   ): DecorationKind | undefined {
-    let res: number | undefined = undefined;
-    for (
-      let kind = 0;
-      kind < 4 && ranges[kind].find((_range) => _range.contains(range));
-      kind++
-    ) {
-      res = kind;
+    for (let kind = 3; kind >= 0; kind--) {
+      if (ranges[kind].find((_range) => _range.contains(range))) {
+        if (kind === 3) return;
+        return kind + 1;
+      }
     }
-    return res;
+    return 0;
   }
 
   public addHighlight() {
@@ -327,16 +325,12 @@ export class Highlight {
   }
 
   private _findRemoveKind(ranges: vscode.Range[][], pos: vscode.Position) {
-    let res: number | undefined = undefined;
-
-    for (
-      let kind = 3;
-      kind >= 0 && ranges[kind].find((range) => range.contains(pos));
-      kind--
-    ) {
-      res = kind;
+    for (let kind = 3; kind >= 0; kind--) {
+      if (ranges[kind].find((range) => range.contains(pos))) {
+        return kind;
+      }
     }
-    return res;
+    return;
   }
 
   public removeHighlight() {
@@ -347,8 +341,7 @@ export class Highlight {
     if (!ranges) return;
 
     let kind = this._findRemoveKind(ranges, editor.selection.active);
-    if (typeof kind !== "number" || kind <= 0) return;
-    kind--;
+    if (typeof kind !== "number") return;
 
     const idx = ranges[kind].findIndex((range) =>
       range.contains(editor.selection.active)
