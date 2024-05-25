@@ -5,16 +5,12 @@ import { MouseEvent, memo, useCallback, useMemo } from "react";
 // import debounce from "lodash.debounce";
 import {
   selectActiveEdge,
-  selectActiveNodeId,
   selectCodeBlockState,
   selectDebug,
-  selectRootIds,
   selectSelectedEdge,
-  selectSelectedNodes,
-  selectWidthSetting,
   useTreeNoteStore,
 } from "./store";
-
+import { BiCopy } from "react-icons/bi";
 import { BiText } from "react-icons/bi";
 import { IoCode } from "react-icons/io5";
 import type { IsValidConnection } from "reactflow";
@@ -150,10 +146,18 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   const idRight = id + "-right";
   const idBottom = id + "-bottom";
 
-  const mdx = useMemo(
-    () => (data.showCode ? block2MDX(data) : data.text),
-    [data]
-  );
+  const { mdx, copyMdx } = useMemo(() => {
+    const mdx = data.showCode ? block2MDX(data) : data.text;
+    const copyMdx = () => {
+      navigator.clipboard.writeText(mdx);
+      vscode.postMessage({
+        action: "show-info",
+        data: "MDX code is copied.",
+      } as Web2Ext.ShowMsg);
+    };
+    return { mdx, copyMdx };
+  }, [data]);
+
   return (
     <div>
       <Handle
@@ -197,6 +201,10 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
                 data.isCodeRangeEditing ? "text-red scale-125" : "text-gray-500"
               )}
               onClick={onCodeRangeEditClick}
+            />
+            <BiCopy
+              className="mr-5 cursor-auto text-gray-500 hover:text-gray-900 hover:scale-125"
+              onClick={copyMdx}
             />
 
             <div className="flex align-baseline px">

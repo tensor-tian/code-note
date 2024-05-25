@@ -118,7 +118,7 @@ function codeStr({
         markLines.push(
           inlineComment(
             ext,
-            `mark(${lineCount}[${mRange.start.character + 1}:${
+            `mark(${i - startLine + 1}[${mRange.start.character + 1}:${
               mRange.end.character
             }])`
           )

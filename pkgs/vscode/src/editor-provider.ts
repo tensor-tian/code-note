@@ -239,7 +239,6 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         <link href="${styleUri}" rel="stylesheet" />
       </head>
       <body>
-        <h1>Loading file...</h1>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
       </body>

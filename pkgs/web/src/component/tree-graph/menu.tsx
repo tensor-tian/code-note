@@ -1,18 +1,10 @@
-import { Ext2Web, Web2Ext } from "types";
+import { Ext2Web, Note, Web2Ext } from "types";
 import { Panel, useStore } from "reactflow";
 import { isVscode, nanoid, vscode } from "../../utils";
-import Input from "@mui/base/Input";
-import {
-  selectDebug,
-  selectMenuState,
-  selectNoteTitle,
-  useTreeNoteStore,
-} from "./store";
+import { selectMenuState, useTreeNoteStore } from "./store";
 import { useSpring, animated } from "@react-spring/web";
-import type { AnimationResult, SpringValue } from "@react-spring/web";
 import MDX from "../mdx";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import cls from "classnames";
+import { useCallback, useEffect, useMemo, useState, ChangeEvent } from "react";
 import {
   VSCodeOption,
   VSCodeDropdown,
@@ -97,7 +89,8 @@ function Menu({ addBlock }: Props) {
     addBlock({ action: "add-next", data: { ...block, id: nanoid() } });
   }, [addBlock]);
 
-  const { setKV, toggleGroup, deleteEdge, deleteNode } = useTreeNoteStore();
+  const { resetNote, setKV, toggleGroup, deleteEdge, deleteNode } =
+    useTreeNoteStore();
   const {
     id,
     text,
@@ -174,6 +167,18 @@ function Menu({ addBlock }: Props) {
       </>
     ),
     [onSettingsChange, settings.W, settings.X, settings.Y]
+  );
+
+  const openFile = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      console.log("receive files:", e.target);
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      const note = JSON.parse(text) as Note;
+      resetNote(note);
+    },
+    [resetNote]
   );
 
   return (

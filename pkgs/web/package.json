@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@code-hike-local/mdx": "workspace:*",
     "@mdx-js/mdx": "2.3.0",
     "@mui/base": "5.0.0-beta.40",
     "@react-spring/web": "^9.7.3",
