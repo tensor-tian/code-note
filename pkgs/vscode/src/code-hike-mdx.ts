@@ -105,20 +105,22 @@ function codeStr({
   const origCodeLines = doc
     .getText(new vscode.Range(codeStartPos, codeEndPos))
     .split("\n");
+  const markLines = new Array<string>();
   const codeLines = new Array<string>();
   const startLine = codeRanges[0].start.line;
   let iMark = 0;
-  let count = 0;
+  let lineCount = 0;
   let mRange = markRanges[iMark];
   for (const range of codeRanges) {
-    count += range.end.line - range.start.line + 1;
     for (let i = range.start.line; i <= range.end.line; i++) {
-      // only support one line mark
+      lineCount++;
       while (mRange && mRange.start.line === i) {
-        codeLines.push(
+        markLines.push(
           inlineComment(
             ext,
-            `mark[${mRange.start.character + 1}:${mRange.end.character}]`
+            `mark(${lineCount}[${mRange.start.character + 1}:${
+              mRange.end.character
+            }])`
           )
         );
         iMark++;
@@ -138,16 +140,16 @@ function codeStr({
   const focus = focusRanges.map((range) => rangeToStr(doc, range)).join(",");
   return {
     code: `\`\`\`${ext} ${filename} lineNums=${lineNums} focus=${focus} 
-${codeLines.join("\n")}
+${markLines.join("\n") + "\n" + codeLines.join("\n")}
 \`\`\``,
-    count,
+    count: lineCount,
   };
 }
 
 function rangeToStr(doc: vscode.TextDocument, range: vscode.Range): string {
   const { start, end } = range;
   if (start.line === end.line) {
-    return `${start.line + 1}[${start.character + 1}:${end.character}])`;
+    return `${start.line + 1}[${start.character + 1}:${end.character}]`;
   }
   const firstLine = new vscode.Range(
     start,
@@ -182,11 +184,6 @@ function inlineComment(ext: string, text: string): string {
     case "py":
     case "sh":
       return "# " + text;
-    case "html":
-      return "<!-- " + text + "-->";
-    case "jsx":
-    case "tsx":
-      return "{/* " + text + " */}";
     default:
       return "// " + text;
   }
