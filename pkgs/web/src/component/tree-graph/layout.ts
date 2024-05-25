@@ -1,11 +1,12 @@
 import type { CodeNode, Edge, GroupNode, Node } from "types";
 
-export const CODE_SIZE = {
-  X: 50,
-  Y: 46,
-  W: 600,
-  H: 58,
+export type TreeGraphSettings = {
+  X: number;
+  Y: number;
+  W: number;
+  H: number;
 };
+
 export const VIEWPORT = {
   x: 0,
   y: 0,
@@ -32,7 +33,11 @@ class TreeLayout {
   nodeMap: Record<string, Node>;
   layoutMap = new Map<string, NodeLayout>();
 
-  constructor(nodeMap: Record<string, Node>, edges: Edge[]) {
+  constructor(
+    nodeMap: Record<string, Node>,
+    edges: Edge[],
+    private settings: TreeGraphSettings
+  ) {
     this.nodeMap = nodeMap;
     edges.forEach((e) => {
       this.edgeMap.set(e.sourceHandle!, e).set(e.targetHandle!, e);
@@ -91,12 +96,12 @@ class TreeLayout {
     }
     const bottom = this.sizeOf(n, this.bottom);
     if (bottom) {
-      sz.treeH += bottom.treeH + CODE_SIZE.Y;
+      sz.treeH += bottom.treeH + this.settings.Y;
     }
 
     sz.treeW = sz.w;
     if (right) {
-      sz.treeW += right.treeW + CODE_SIZE.X;
+      sz.treeW += right.treeW + this.settings.X;
     }
     if (bottom && bottom.treeW > sz.treeW) {
       sz.treeW = bottom.treeW;
@@ -112,10 +117,11 @@ class TreeLayout {
     const left = this.sizeOf(n, this.left);
     const topRight = this.sizeOf(n, this.topRight);
 
-    sz.x = top?.x || (left ? left!.x + left!.w : 0) + CODE_SIZE.X;
+    sz.x = top?.x || (left ? left!.x + left!.w : 0) + this.settings.X;
     sz.y =
       left?.y ||
-      (top ? top!.y + Math.max(topRight?.treeH || 0, top.h) : 50) + CODE_SIZE.Y;
+      (top ? top!.y + Math.max(topRight?.treeH || 0, top.h) : 50) +
+        this.settings.Y;
   };
 
   private visit(
@@ -185,7 +191,7 @@ class TreeLayout {
     gsz.x = x - 10;
     gsz.y = yFirst - 28; // -10-16-2
     gsz.w = w + 20;
-    gsz.h = yLast - yFirst + (hLast || CODE_SIZE.H) + 38; // 10 + 10 + 16 + 4
+    gsz.h = yLast - yFirst + (hLast || this.settings.H) + 38; // 10 + 10 + 16 + 4
 
     chain.forEach((id) => {
       const sz = this.layoutMap.get(id);
@@ -210,8 +216,8 @@ class TreeLayout {
       this.layoutMap.set(n.id, {
         x: UNSET_NUMBER,
         y: UNSET_NUMBER,
-        w: n.width || CODE_SIZE.W,
-        h: n.height || CODE_SIZE.H,
+        w: n.width || this.settings.W,
+        h: n.height || this.settings.H,
         treeH: UNSET_NUMBER,
         treeW: UNSET_NUMBER,
       });
@@ -276,8 +282,12 @@ export function isGroupNode(n: Node | undefined): n is GroupNode {
   return n?.data.type === "Scrolly";
 }
 
-export function layout(nodeMap: Record<string, Node>, edges: Edge[]) {
-  return new TreeLayout(nodeMap, edges).layout();
+export function layout(
+  nodeMap: Record<string, Node>,
+  edges: Edge[],
+  options: TreeGraphSettings
+) {
+  return new TreeLayout(nodeMap, edges, options).layout();
 }
 
 export function hasCycle(edges: Edge[]): boolean {

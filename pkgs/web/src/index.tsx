@@ -4,11 +4,7 @@ import "./index.css";
 import Graph from "./component/graph";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import TimeAgo from "javascript-time-ago";
 import reportWebVitals from "./reportWebVitals";
-import zh from "javascript-time-ago/locale/zh";
-
-TimeAgo.addDefaultLocale(zh);
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement

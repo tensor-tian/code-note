@@ -13,19 +13,19 @@ const CodeEdge = (props: EdgeProps) => {
     if (isActive) {
       return {
         stroke: "#1a202c",
-        strokeWidth: 2,
+        strokeWidth: 4,
         ...style,
       };
     } else {
       if (isSelected) {
         return {
-          stroke: "#1a202c",
+          stroke: "#63b3ed",
           strokeWidth: 2,
           ...style,
         };
       }
       return {
-        stroke: "#cbd5e0",
+        stroke: "#1a202c",
         strokeWidth: 1,
         ...style,
       };

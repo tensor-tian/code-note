@@ -1,28 +1,24 @@
 import { EdgeLabelRenderer, useNodes } from "reactflow";
-import {
-  selectActiveNodeId,
-  selectSelectedNodes,
-  useTreeNoteStore,
-} from "./store";
+import { selectNodeInspectorState, useTreeNoteStore } from "./store";
 
-import { CODE_SIZE } from "./layout";
 import { Node } from "types";
 
 export default function NodeInspector() {
   const nodes: Node[] = useNodes();
 
-  const selectedNodes = new Set(useTreeNoteStore(selectSelectedNodes));
-  const activeNodeId = useTreeNoteStore(selectActiveNodeId);
+  const { selectedNodes, activeNodeId, settings } = useTreeNoteStore(
+    selectNodeInspectorState
+  );
   return (
     <EdgeLabelRenderer>
       <div className="react-flow__devtools-nodeinspector">
         {nodes.map((node) => {
           const x =
-            (node.positionAbsolute?.x || 0) + (node.width || CODE_SIZE.W) / 2;
+            (node.positionAbsolute?.x || 0) + (node.width || settings.W) / 2;
           const y = node.positionAbsolute?.y || 0;
-          const width = (node.width || CODE_SIZE.W) / 2 || 0;
+          const width = (node.width || settings.W) / 2 || 0;
           const height = node.height || 0;
-          const selected = selectedNodes.has(node.id);
+          const selected = selectedNodes.includes(node.id);
           const isActive = activeNodeId === node.id;
 
           return (

@@ -1,14 +1,27 @@
 import { Ext2Web, Web2Ext } from "types";
 import { Panel, useStore } from "reactflow";
 import { isVscode, nanoid, vscode } from "../../utils";
-import { selectDebug, selectNoteTitle, useTreeNoteStore } from "./store";
-
+import Input from "@mui/base/Input";
+import {
+  selectDebug,
+  selectMenuState,
+  selectNoteTitle,
+  useTreeNoteStore,
+} from "./store";
+import { useSpring, animated } from "@react-spring/web";
+import type { AnimationResult, SpringValue } from "@react-spring/web";
 import MDX from "../mdx";
-import { useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import cls from "classnames";
+import {
+  VSCodeOption,
+  VSCodeDropdown,
+  VSCodeButton,
+} from "@vscode/webview-ui-toolkit/react";
 
 const block: Ext2Web.AddCode["data"] = {
   type: "Code",
-  code: `\`\`\`ts src/dispose.ts lineNums=18:32 focus=22[1:32],23:25,26[1:15]
+  code: `\`\`\`ts src/dispose.ts lineNums=18:33 focus=22[1:32],23:25,26[1:15],33
 if (this._isDisposed) {
     return;
   }
@@ -25,6 +38,7 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   }
   return value;
 }
+* configuration for mermaid rendering and calls init for rendering the mermaid diagrams on the
 \`\`\`
 `,
   rowCount: 15,
@@ -49,7 +63,7 @@ protected _register<T extends vscode.Disposable>(value: T): T {
 
   #### h4
   Use \`git status\` to list all new or modified files that haven't yet been committed.
-
+012345667890123456789012345667890123456789012345667890123456789012345667890123456789012345667890123456789
 
 - George Washington
 * John Adams
@@ -84,7 +98,13 @@ function Menu({ addBlock }: Props) {
   }, [addBlock]);
 
   const { setKV, toggleGroup, deleteEdge, deleteNode } = useTreeNoteStore();
-  const { id, text, type: typ } = useTreeNoteStore(selectNoteTitle);
+  const {
+    id,
+    text,
+    type: typ,
+    settings,
+    debug,
+  } = useTreeNoteStore(selectMenuState);
 
   const viewport = useStore(
     (s) =>
@@ -92,8 +112,6 @@ function Menu({ addBlock }: Props) {
         2
       )}, zoom: ${s.transform[2].toFixed(2)}`
   );
-  const debug = useTreeNoteStore(selectDebug);
-
   const startEdit = useCallback(() => {
     vscode.postMessage({
       action: "start-text-editor",
@@ -105,50 +123,129 @@ function Menu({ addBlock }: Props) {
     setKV("debug", !debug);
   }, [debug, setKV]);
 
+  const [showForm, setShowForm] = useState(false);
+
+  const toggleForm = useCallback(() => {
+    setShowForm(!showForm);
+  }, [showForm]);
+
+  const formStyle = useSpring({
+    height: showForm ? "auto" : 0,
+    opacity: showForm ? 1 : 0,
+  });
+  const onSettingsChange = useCallback(
+    (key: string) =>
+      function (e: React.ChangeEvent<HTMLSelectElement>) {
+        setKV("settings", {
+          ...settings,
+          [key]: +e.target.value,
+        });
+      },
+    [setKV, settings]
+  );
+  const list = useMemo(
+    () => (
+      <>
+        {[
+          {
+            id: "settings-w",
+            label: "Max Width:",
+            value: settings.W.toString(),
+            options: ["500", "600", "700", "800", "900"],
+            onChange: onSettingsChange("W"),
+          },
+          {
+            id: "settings-y",
+            label: "Vertical Gap:",
+            value: settings.Y.toString(),
+            options: ["40", "50", "60", "70", "80"],
+            onChange: onSettingsChange("Y"),
+          },
+          {
+            id: "settings-x",
+            label: "Horizontal Gap:",
+            value: settings.X.toString(),
+            options: ["60", "80", "100", "120", "140"],
+            onChange: onSettingsChange("X"),
+          },
+        ].map((props) => (
+          <Dropdown {...props} />
+        ))}
+      </>
+    ),
+    [onSettingsChange, settings.W, settings.X, settings.Y]
+  );
+
   return (
     <>
-      <Panel position="top-left" className="border ">
-        <div className="px-3">
+      <Panel position="top-left" className="border px-4 py-4">
+        <div className="px-1">
           <MDX mdx={text} />
         </div>
-        <div className="flex justify-between align-middle h-10">
-          <button className="btn-gray h-6 mt-1" onClick={startEdit}>
-            Edit
-          </button>
+        <div className="flex justify-between align-middle ">
+          <VSCodeButton onClick={startEdit}>Edit</VSCodeButton>
           {!isVscode && (
-            <button className="btn-gary h-6 mt-1" onClick={addDetail}>
-              Add Detail
-            </button>
+            <VSCodeButton onClick={addDetail}>Add Detail</VSCodeButton>
           )}
-          {!isVscode && (
-            <button className="btn-gray h-6 mt-1" onClick={addNext}>
-              Add Next
-            </button>
-          )}
-          {
-            <button className="btn-gray h-6 mt-1" onClick={toggleDebug}>
-              Debug
-            </button>
-          }
-          <button className="btn-gray h-6 mt-1" onClick={deleteEdge}>
+          {!isVscode && <VSCodeButton onClick={addNext}>Add Next</VSCodeButton>}
+          {<VSCodeButton onClick={toggleDebug}>Debug</VSCodeButton>}
+          <VSCodeButton onClick={deleteEdge}>
             <s>Edge</s>
-          </button>
-          <button className="btn-gray h-6 mt-1" onClick={deleteNode}>
+          </VSCodeButton>
+          <VSCodeButton onClick={deleteNode}>
             <s>Node</s>
-          </button>
-          <button className="btn-gray h-6 mt-1" onClick={toggleGroup}>
-            ScrollyBlock
-          </button>
-
+          </VSCodeButton>
+          <VSCodeButton onClick={toggleGroup}>ScrollyBlock</VSCodeButton>
+          <VSCodeButton onClick={toggleForm}>Edit Settings</VSCodeButton>
           {debug && (
             <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray rounded border px-3  bg-gray-300">
               {viewport}
             </pre>
           )}
         </div>
+        <animated.div className="flex justify-between  pt-4" style={formStyle}>
+          {list}
+        </animated.div>
       </Panel>
     </>
   );
 }
 
 export default Menu;
+
+type DropdownProps = {
+  id: string;
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+} & React.HTMLAttributes<HTMLSelectElement>;
+
+function Dropdown({
+  id,
+  label,
+  options,
+  value,
+  onChange,
+  ...rest
+}: DropdownProps) {
+  return (
+    <div key={id}>
+      <label htmlFor={id} className="text-xs px-6">
+        {label}
+      </label>
+      {/* @ts-ignore */}
+      <VSCodeDropdown id={id} onChange={onChange} {...rest}>
+        {options.map((val) => (
+          <VSCodeOption
+            value={val}
+            selected={val === value}
+            className="py-1 text-xs"
+          >
+            {val}
+          </VSCodeOption>
+        ))}
+      </VSCodeDropdown>
+    </div>
+  );
+}

@@ -1,4 +1,4 @@
-import { CODE_SIZE, hasCycle, isCodeNode, isGroupNode } from "./layout";
+import { hasCycle, isCodeNode, isGroupNode, TreeGraphSettings } from "./layout";
 import {
   CodeBlock,
   CodeNode,
@@ -32,6 +32,7 @@ namespace TreeNote {
     rootIds: string[];
     handshake: boolean;
     debug: boolean;
+    settings: TreeGraphSettings;
   }
   export interface Actions {
     resetNote: (state: Note) => void;
@@ -74,6 +75,12 @@ const initialData: TreeNote.Store = {
   rootIds: [],
   handshake: false,
   debug: false,
+  settings: {
+    X: 50,
+    Y: 46,
+    W: 600,
+    H: 58,
+  },
 };
 
 export type { TreeNote };
@@ -103,7 +110,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           false,
           action
         );
-    };
+      };
 
       return {
         ...initialData,
@@ -116,10 +123,14 @@ export const useTreeNoteStore = create<TreeNote.State>(
             return acc;
           }, {} as Record<string, Node>);
           set(note);
-          const { activeNodeId, nodeMap, edges } = get();
+          const { activeNodeId, nodeMap, edges, settings } = get();
           if (!activeNodeId) {
             if (Object.keys(nodeMap).length === 0) return;
-            const { nodeMap: nextNodeMap, rootIds } = layout(nodeMap, edges);
+            const { nodeMap: nextNodeMap, rootIds } = layout(
+              nodeMap,
+              edges,
+              settings
+            );
             set({
               nodeMap: nextNodeMap,
               rootIds,
@@ -150,7 +161,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         onNodeChange: (changes) => {
           console.log("on node change:", changes);
           if (changes.every((chg) => chg.type === "select")) return;
-          const { nodeMap, edges, rootIds } = get();
+          const { nodeMap, edges, rootIds, settings } = get();
           const nextNodes = applyNodeChanges(changes, Object.values(nodeMap));
           const needLayout = changes.find((change) =>
             ["dimensions", "remove", "add"].includes(change.type)
@@ -166,7 +177,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
           if (needLayout) {
             ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(
               nextNodeMap,
-              edges
+              edges,
+              settings
             ));
           }
           set(
@@ -186,7 +198,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         onConnect: (conn) => {
           const { source, target, sourceHandle, targetHandle } = conn;
           if (source === target) return;
-          const { edges, nodeMap } = get();
+          const { edges, nodeMap, settings } = get();
           const isX =
             sourceHandle?.endsWith("right") && targetHandle?.endsWith("left");
           const isY =
@@ -208,7 +220,11 @@ export const useTreeNoteStore = create<TreeNote.State>(
             console.log("has cycle", nextEdges);
             return;
           }
-          const { rootIds, nodeMap: nextNodeMap } = layout(nodeMap, nextEdges);
+          const { rootIds, nodeMap: nextNodeMap } = layout(
+            nodeMap,
+            nextEdges,
+            settings
+          );
           set(
             {
               nodeMap: nextNodeMap,
@@ -220,7 +236,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
         },
         addCodeNode: ({ action, data }) => {
-          const { nodeMap, edges, activeNodeId } = get();
+          const { nodeMap, edges, activeNodeId, settings } = get();
           const nodes = Object.values(nodeMap);
           console.log("add code node:", activeNodeId, nodes.length);
           // empty tree flow graph
@@ -228,7 +244,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
           // add node
           const activeNode = nodeMap[activeNodeId];
-          const node = newNode({ data, action }, activeNode);
+          const node = newNode({ data, action }, activeNode, settings);
           const nextNodeMap = { ...nodeMap, [node.id]: node };
 
           if (!activeNode) {
@@ -318,7 +334,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
         },
         toggleGroup: () => {
-          const { selectedNodes, nodeMap, edges, rootIds } = get();
+          const { selectedNodes, nodeMap, edges, rootIds, settings } = get();
           if (selectedNodes.length === 1) {
             // remove group node
             const id = selectedNodes[0];
@@ -371,7 +387,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
             let nextRootIds = rootIds;
             ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(
               nextNodeMap,
-              edges
+              edges,
+              settings
             ));
             set(
               {
@@ -387,9 +404,13 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
         },
         deleteEdge: () => {
-          const { edges, selectedEdge, nodeMap } = get();
+          const { edges, selectedEdge, nodeMap, settings } = get();
           let nextEdges = edges.filter((e) => e.id !== selectedEdge);
-          const { rootIds, nodeMap: nextNodeMap } = layout(nodeMap, nextEdges);
+          const { rootIds, nodeMap: nextNodeMap } = layout(
+            nodeMap,
+            nextEdges,
+            settings
+          );
           set(
             {
               edges: nextEdges,
@@ -401,7 +422,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
         },
         deleteNode: () => {
-          const { nodeMap, selectedNodes, edges, rootIds } = get();
+          const { nodeMap, selectedNodes, edges, rootIds, settings } = get();
           if (selectedNodes.length !== 1) return;
           const node = nodeMap[selectedNodes[0]];
           if (!node) return;
@@ -434,7 +455,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
           let nextRootIds = rootIds;
           ({ rootIds: nextRootIds, nodeMap: nextNodeMap } = layout(
             nextNodeMap,
-            nextEdges
+            nextEdges,
+            settings
           ));
           set(
             {
@@ -461,6 +483,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           text: state.text,
           nodeMap: state.nodeMap,
           edges: state.edges,
+          settings: state.settings,
         };
       },
       storage: {
@@ -495,21 +518,19 @@ export function newEdge(
 
 export function newNode(
   { action, data: block }: Ext2Web.AddCode,
-  activeNode: Node | undefined
+  activeNode: Node | undefined,
+  settings: TreeGraphSettings
 ) {
   let x = 0,
     y = 0;
   if (activeNode) {
     if (action === "add-detail") {
-      x =
-        activeNode.position.x + (activeNode.width || CODE_SIZE.W) + CODE_SIZE.X;
+      x = activeNode.position.x + (activeNode.width || settings.W) + settings.X;
       y = activeNode.position.y;
     } else if (action === "add-next") {
       x = activeNode.position.x;
       y =
-        activeNode.position.y +
-        (activeNode.height || CODE_SIZE.H) +
-        CODE_SIZE.Y;
+        activeNode.position.y + (activeNode.height || settings.H) + settings.Y;
     }
   }
   const node: Node = {
@@ -517,8 +538,8 @@ export function newNode(
     type: block.type,
     position: { x, y },
     data: block,
-    width: CODE_SIZE.W,
-    height: CODE_SIZE.H,
+    width: settings.W,
+    height: settings.H,
     deletable: false,
   };
   return node;
@@ -604,6 +625,26 @@ export const selectEdges = (state: Store) => state.edges;
 export const selectSelectedNodes = (state: Store) => state.selectedNodes;
 export const selectActiveEdgeId = (state: Store) => state.activeEdgeId;
 export const selectActiveNodeId = (state: Store) => state.activeNodeId;
+export const selectNodeInspectorState = (state: Store) => ({
+  selectedNodes: state.selectedNodes,
+  activeNodeId: state.activeNodeId,
+  settings: state.settings,
+});
+export const selectCodeBlockState = (state: Store) => ({
+  activeNodeId: state.activeNodeId,
+  selectedNodes: state.selectedNodes,
+  rootIds: state.rootIds,
+  width: state.settings.W,
+});
+export const selectWidthSetting = (state: Store) => state.settings.W;
+export const selectMenuState = (state: Store) => ({
+  id: state.id,
+  text: state.text,
+  type: state.type,
+  debug: state.debug,
+  settings: state.settings,
+});
+export const selectSettings = (state: Store) => state.settings;
 export const selectNoteTitle = (state: Store) => ({
   text: state.text,
   id: state.id,
@@ -664,5 +705,12 @@ export const selectGroupShowCode = (id: string) =>
 
 export const selectActiveEdge = createSelector(
   [selectEdges, selectActiveEdgeId],
+  (edges, id) => edges.find((e) => e.id === id)
+);
+
+export const selectSelectedEdgeId = (state: Store) => state.selectedEdge;
+
+export const selectSelectedEdge = createSelector(
+  [selectEdges, selectSelectedEdgeId],
   (edges, id) => edges.find((e) => e.id === id)
 );
