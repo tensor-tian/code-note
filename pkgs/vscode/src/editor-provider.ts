@@ -182,9 +182,9 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
               if (!note) return;
               webviewPanel.webview
                 .postMessage({
-                  action: "init-tree-note",
+                  action: "ext2web-init-tree-note",
                   data: note,
-                })
+                } as Ext2Web.Message)
                 .then(() =>
                   this.sendCachedTextChangeMsg(webviewKey, webviewPanel)
                 );
@@ -200,6 +200,17 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
           break;
         case "web2ext-stop-code-range-editor":
           this.highlight.stopCodeRangeEdit(message.data.id);
+          break;
+        case "web2ext-request-for-ids":
+          const { n, key } = message.data;
+          const ids: string[] = [];
+          for (let i = 0; i < n; i++) {
+            ids.push(this.store.getBlockId());
+          }
+          webviewPanel.webview.postMessage({
+            action: "ext2web-response-for-ids",
+            data: { ids, key },
+          } as Ext2Web.Message);
           break;
       }
     };

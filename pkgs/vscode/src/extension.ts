@@ -10,15 +10,6 @@ import { Store } from "./store";
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "vscode-note" is now active!');
 
-  // console.log("env", process.env);
-
-  // console.log(
-  //   "extension context:",
-  //   context.extensionPath,
-  //   context.extensionUri,
-  //   context.globalStorageUri.path
-  // );
-
   const store = new Store(context);
 
   const highlight = new Highlight(store);
