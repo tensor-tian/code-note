@@ -62,7 +62,7 @@ export class ReactPanel {
     this._panel.webview.onDidReceiveMessage(
       (event: Web2Ext.Message) => {
         switch (event.action) {
-          case "save-note":
+          case "web2ext-save-note":
             break;
         }
       },

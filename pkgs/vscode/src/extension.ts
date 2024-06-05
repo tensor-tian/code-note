@@ -48,12 +48,12 @@ export function activate(context: vscode.ExtensionContext) {
       highlight.removeAll();
     }),
     vscode.commands.registerCommand("vscode-note.add-detail", () => {
-      addBlock(editorProvider, highlight, "add-detail", store).catch(
+      addBlock(editorProvider, highlight, "ext2web-add-detail", store).catch(
         console.error
       );
     }),
     vscode.commands.registerCommand("vscode-note.add-next", () => {
-      addBlock(editorProvider, highlight, "add-next", store).catch(
+      addBlock(editorProvider, highlight, "ext2web-add-next", store).catch(
         console.error
       );
     })

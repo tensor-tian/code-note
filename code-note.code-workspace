@@ -21,6 +21,12 @@
   ],
   "settings": {
     "typescript.tsc.autoDetect": "off",
-    "cSpell.words": ["cnote", "nodeinspector", "pannable", "partialize"]
+    "cSpell.words": [
+      "cnote",
+      "nodeinspector",
+      "pannable",
+      "partialize",
+      "Scrollycoding"
+    ]
   }
 }

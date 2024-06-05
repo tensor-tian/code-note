@@ -200,6 +200,7 @@ export async function initCodeNote(title: string): Promise<Note | undefined> {
     await getActiveWorkspacePackageInfo();
   if (!pkgPath || !pkgName) return;
   return {
+    version: 2,
     id: await nanoid(),
     type: "TreeNote",
     text: `### ${title}`,

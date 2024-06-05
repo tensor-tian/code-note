@@ -155,19 +155,19 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       if (!webviewPanel) return;
       console.log("web to ext:", message);
       switch (message.action) {
-        case "show-info":
+        case "web2ext-show-info":
           vscode.window.showInformationMessage(message.data);
           break;
-        case "show-warn":
+        case "web2ext-show-warn":
           vscode.window.showWarningMessage(message.data);
           break;
-        case "show-error":
+        case "web2ext-show-error":
           vscode.window.showErrorMessage(message.data);
           break;
-        case "save-note":
+        case "web2ext-save-note":
           this.saveTextDocument(document, message.data);
           break;
-        case "ask-init-tree-note":
+        case "web2ext-ask-init-tree-note":
           {
             let note: Note | undefined;
             const getNote = async () => {
@@ -191,14 +191,14 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
             });
           }
           break;
-        case "start-text-editor":
+        case "web2ext-start-text-editor":
           this.startEditText(message.data, webviewKey);
           break;
-        case "start-code-range-editor":
+        case "web2ext-start-code-range-editor":
           const getWebviewPanel = () => this.getWebviewPanel(webviewKey);
           this.highlight.startCodeRangeEdit(message.data, getWebviewPanel);
           break;
-        case "stop-code-range-editor":
+        case "web2ext-stop-code-range-editor":
           this.highlight.stopCodeRangeEdit(message.data.id);
           break;
       }
@@ -294,7 +294,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     const text = event.document.getText();
     const webviewPanel = this.getWebViewByVDoc(uri);
     const message = {
-      action: "text-change",
+      action: "ext2web-text-change",
       data: { id, type: typ, text },
     } as Ext2Web.TextChange;
     if (webviewPanel?.visible) {

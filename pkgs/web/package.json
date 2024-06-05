@@ -32,7 +32,6 @@
     "reselect": "^5.1.0",
     "types": "0.0.1",
     "web-vitals": "^2.1.4",
-    "whatwg-fetch": "^3.6.20",
     "zustand": "^4.4.1"
   },
   "scripts": {
@@ -49,6 +48,9 @@
       "react-app",
       "react-app/jest"
     ]
+  },
+  "prettier": {
+    "printWidth": 120
   },
   "browserslist": {
     "production": [

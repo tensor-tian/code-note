@@ -227,7 +227,7 @@ export class Highlight {
     }
     this._editingMap.delete(filePath);
     this._getWebviewPanel?.()?.webview.postMessage({
-      action: "code-range-edit-stopped",
+      action: "ext2web-code-range-edit-stopped",
       data: { id },
     } as Ext2Web.CodeRangeEditStopped);
   }
@@ -417,7 +417,7 @@ export class Highlight {
     if (!code || !rowCount) return;
     const webview = this._getWebviewPanel?.()?.webview;
     webview?.postMessage({
-      action: "code-range-change",
+      action: "ext2web-code-range-change",
       data: {
         id,
         code,
