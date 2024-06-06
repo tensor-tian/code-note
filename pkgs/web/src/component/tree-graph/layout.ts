@@ -178,6 +178,8 @@ class TreeLayout {
         const csz = this.layoutMap.get(_id)!;
         if (i === 0) {
           sz.h += csz.treeH;
+        } else if (i === chain.length - 1) {
+          sz.h += csz.h - csz.treeH;
         }
         sz.w = Math.max(csz.w + 2 * GroupPadding.X, sz.w);
       }

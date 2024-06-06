@@ -1,6 +1,6 @@
 import { getHidden, hasCycle, isCodeNode, isGroupNode, TreeGraphSettings } from "./layout";
 import { CodeBlock, CodeNode, Edge, Ext2Web, GroupNode, Node, Note, Web2Ext } from "types";
-import { EdgeChange, NodeChange, OnConnect, addEdge, applyEdgeChanges, applyNodeChanges } from "reactflow";
+import { EdgeChange, NodeChange, OnConnect, addEdge, applyEdgeChanges, applyNodeChanges, Connection } from "reactflow";
 import { devtools, persist } from "zustand/middleware";
 import { isVscode, nanoid, saveNote, vscode, vscodeMessage } from "../../utils";
 
@@ -204,7 +204,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
           let nextEdges = inEdge || outEdge ? edges.filter((e) => e.id !== inEdge?.id && e.id !== outEdge?.id) : edges;
 
-          nextEdges = addEdge(conn, nextEdges);
+          nextEdges = addEdge(newEdgeFromConn(conn), nextEdges);
 
           if (hasCycle(nextEdges)) {
             console.log("has cycle", nextEdges);
@@ -671,6 +671,20 @@ export function newEdge(source: string, target: string, action: "ext2web-add-det
     animated: true,
     sourceHandle: action === "ext2web-add-detail" ? `${source}-right` : `${source}-bottom`,
     targetHandle: action === "ext2web-add-detail" ? `${target}-left` : `${target}-top`,
+    data: { id },
+  };
+}
+
+export function newEdgeFromConn(conn: Connection): Edge {
+  const id = nanoid();
+  return {
+    id,
+    type: "CodeEdge",
+    source: conn.source!,
+    target: conn.target!,
+    animated: true,
+    sourceHandle: conn.sourceHandle!,
+    targetHandle: conn.targetHandle!,
     data: { id },
   };
 }
