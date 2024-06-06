@@ -1,9 +1,13 @@
-export interface WebviewApi<StateType> {
-  postMessage(message: unknown): void;
-  getState(): StateType | undefined;
-  setState<T extends StateType | undefined>(newState: T): T;
-}
+// export interface WebviewApi<StateType> {
+//   postMessage(message: unknown): void;
+//   getState(): StateType | undefined;
+//   setState<T extends StateType | undefined>(newState: T): T;
+// }
+
+// declare global {
+//   function acquireVsCodeApi<StateType = unknown>(): WebviewApi<StateType>;
+// }
 
 declare global {
-  function acquireVsCodeApi<StateType = unknown>(): WebviewApi<StateType>;
+  function postMessageToCodeNoteEditor(action: string, payload: any): void;
 }

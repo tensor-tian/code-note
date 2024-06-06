@@ -1,23 +1,17 @@
-import { VIEWPORT, isCodeNode } from "./layout";
+import { VIEWPORT, isGroupNode } from "./layout";
 import CodeEdge, { useEdge } from "./edge";
-import type { Ext2Web, Node } from "types";
-import ReactFlow, {
-  Controls,
-  EdgeTypes,
-  MiniMap,
-  NodeTypes,
-  useReactFlow,
-} from "reactflow";
+import type { Node, Web2Ext } from "types";
+import ReactFlow, { Controls, EdgeTypes, MiniMap, NodeTypes, useReactFlow } from "reactflow";
 import {
-  TreeNote,
   selectActiveNodeAndGroup,
   selectDebug,
   selectNodes,
   selectSettings,
   selectRootIds,
   selectSelectedNodes,
-  useTreeNoteStore,
-} from "./store";
+  selectTreeFlowState,
+} from "./selector";
+import { useTreeNoteStore, TreeNote } from "./store";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import Code from "./code";
@@ -43,26 +37,18 @@ const DEFAULT_EDGE_OPTIONS = {
 function TreeFlow() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { setKV, onNodeChange, addCodeNode, onConnect } = useTreeNoteStore();
-  const selectedNodes = useTreeNoteStore(selectSelectedNodes);
-  const rootIds = useTreeNoteStore(selectRootIds);
+  const { rootIds, selectedNodes, debug, handshake } = useTreeNoteStore(selectTreeFlowState);
   const nodes = useTreeNoteStore(selectNodes);
-  const debug = useTreeNoteStore(selectDebug);
 
   // edge operation
-  const {
-    edges,
-    onEdgeClick,
-    onEdgeMouseEnter,
-    onEdgeMouseLeave,
-    onEdgeChange,
-  } = useEdge();
+  const { edges, onEdgeClick, onEdgeMouseEnter, onEdgeMouseLeave, onEdgeChange } = useEdge();
 
   // arrow key to focus node
   useNavKeys(edges);
   // auto focus node by reset viewport
   usePanToActiveNode(containerRef, setKV, nodes.length);
-  // init note and handle message from extension
-  useExt2WebMessage();
+  // get init note from extension
+  useInitNote(handshake, setKV);
 
   // minimap
   const nodeClassName = useCallback(
@@ -105,11 +91,7 @@ function TreeFlow() {
         zoomOnDoubleClick={false}
       >
         <Controls />
-        <MiniMap
-          pannable
-          nodeClassName={nodeClassName}
-          nodeComponent={MiniMapNode}
-        />
+        <MiniMap pannable nodeClassName={nodeClassName} nodeComponent={MiniMapNode} />
         <Menu addBlock={addCodeNode} />
         {debug && <NodeInspector />}
       </ReactFlow>
@@ -120,15 +102,10 @@ export default TreeFlow;
 
 function usePanToActiveNode(
   ref: React.RefObject<HTMLDivElement>,
-  setKV: <T extends keyof TreeNote.Store>(
-    key: T,
-    val: TreeNote.Store[T]
-  ) => void,
+  setKV: <T extends keyof TreeNote.Store>(key: T, val: TreeNote.Store[T]) => void,
   nLen: number
 ) {
-  const { activeNode, activeGroup, activeMark } = useTreeNoteStore(
-    selectActiveNodeAndGroup
-  );
+  const { activeNode, activeGroup, activeMark } = useTreeNoteStore(selectActiveNodeAndGroup);
   const settings = useTreeNoteStore(selectSettings);
   const { setViewport } = useReactFlow();
   const [mark, setMark] = useState<number>(activeMark);
@@ -136,7 +113,7 @@ function usePanToActiveNode(
     if (mark === activeMark) return;
     console.log("pan to active.");
     if (!ref.current) return;
-    if (!isCodeNode(activeNode)) return;
+    if (isGroupNode(activeNode) && !activeNode.data.renderAsGroup) return;
 
     let { x: xActive, y: yActive } = activeNode.position;
     if (activeGroup) {
@@ -157,78 +134,19 @@ function usePanToActiveNode(
     if (nLen === 1) {
       setTimeout(() => setKV("panToActiveMark", 0), 800);
     }
-  }, [
-    activeGroup,
-    activeMark,
-    activeNode,
-    setViewport,
-    mark,
-    setKV,
-    nLen,
-    ref,
-    settings.W,
-    settings.H,
-  ]);
+  }, [activeGroup, activeMark, activeNode, setViewport, mark, setKV, nLen, ref, settings.W, settings.H]);
 
   useEffect(() => {
     setMark(activeMark);
   }, [activeMark]);
 }
 
-function useExt2WebMessage() {
-  const {
-    handshake,
-    setKV,
-    resetNote,
-    addCodeNode,
-    updateNodeText,
-    updateNodeCodeRange,
-    stopNodeCodeRangeEditing,
-  } = useTreeNoteStore();
-  useEffect(() => {
-    const handler = (event: MessageEvent<Ext2Web.Message>) => {
-      const { action, data } = event.data;
-      console.log("ext to web:", { action, data });
-      switch (action) {
-        case "init-tree-note":
-          console.log("init tree note:", data);
-          resetNote(data);
-          break;
-        case "text-change":
-          if (data.type === "Code") {
-            updateNodeText(data.id, data.text);
-          } else if (data.type === "TreeNote") {
-            setKV("text", data.text);
-          }
-          break;
-        case "add-detail":
-        case "add-next":
-          addCodeNode(event.data);
-          break;
-        case "code-range-change":
-          updateNodeCodeRange(data);
-          break;
-        case "code-range-edit-stopped":
-          stopNodeCodeRangeEditing(data.id);
-          break;
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => {
-      window.removeEventListener("message", handler);
-    };
-  }, [
-    addCodeNode,
-    resetNote,
-    setKV,
-    stopNodeCodeRangeEditing,
-    updateNodeCodeRange,
-    updateNodeText,
-  ]);
+type SetKVFn = <T extends keyof TreeNote.Store>(key: T, val: TreeNote.Store[T]) => void;
 
+function useInitNote(handshake: boolean, setKV: SetKVFn) {
   useEffect(() => {
     if (!handshake) {
-      vscode.postMessage({ action: "ask-init-tree-note" });
+      vscode.postMessage({ action: "web2ext-ask-init-tree-note", data: "" } as Web2Ext.AskInitTreeNote);
       setKV("handshake", true);
     }
   }, [handshake, setKV]);

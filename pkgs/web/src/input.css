@@ -215,3 +215,9 @@ strike:after {
 .preview-container li > ol {
   @apply ps-5;
 }
+.ch-scrollycoding-step-content {
+  @apply px-2;
+}
+.ch-scrollycoding-step-content[data-selected] {
+  @apply !border-gray-600 !rounded-sm border-l-white shadow-[rgba(0,0,15,0.6)_3px_5px_4px_0px];
+}

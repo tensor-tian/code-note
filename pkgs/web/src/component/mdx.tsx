@@ -11,7 +11,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import type { MDXContent } from "mdx/types";
 import { remarkCodeHike } from "@code-hike-local/mdx";
 import remarkGfm from "remark-gfm";
-import { selectWidthSetting, useTreeNoteStore } from "./tree-graph/store";
+
 import cls from "classnames";
 
 async function compileAndRun(input: string) {
@@ -90,10 +90,7 @@ function ErrorFallback({ error }: { error: string }) {
   );
 }
 
-const InnerPreview: FC<{ input: string; width?: number }> = ({
-  input,
-  width,
-}) => {
+const InnerPreview: FC<{ input: string; width?: number }> = ({ input, width }) => {
   const { Component, error, loading } = useInput(input, width);
   // console.log("error:", error, typeof Component);
   const style = typeof width === "number" ? { maxWidth: width } : {};

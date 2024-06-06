@@ -19,7 +19,7 @@ const MiniMapNode = ({
   const isRoot = className.includes("root");
   const isSelected = className.includes("selected");
   const isGroup = className.includes("group");
-  const fill = isGroup ? "#ffffffff" : isSelected ? "#60a5fa" : "#e2e8f0";
+  const fill = isGroup ? "#ffffff80" : isSelected ? "#60a5fa80" : "#e2e8f080";
   const stroke = isGroup ? "#000" : "#fff";
   const strokeWidth = isGroup ? 10 : 0;
   return (
@@ -69,14 +69,7 @@ function Root({ x, y, width, height }: TextProps) {
     }
   }, [x, y, width, height]);
   return (
-    <svg
-      x={xText}
-      y={yText}
-      width={wText}
-      height={hText}
-      viewBox="0 0 211.4 71.201"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg x={xText} y={yText} width={wText} height={hText} viewBox="0 0 211.4 71.201" xmlns="http://www.w3.org/2000/svg">
       <g
         id="svgGroup"
         strokeLinecap="round"

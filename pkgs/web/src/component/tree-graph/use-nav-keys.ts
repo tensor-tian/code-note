@@ -1,4 +1,5 @@
-import { selectActiveNodeId, useTreeNoteStore } from "./store";
+import { useTreeNoteStore } from "./store";
+import { selectActiveNode } from "./selector";
 import { useCallback, useEffect, useRef } from "react";
 
 import { Edge } from "types";
@@ -26,18 +27,23 @@ function useKeyPress(keys: string | string[], handler: KeyboardHandler) {
 }
 
 export function useNavKeys(edges: Edge[]) {
-  const { activateNode } = useTreeNoteStore();
-  const activeId = useTreeNoteStore(selectActiveNodeId);
+  const { activateNode, toggleNodeSelection } = useTreeNoteStore();
+  const activeNode = useTreeNoteStore(selectActiveNode);
+  const activeId = activeNode?.id;
+  const parentId = activeNode?.parentId;
   const onKeyPress = useCallback(
     (event: KeyboardEvent) => {
       console.log(activeId, event);
-      if (!activeId) return;
+      if (!activateNode) return;
       switch (event.key) {
         case "ArrowLeft": {
           const edge = edges.find((e) => e.targetHandle === activeId + "-left");
           console.log("←", edge);
           if (edge) {
-            activateNode(edge.source);
+            activateNode(edge.source, edge);
+          } else if (parentId) {
+            const edge = edges.find((e) => e.targetHandle === parentId + "-left");
+            if (edge) activateNode(edge.source, edge);
           } else {
             const map = edges.reduce((acc, e) => {
               if (e.targetHandle) acc.set(e.targetHandle, e);
@@ -55,35 +61,45 @@ export function useNavKeys(edges: Edge[]) {
               return map.get(id + "-left")?.source;
             };
             const left = moveTopLeft(activeId);
-            if (left) activateNode(left);
+            if (left) activateNode(left, edge);
           }
           break;
         }
         case "ArrowRight": {
-          const edge = edges.find(
-            (e) => e.sourceHandle === activeId + "-right"
-          );
+          const edge = edges.find((e) => e.sourceHandle === activeId + "-right");
           console.log("→", edge);
-          if (edge) activateNode(edge.target);
+          if (edge) activateNode(edge.target, edge);
           break;
         }
         case "ArrowUp": {
           const edge = edges.find((e) => e.targetHandle === activeId + "-top");
           console.log("↑", edge);
-          if (edge) activateNode(edge.source);
+          if (edge) {
+            activateNode(edge.source, edge);
+          } else if (parentId) {
+            const edge = edges.find((e) => e.targetHandle === parentId + "-top");
+            if (edge) activateNode(edge.source, edge);
+          }
           break;
         }
         case "ArrowDown": {
-          const edge = edges.find(
-            (e) => e.sourceHandle === activeId + "-bottom"
-          );
+          const edge = edges.find((e) => e.sourceHandle === activeId + "-bottom");
           console.log("↓", edge);
-          if (edge) activateNode(edge.target);
+          if (edge) {
+            activateNode(edge.target, edge);
+          } else if (parentId) {
+            const edge = edges.find((e) => e.sourceHandle === parentId + "-bottom");
+            if (edge) activateNode(edge.target, edge);
+          }
+          break;
+        }
+        case "Enter": {
+          toggleNodeSelection(activeId);
           break;
         }
       }
     },
-    [activateNode, activeId, edges]
+    [activateNode, activeId, parentId, edges, toggleNodeSelection]
   );
-  useKeyPress(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"], onKeyPress);
+  useKeyPress(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter"], onKeyPress);
 }

@@ -46,13 +46,15 @@ export interface CodeBlock extends BaseBlock {
 export interface ScrollyCodeBlock extends BaseBlock {
   type: "Scrolly";
   chain: string[];
+  renderAsGroup: boolean; // add in version 2
+  stepIndex: number; // add in version 2
 }
 
 export interface EdgeData {
   id: string;
 }
 
-export interface Note {
+export interface NoteV1 {
   id: string;
   type: "TreeNote";
   text: string;
@@ -63,18 +65,24 @@ export interface Note {
   activeNodeId: string;
 }
 
+export interface NoteV2 extends NoteV1 {
+  version: 2;
+}
+
+export type Note = NoteV2;
+
 namespace Ext2Web {
   export type AddCodeData = CodeBlock;
   export type AddCode = {
-    action: "add-detail" | "add-next";
+    action: "ext2web-add-detail" | "ext2web-add-next";
     data: AddCodeData;
   };
   export type InitTreeNote = {
-    action: "init-tree-note";
+    action: "ext2web-init-tree-note";
     data: Note;
   };
   export type TextChange = {
-    action: "text-change";
+    action: "ext2web-text-change";
     data: {
       id: string;
       type: Note["type"] | Block["type"];
@@ -82,38 +90,46 @@ namespace Ext2Web {
     };
   };
   export type CodeRangeChange = {
-    action: "code-range-change";
+    action: "ext2web-code-range-change";
     data: Pick<CodeBlock, "id" | "ranges" | "code" | "rowCount">;
   };
   export type CodeRangeEditStopped = {
-    action: "code-range-edit-stopped";
+    action: "ext2web-code-range-edit-stopped";
     data: { id: string };
+  };
+  export type ResponseForIDs = {
+    action: "ext2web-response-for-ids";
+    data: {
+      ids: string[];
+      key: number;
+    };
   };
   export type Message =
     | AddCode
     | InitTreeNote
     | TextChange
     | CodeRangeChange
-    | CodeRangeEditStopped;
+    | CodeRangeEditStopped
+    | ResponseForIDs;
 }
 
 namespace Web2Ext {
   export type SaveNote = {
-    action: "save-note";
+    action: "web2ext-save-note";
     data: string;
   };
   export type ShowMsg = {
-    action: "show-info" | "show-warn" | "show-error";
+    action: "web2ext-show-info" | "web2ext-show-warn" | "web2ext-show-error";
     data: string;
   };
 
   export type AskInitTreeNote = {
-    action: "ask-init-tree-note";
+    action: "web2ext-ask-init-tree-note";
     data: "";
   };
 
   export type StartTextEditor = {
-    action: "start-text-editor";
+    action: "web2ext-start-text-editor";
     data: {
       id: string;
       type: Note["type"] | Block["type"];
@@ -121,12 +137,20 @@ namespace Web2Ext {
     };
   };
   export type StartCodeRangeEditor = {
-    action: "start-code-range-editor";
+    action: "web2ext-start-code-range-editor";
     data: Pick<CodeBlock, "id" | "type" | "filePath" | "pkgPath" | "ranges">;
   };
   export type StopCodeRangeEditor = {
-    action: "stop-code-range-editor";
+    action: "web2ext-stop-code-range-editor";
     data: { id: string };
+  };
+
+  export type RequestForIDs = {
+    action: "web2ext-request-for-ids";
+    data: {
+      n: number;
+      key: number;
+    };
   };
 
   export type Message =
@@ -135,7 +159,8 @@ namespace Web2Ext {
     | AskInitTreeNote
     | StartTextEditor
     | StartCodeRangeEditor
-    | StopCodeRangeEditor;
+    | StopCodeRangeEditor
+    | RequestForIDs;
 }
 
 export type { Ext2Web, Web2Ext };

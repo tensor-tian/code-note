@@ -1,14 +1,14 @@
 import type { EdgeMouseHandler, EdgeProps } from "reactflow";
-import { selectActiveNodeId, selectEdges, useTreeNoteStore } from "./store";
+import { selectActiveEdgeId, selectActiveNodeId, selectEdges } from "./selector";
+import { useTreeNoteStore } from "./store";
 import { useCallback, useMemo } from "react";
 
 import { BezierEdge } from "reactflow";
 
 const CodeEdge = (props: EdgeProps) => {
   const style = props.style;
-  const isActive = useTreeNoteStore((state) => state.activeEdgeId) === props.id;
-  const isSelected =
-    useTreeNoteStore((state) => state.selectedEdge) === props.id;
+  const isActive = useTreeNoteStore(selectActiveEdgeId) === props.id;
+  const isSelected = useTreeNoteStore((state) => state.selectedEdge) === props.id;
   const newStyle = useMemo(() => {
     if (isActive) {
       return {
@@ -51,10 +51,7 @@ export function useEdge() {
     },
     [setKV, activateNode, activeNodeId]
   );
-  const onEdgeMouseEnter: EdgeMouseHandler = useCallback(
-    (_event, edge) => setKV("activeEdgeId", edge.id),
-    [setKV]
-  );
+  const onEdgeMouseEnter: EdgeMouseHandler = useCallback((_event, edge) => setKV("activeEdgeId", edge.id), [setKV]);
   const onEdgeMouseLeave: EdgeMouseHandler = useCallback(() => {
     setKV("activeEdgeId", "");
   }, [setKV]);

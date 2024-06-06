@@ -10,15 +10,6 @@ import { Store } from "./store";
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "vscode-note" is now active!');
 
-  // console.log("env", process.env);
-
-  // console.log(
-  //   "extension context:",
-  //   context.extensionPath,
-  //   context.extensionUri,
-  //   context.globalStorageUri.path
-  // );
-
   const store = new Store(context);
 
   const highlight = new Highlight(store);
@@ -48,12 +39,12 @@ export function activate(context: vscode.ExtensionContext) {
       highlight.removeAll();
     }),
     vscode.commands.registerCommand("vscode-note.add-detail", () => {
-      addBlock(editorProvider, highlight, "add-detail", store).catch(
+      addBlock(editorProvider, highlight, "ext2web-add-detail", store).catch(
         console.error
       );
     }),
     vscode.commands.registerCommand("vscode-note.add-next", () => {
-      addBlock(editorProvider, highlight, "add-next", store).catch(
+      addBlock(editorProvider, highlight, "ext2web-add-next", store).catch(
         console.error
       );
     })

@@ -1,15 +1,12 @@
 import { Ext2Web, Note, Web2Ext } from "types";
 import { Panel, useStore } from "reactflow";
 import { isVscode, nanoid, vscode } from "../../utils";
-import { selectMenuState, useTreeNoteStore } from "./store";
+import { selectMenuState } from "./selector";
+import { iDGenerator, useTreeNoteStore } from "./store";
 import { useSpring, animated } from "@react-spring/web";
 import MDX from "../mdx";
-import { useCallback, useEffect, useMemo, useState, ChangeEvent } from "react";
-import {
-  VSCodeOption,
-  VSCodeDropdown,
-  VSCodeButton,
-} from "@vscode/webview-ui-toolkit/react";
+import { useCallback, useMemo, useState, ChangeEvent } from "react";
+import { VSCodeOption, VSCodeDropdown, VSCodeButton } from "@vscode/webview-ui-toolkit/react";
 
 const block: Ext2Web.AddCode["data"] = {
   type: "Code",
@@ -36,41 +33,11 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   rowCount: 15,
   filePath: "src/dispose.ts",
   pkgName: "custom-editor-sample",
-  pkgPath:
-    "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
-  text: `#### \`disposeAll\` dispose by hand 5 [baidu](http://baidu.com)
+  pkgPath: "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
+  text: `##### \`disposeAll\` dispose by hand 5 
   
   Emphasis, aka italics, with *asterisks* or _underscores_.
 
-  # h1
-  Strong emphasis, aka bold, with **asterisks** or __underscores__.
-  
-  ## h2
-  Combined emphasis with **asterisks and _underscores_**.
-  
-  ### h3
-  Strikethrough uses two tildes. ~~Scratch this.~~
-
-  > Text that is a quote
-
-  #### h4
-  Use \`git status\` to list all new or modified files that haven't yet been committed.
-012345667890123456789012345667890123456789012345667890123456789012345667890123456789012345667890123456789
-
-- George Washington
-* John Adams
-+ Thomas Jefferson
-
-
-1. James Madison
-2. James Monroe
-3. John Quincy Adams
-
-## h2
-
-1. First list item
-   - First nested list item
-     - Second nested list item
 `,
   showCode: true,
   ranges: [],
@@ -83,31 +50,29 @@ type Props = {
 
 function Menu({ addBlock }: Props) {
   const addDetail = useCallback(() => {
-    addBlock({ action: "add-detail", data: { ...block, id: nanoid() } });
+    addBlock({ action: "ext2web-add-detail", data: { ...block, id: nanoid() } });
   }, [addBlock]);
   const addNext = useCallback(() => {
-    addBlock({ action: "add-next", data: { ...block, id: nanoid() } });
+    addBlock({ action: "ext2web-add-next", data: { ...block, id: nanoid() } });
   }, [addBlock]);
 
-  const { resetNote, setKV, toggleGroup, deleteEdge, deleteNode } =
-    useTreeNoteStore();
   const {
-    id,
-    text,
-    type: typ,
-    settings,
-    debug,
-  } = useTreeNoteStore(selectMenuState);
+    resetNote,
+    setKV,
+    groupNodes: _groupNodes,
+    splitGroup,
+    deleteEdge,
+    deleteNode,
+    forceLayout,
+  } = useTreeNoteStore();
+  const { id, text, type: typ, settings, debug, canGroupNodes, canSplitGroup } = useTreeNoteStore(selectMenuState);
 
   const viewport = useStore(
-    (s) =>
-      `x: ${s.transform[0].toFixed(2)}, y: ${s.transform[1].toFixed(
-        2
-      )}, zoom: ${s.transform[2].toFixed(2)}`
+    (s) => `x: ${s.transform[0].toFixed(2)}, y: ${s.transform[1].toFixed(2)}, zoom: ${s.transform[2].toFixed(2)}`
   );
   const startEdit = useCallback(() => {
     vscode.postMessage({
-      action: "start-text-editor",
+      action: "web2ext-start-text-editor",
       data: { id, text, type: typ },
     } as Web2Ext.StartTextEditor);
   }, [id, text, typ]);
@@ -142,6 +107,7 @@ function Menu({ addBlock }: Props) {
         {[
           {
             id: "settings-w",
+            key: "settings-w",
             label: "Max Width:",
             value: settings.W.toString(),
             options: ["500", "600", "700", "800", "900"],
@@ -149,6 +115,7 @@ function Menu({ addBlock }: Props) {
           },
           {
             id: "settings-y",
+            key: "settings-y",
             label: "Vertical Gap:",
             value: settings.Y.toString(),
             options: ["40", "50", "60", "70", "80"],
@@ -156,6 +123,7 @@ function Menu({ addBlock }: Props) {
           },
           {
             id: "settings-x",
+            key: "settings-x",
             label: "Horizontal Gap:",
             value: settings.X.toString(),
             options: ["60", "80", "100", "120", "140"],
@@ -181,6 +149,11 @@ function Menu({ addBlock }: Props) {
     [resetNote]
   );
 
+  const groupNodes = useCallback(async () => {
+    const [id] = await iDGenerator.requestIDs(1);
+    _groupNodes(id);
+  }, [_groupNodes]);
+
   return (
     <>
       <Panel position="top-left" className="border px-4 py-4">
@@ -189,9 +162,7 @@ function Menu({ addBlock }: Props) {
         </div>
         <div className="flex justify-between align-middle ">
           <VSCodeButton onClick={startEdit}>Edit</VSCodeButton>
-          {!isVscode && (
-            <VSCodeButton onClick={addDetail}>Add Detail</VSCodeButton>
-          )}
+          {!isVscode && <VSCodeButton onClick={addDetail}>Add Detail</VSCodeButton>}
           {!isVscode && <VSCodeButton onClick={addNext}>Add Next</VSCodeButton>}
           {<VSCodeButton onClick={toggleDebug}>Debug</VSCodeButton>}
           <VSCodeButton onClick={deleteEdge}>
@@ -200,7 +171,13 @@ function Menu({ addBlock }: Props) {
           <VSCodeButton onClick={deleteNode}>
             <s>Node</s>
           </VSCodeButton>
-          <VSCodeButton onClick={toggleGroup}>ScrollyBlock</VSCodeButton>
+          <VSCodeButton onClick={groupNodes} disabled={!canGroupNodes}>
+            Group Nodes
+          </VSCodeButton>
+          <VSCodeButton onClick={splitGroup} disabled={!canSplitGroup}>
+            Split Group
+          </VSCodeButton>
+          <VSCodeButton onClick={forceLayout}>Layout</VSCodeButton>
           <VSCodeButton onClick={toggleForm}>Edit Settings</VSCodeButton>
           {debug && (
             <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray rounded border px-3  bg-gray-300">
@@ -226,14 +203,7 @@ type DropdownProps = {
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 } & React.HTMLAttributes<HTMLSelectElement>;
 
-function Dropdown({
-  id,
-  label,
-  options,
-  value,
-  onChange,
-  ...rest
-}: DropdownProps) {
+function Dropdown({ id, label, options, value, onChange, ...rest }: DropdownProps) {
   return (
     <div key={id}>
       <label htmlFor={id} className="text-xs px-6">
@@ -242,11 +212,7 @@ function Dropdown({
       {/* @ts-ignore */}
       <VSCodeDropdown id={id} onChange={onChange} {...rest}>
         {options.map((val) => (
-          <VSCodeOption
-            value={val}
-            selected={val === value}
-            className="py-1 text-xs"
-          >
+          <VSCodeOption key={val} value={val} selected={val === value} className="py-1 text-xs">
             {val}
           </VSCodeOption>
         ))}
