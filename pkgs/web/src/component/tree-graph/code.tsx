@@ -1,9 +1,9 @@
 import { CodeBlock, Web2Ext } from "types";
 import { NodeProps } from "reactflow";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
-import { MouseEvent, memo, useCallback, useMemo } from "react";
+import { MouseEvent as ReactMouseEvent, memo, useCallback, useMemo } from "react";
 // import debounce from "lodash.debounce";
-import { selectCodeBlockState, selectDebug } from "./selector";
+import { selectDebug } from "./selector";
 import { useTreeNoteStore } from "./store";
 import { BiCopy } from "react-icons/bi";
 import { BiText } from "react-icons/bi";
@@ -13,23 +13,18 @@ import MDX from "../mdx";
 import cx from "classnames";
 import { vscode } from "../../utils";
 import NodeHandles from "./node-handles";
+import NodeBox from "./node-box";
+import { useBlockState } from "./hooks";
 
 function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   const { showCode } = data;
   const { toggleCode: _toggleCode, activateNode, toggleNodeSelection, updateCodeBlock } = useTreeNoteStore();
-  // const { setNodes, getNodes, getEdge } = useReactFlow();
-
-  const { activeNodeId, selectedNodes, rootIds, width } = useTreeNoteStore(selectCodeBlockState);
-
-  const isSelected = selectedNodes.includes(id);
-  const isActive = activeNodeId === id;
-  const isRoot = rootIds.includes(id);
-
+  const { isSelected, isActive, isRoot, width } = useBlockState(id);
   const toggleCode = useCallback(() => {
     _toggleCode(id);
   }, [id, _toggleCode]);
   const onActivate = useCallback(
-    (event: MouseEvent<HTMLDivElement>) => {
+    (event: ReactMouseEvent<HTMLDivElement>) => {
       if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
         return;
       }
@@ -118,16 +113,8 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   }, [data]);
 
   return (
-    <div>
-      <div
-        className={cx(
-          "border px-4 py-4 bg-white",
-          isActive ? "border-gray-600 shadow-lg shadow-gray-900" : "border-gray-300",
-          isRoot ? "bg-indigo-100" : "bg-white",
-          isSelected ? "!border-blue-600 !shadow-blue-600" : "bg-white"
-        )}
-        onClick={onActivate}
-      >
+    <NodeBox isActive={isActive} isRoot={isRoot} isSelected={isSelected} onActivate={onActivate}>
+      <div className="p-4">
         <div className="flex justify-between mb-3">
           {ShowCodeIcon}
           {ID}
@@ -165,9 +152,10 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
         <div className="px-1">
           <MDX mdx={mdx} width={width} />
         </div>
+        <NodeHandles id={id} />
       </div>
-      <NodeHandles id={id} />
-    </div>
+    </NodeBox>
+    // </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useTreeNoteStore } from "./store";
-import { selectGroupCodes, selectGroupShowCode } from "./selector";
+import { selectGroupCodes, selectGroupShowCode, selectScrollyBlockState } from "./selector";
 
 import { IoMdArrowDropdown } from "react-icons/io";
 import { NodeProps } from "reactflow";
@@ -13,20 +13,14 @@ import { AiOutlineGroup } from "react-icons/ai";
 import { FaRegRectangleList } from "react-icons/fa6";
 import { vscode } from "../../utils";
 import MDX from "../mdx";
+import { useBlockState } from "./hooks";
+import NodeBox from "./node-box";
 
 function ScrollyNode({ id, data: { text, chain, stepIndex, renderAsGroup } }: NodeProps<ScrollyCodeBlock>) {
-  const {
-    selectedNodes,
-    toggleNodeSelection,
-    hideGroupCode,
-    activateNode,
-    toggleRenderAsGroup: _toggleRender,
-  } = useTreeNoteStore();
+  const { toggleNodeSelection, hideGroupCode, activateNode, toggleRenderAsGroup: _toggleRender } = useTreeNoteStore();
   const codes = useTreeNoteStore((state) => selectGroupCodes(state, id));
-
-  console.log("scrolly node id:", id);
-  const isSelected = selectedNodes.includes(id);
   const showCode = useTreeNoteStore(selectGroupShowCode(id));
+  const { isSelected, isActive, isRoot, width } = useBlockState(id);
   const checkboxId = "scrolly-" + id;
   const hideCode = useCallback(() => {
     hideGroupCode(id);
@@ -37,8 +31,12 @@ function ScrollyNode({ id, data: { text, chain, stepIndex, renderAsGroup } }: No
   }, [toggleNodeSelection, id]);
 
   const onActivate = useCallback(() => {
-    activateNode(chain[0]);
-  }, [activateNode, chain]);
+    if (!renderAsGroup) {
+      activateNode(chain[0]);
+    } else {
+      activateNode(id);
+    }
+  }, [activateNode, chain, id, renderAsGroup]);
 
   const toggleRenderMode = useCallback(() => {
     _toggleRender(id);
@@ -62,7 +60,13 @@ function ScrollyNode({ id, data: { text, chain, stepIndex, renderAsGroup } }: No
   }, [codes, id, text]);
 
   return (
-    <div className={cx("w-full h-full px-2 py-2 bg-white bg-opacity-0")} onClick={onActivate}>
+    <NodeBox
+      onActivate={onActivate}
+      isSelected={isSelected}
+      isActive={isActive}
+      isRoot={isRoot}
+      className="w-full h-full px-2 py-2 bg-white bg-opacity-0"
+    >
       <div className="flex justify-between">
         {showCode && (
           <div className="w-100 flex" onClick={hideCode}>
@@ -102,7 +106,7 @@ function ScrollyNode({ id, data: { text, chain, stepIndex, renderAsGroup } }: No
       </div>
       {renderAsGroup && <MDX mdx={mdx} />}
       <NodeHandles id={id} />
-    </div>
+    </NodeBox>
   );
 }
 
