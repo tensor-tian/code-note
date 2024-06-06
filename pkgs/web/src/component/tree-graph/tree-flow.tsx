@@ -1,6 +1,6 @@
-import { VIEWPORT, isCodeNode, isGroupNode } from "./layout";
+import { VIEWPORT, isGroupNode } from "./layout";
 import CodeEdge, { useEdge } from "./edge";
-import type { Node } from "types";
+import type { Node, Web2Ext } from "types";
 import ReactFlow, { Controls, EdgeTypes, MiniMap, NodeTypes, useReactFlow } from "reactflow";
 import {
   selectActiveNodeAndGroup,
@@ -9,6 +9,7 @@ import {
   selectSettings,
   selectRootIds,
   selectSelectedNodes,
+  selectTreeFlowState,
 } from "./selector";
 import { useTreeNoteStore, TreeNote } from "./store";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -36,10 +37,8 @@ const DEFAULT_EDGE_OPTIONS = {
 function TreeFlow() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { setKV, onNodeChange, addCodeNode, onConnect } = useTreeNoteStore();
-  const selectedNodes = useTreeNoteStore(selectSelectedNodes);
-  const rootIds = useTreeNoteStore(selectRootIds);
+  const { rootIds, selectedNodes, debug, handshake } = useTreeNoteStore(selectTreeFlowState);
   const nodes = useTreeNoteStore(selectNodes);
-  const debug = useTreeNoteStore(selectDebug);
 
   // edge operation
   const { edges, onEdgeClick, onEdgeMouseEnter, onEdgeMouseLeave, onEdgeChange } = useEdge();
@@ -49,7 +48,7 @@ function TreeFlow() {
   // auto focus node by reset viewport
   usePanToActiveNode(containerRef, setKV, nodes.length);
   // get init note from extension
-  useInitNote();
+  useInitNote(handshake, setKV);
 
   // minimap
   const nodeClassName = useCallback(
@@ -142,11 +141,12 @@ function usePanToActiveNode(
   }, [activeMark]);
 }
 
-function useInitNote() {
-  const { handshake, setKV } = useTreeNoteStore();
+type SetKVFn = <T extends keyof TreeNote.Store>(key: T, val: TreeNote.Store[T]) => void;
+
+function useInitNote(handshake: boolean, setKV: SetKVFn) {
   useEffect(() => {
     if (!handshake) {
-      vscode.postMessage({ action: "ask-init-tree-note" });
+      vscode.postMessage({ action: "web2ext-ask-init-tree-note", data: "" } as Web2Ext.AskInitTreeNote);
       setKV("handshake", true);
     }
   }, [handshake, setKV]);

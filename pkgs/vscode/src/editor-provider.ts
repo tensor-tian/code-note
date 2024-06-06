@@ -167,30 +167,30 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         case "web2ext-save-note":
           this.saveTextDocument(document, message.data);
           break;
-        case "web2ext-ask-init-tree-note":
-          {
-            let note: Note | undefined;
-            const getNote = async () => {
-              try {
-                note = JSON.parse(document.getText());
-              } catch (err) {
-                note = await initCodeNote("Untitled Note");
-              }
-              return note;
-            };
-            getNote().then((note) => {
-              if (!note) return;
-              webviewPanel.webview
-                .postMessage({
-                  action: "ext2web-init-tree-note",
-                  data: note,
-                } as Ext2Web.Message)
-                .then(() =>
-                  this.sendCachedTextChangeMsg(webviewKey, webviewPanel)
-                );
-            });
-          }
+        case "web2ext-ask-init-tree-note": {
+          let note: Note | undefined;
+          const getNote = async () => {
+            try {
+              note = JSON.parse(document.getText());
+            } catch (err) {
+              note = await initCodeNote("Untitled Note");
+            }
+            return note;
+          };
+          getNote().then((note) => {
+            if (!note) return;
+            console.log("note:", note);
+            webviewPanel.webview
+              .postMessage({
+                action: "ext2web-init-tree-note",
+                data: note,
+              } as Ext2Web.Message)
+              .then(() =>
+                this.sendCachedTextChangeMsg(webviewKey, webviewPanel)
+              );
+          });
           break;
+        }
         case "web2ext-start-text-editor":
           this.startEditText(message.data, webviewKey);
           break;

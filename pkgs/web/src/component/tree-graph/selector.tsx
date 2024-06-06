@@ -115,6 +115,15 @@ export const selectActiveEdge = createSelector([selectAllEdges, selectActiveEdge
   edges.find((e) => e.id === id)
 );
 
+const selectHandshake = (state: TreeNote.Store) => state.handshake;
+
+export const selectTreeFlowState = createSelector(
+  [selectRootIds, selectSelectedNodes, selectDebug, selectHandshake],
+  (rootIds, selectedNodes, debug, handshake) => {
+    return { rootIds, selectedNodes, debug, handshake };
+  }
+);
+
 export const selectSelectedEdgeId = (state: TreeNote.Store) => state.selectedEdge;
 
 export const selectSelectedEdge = createSelector([selectAllEdges, selectSelectedEdgeId], (edges, id) =>
