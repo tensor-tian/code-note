@@ -39,29 +39,9 @@ type NodeLayout = {
   treeW: number; //
 };
 
-class GroupTree {
-  private children: GroupNode[] = [];
-  constructor(public g: GroupNode) {}
-  addChild(g: GroupNode) {
-    this.children.push(g);
-  }
-  visit(g: GroupNode, visitor: (g: GroupNode) => void, order: VisitOrder) {
-    if (order === VisitOrder.PreOrder) {
-      visitor(g);
-    }
-    for (const child of this.children) {
-      this.visit(child, visitor, order);
-    }
-    if (order === VisitOrder.PostOrder) {
-      visitor(g);
-    }
-  }
-}
-
 class TreeLayout {
   edgeMap = new Map<string, Edge>();
   layoutMap = new Map<string, NodeLayout>();
-  groupList: GroupTree[] = [];
 
   constructor(private nodeMap: Record<string, Node>, edges: Edge[], private settings: TreeGraphSettings) {
     edges.forEach((e) => {
