@@ -1,7 +1,7 @@
 import { CodeNode, Edge, GroupNode, Node, Note } from "types";
 import { useTreeNoteStore, TreeNote } from "./store";
 import { createSelector } from "reselect";
-import { isGroupNode } from "./layout";
+import { DefaultNodeDimension, isGroupNode } from "./layout";
 
 export const selectNodeMap = (state: TreeNote.Store) => state.nodeMap;
 // export const selectAllEdges = (state: TreeNote.Store) => state.edges;
@@ -17,30 +17,14 @@ export const selectActiveNode = (state: TreeNote.Store) => state.nodeMap[state.a
 export const selectNodeInspectorState = (state: TreeNote.Store) => ({
   selectedNodes: state.selectedNodes,
   activeNodeId: state.activeNodeId,
-  settings: state.settings,
 });
 export const selectBlockState = (state: TreeNote.Store) => ({
   activeNodeId: state.activeNodeId,
   selectedNodes: state.selectedNodes,
   rootIds: state.rootIds,
-  width: state.settings.W,
+  nodeMap: state.nodeMap,
 });
 
-export const selectScrollyBlockState = (state: TreeNote.State) => ({
-  activeNodeId: state.activeNodeId,
-  selectedNodes: state.selectedNodes,
-  rootIds: state.rootIds,
-  width: state.settings.W,
-});
-
-export const selectTextBlockState = (state: TreeNote.Store) => ({
-  activeNodeId: state.activeNodeId,
-  selectedNodes: state.selectedNodes,
-  rootIds: state.rootIds,
-  width: state.settings.W,
-});
-
-export const selectWidthSetting = (state: TreeNote.Store) => state.settings.W;
 export const selectMenuState = (state: TreeNote.Store) => {
   const firstSelected = state.nodeMap[state.selectedNodes[0] || ""];
   return {
@@ -48,12 +32,10 @@ export const selectMenuState = (state: TreeNote.Store) => {
     text: state.text,
     type: state.type,
     debug: state.debug,
-    settings: state.settings,
     canGroupNodes: state.canGroupNodes,
     canSplitGroup: state.selectedNodes.length === 1 && isGroupNode(firstSelected) && !firstSelected.data.renderAsGroup,
   };
 };
-export const selectSettings = (state: TreeNote.Store) => state.settings;
 export const selectNoteTitle = (state: TreeNote.Store) => ({
   text: state.text,
   id: state.id,
@@ -157,6 +139,7 @@ function v1Tov2(note: Note): Note {
     if (isGroupNode(node)) {
       node.data.stepIndex = 0;
       node.data.renderAsGroup = false;
+      node.data.groupModeWidth = node.data.groupModeWidth || DefaultNodeDimension.WGroup;
       const chain = node.data.chain;
       // replace edges connecting to 1st and last code node with to group node
       const nFist = chain[0];

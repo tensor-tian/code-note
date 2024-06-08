@@ -1,14 +1,23 @@
 import cx from "classnames";
-import { MouseEvent as ReactMouseEvent } from "react";
+import { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 export type NodeBoxProps = React.PropsWithChildren<{
   isActive: boolean;
   isRoot: boolean;
   isSelected: boolean;
   onActivate: (event: ReactMouseEvent<HTMLDivElement>) => void;
   className?: string;
+  style: CSSProperties;
 }>;
 
-export default function NodeBox({ isActive, isRoot, isSelected, onActivate, children, className }: NodeBoxProps) {
+export default function NodeBox({
+  isActive,
+  isRoot,
+  isSelected,
+  onActivate,
+  children,
+  className,
+  style,
+}: NodeBoxProps) {
   return (
     <div
       className={cx(
@@ -18,6 +27,7 @@ export default function NodeBox({ isActive, isRoot, isSelected, onActivate, chil
         isSelected ? "!border-blue-600 !shadow-blue-600" : "bg-white"
       )}
       onClick={onActivate}
+      style={style}
     >
       {children}
     </div>

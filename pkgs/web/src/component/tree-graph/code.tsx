@@ -1,25 +1,19 @@
 import { CodeBlock, Web2Ext } from "types";
 import { NodeProps } from "reactflow";
-import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { MouseEvent as ReactMouseEvent, memo, useCallback, useMemo } from "react";
-// import debounce from "lodash.debounce";
-import { selectDebug } from "./selector";
 import { useTreeNoteStore } from "./store";
-import { BiCopy } from "react-icons/bi";
-import { BiText } from "react-icons/bi";
-import { IoCode } from "react-icons/io5";
-// import { LiaEdit } from "react-icons/lia";
+
 import MDX from "../mdx";
-import cx from "classnames";
 import { vscode } from "../../utils";
 import NodeHandles from "./node-handles";
 import NodeBox from "./node-box";
 import { useBlockState } from "./hooks";
+import NodeMenu from "./node-menu";
 
 function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   const { showCode } = data;
-  const { toggleCode: _toggleCode, activateNode, toggleNodeSelection, updateCodeBlock } = useTreeNoteStore();
-  const { isSelected, isActive, isRoot, width: maxWidth } = useBlockState(id);
+  const { toggleCode: _toggleCode, activateNode, updateCodeBlock } = useTreeNoteStore();
+  const { isSelected, isActive, isRoot, width } = useBlockState(id);
   const toggleCode = useCallback(() => {
     _toggleCode(id);
   }, [id, _toggleCode]);
@@ -44,7 +38,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
     } as Web2Ext.StartTextEditor);
   }, [data.id, data.text, data.type]);
 
-  const onCodeRangeEditClick = useCallback(() => {
+  const toggleCodeEditing = useCallback(() => {
     if (!data.isCodeRangeEditing) {
       updateCodeBlock(
         {
@@ -70,35 +64,6 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
       } as Web2Ext.StopCodeRangeEditor);
     }
   }, [data.filePath, data.id, data.pkgPath, data.ranges, data.type, updateCodeBlock, data.isCodeRangeEditing]);
-  const checkboxId = "code-" + id;
-
-  const toggleSelection = useCallback(() => {
-    toggleNodeSelection(id);
-  }, [id, toggleNodeSelection]);
-
-  const ShowCodeIcon = useMemo(
-    () => (
-      <div className="w-100 flex" onClick={toggleCode}>
-        {showCode ? (
-          <>
-            <IoMdArrowDropdown className="hover:scale-125" size={16} />
-            <span className="text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 ">Hide Code</span>
-          </>
-        ) : (
-          <>
-            <IoMdArrowDropright className="hover:scale-125" size={16} />
-            <span className="text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 ">Show Code</span>
-          </>
-        )}
-      </div>
-    ),
-    [showCode, toggleCode]
-  );
-  const debug = useTreeNoteStore(selectDebug);
-  const ID = useMemo(() => {
-    if (!debug) return;
-    return <pre className=" text-xs border-none rounded-sm px-3 bg-gray-300">{id}</pre>;
-  }, [id, debug]);
 
   const { mdx, copyMdx } = useMemo(() => {
     const mdx = data.showCode ? block2MDX(data) : data.text;
@@ -113,47 +78,29 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   }, [data]);
 
   return (
-    <NodeBox isActive={isActive} isRoot={isRoot} isSelected={isSelected} onActivate={onActivate}>
-      <div className="p-4">
-        <div className="flex justify-between mb-3">
-          {ShowCodeIcon}
-          {ID}
-          <div className="flex w-30 justify-between">
-            <BiText
-              className="mr-5 cursor-auto text-gray-500 hover:text-gray-900 hover:scale-125"
-              onClick={onStartTextEdit}
-            />
-            <IoCode
-              className={cx(
-                "mr-5 cursor-auto hover:text-gray-900 hover:scale-125",
-                data.isCodeRangeEditing ? "text-red scale-125" : "text-gray-500"
-              )}
-              onClick={onCodeRangeEditClick}
-            />
-            <BiCopy className="mr-5 cursor-auto text-gray-500 hover:text-gray-900 hover:scale-125" onClick={copyMdx} />
-
-            <div className="flex align-baseline px">
-              <label
-                htmlFor={checkboxId}
-                className="ignore-click text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 "
-              >
-                {isSelected ? "Deselect Block" : "Select Block"}
-              </label>
-              <input
-                id={checkboxId}
-                className="ignore-click"
-                type="checkbox"
-                checked={isSelected}
-                onChange={toggleSelection}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="px-1">
-          <MDX mdx={mdx} maxWidth={maxWidth} />
-        </div>
-        <NodeHandles id={id} />
+    <NodeBox
+      isActive={isActive}
+      isRoot={isRoot}
+      isSelected={isSelected}
+      onActivate={onActivate}
+      className="p-4"
+      style={{ width }}
+    >
+      <NodeMenu
+        id={id}
+        showCode={toggleCode}
+        hideCode={toggleCode}
+        codeStatus={showCode}
+        onStartTextEdit={onStartTextEdit}
+        onActivate={onActivate}
+        copyMdx={copyMdx}
+        isCodeEditing={data.isCodeRangeEditing}
+        toggleCodeEditing={toggleCodeEditing}
+      />
+      <div className="px-1">
+        <MDX mdx={mdx} width={width} />
       </div>
+      <NodeHandles id={id} />
     </NodeBox>
     // </div>
   );

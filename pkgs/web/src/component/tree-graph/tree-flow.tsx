@@ -1,8 +1,7 @@
-import { VIEWPORT, isGroupNode } from "./layout";
+import { DefaultNodeDimension, VIEWPORT, isGroupNode } from "./layout";
 import CodeEdge, { useEdge } from "./edge";
 import type { Node, Web2Ext } from "types";
 import ReactFlow, {
-  Controls,
   EdgeTypes,
   MiniMap,
   NodeTypes,
@@ -10,7 +9,7 @@ import ReactFlow, {
   ReactFlowInstance,
   useReactFlow,
 } from "reactflow";
-import { selectActiveNodeAndGroup, selectNodes, selectSettings, selectTreeFlowState } from "./selector";
+import { selectActiveNodeAndGroup, selectNodes, selectTreeFlowState } from "./selector";
 import { useTreeNoteStore, TreeNote } from "./store";
 import {
   useCallback,
@@ -156,7 +155,6 @@ function usePanToActiveNode(
   nLen: number
 ) {
   const { activeNode, activeGroup, activeMark } = useTreeNoteStore(selectActiveNodeAndGroup);
-  const settings = useTreeNoteStore(selectSettings);
   const { setViewport } = useReactFlow();
   const [mark, setMark] = useState<number>(activeMark);
   useEffect(() => {
@@ -171,8 +169,8 @@ function usePanToActiveNode(
       yActive += activeGroup.position.y;
     }
 
-    const wActive = activeNode.width || settings.W;
-    const hActive = activeNode.height || settings.H;
+    const wActive = activeNode.width || DefaultNodeDimension.W;
+    const hActive = activeNode.height || DefaultNodeDimension.H;
     const container = ref.current?.getBoundingClientRect();
     const x = container.width / 2 - xActive - wActive / 2;
     let y = container.height / 2 - yActive - hActive / 2;
@@ -184,7 +182,7 @@ function usePanToActiveNode(
     if (nLen === 1) {
       setTimeout(() => setKV("panToActiveMark", 0), 800);
     }
-  }, [activeGroup, activeMark, activeNode, setViewport, mark, setKV, nLen, ref, settings.W, settings.H]);
+  }, [activeGroup, activeMark, activeNode, setViewport, mark, setKV, nLen, ref]);
 
   useEffect(() => {
     setMark(activeMark);

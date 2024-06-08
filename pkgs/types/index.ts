@@ -21,14 +21,13 @@ export interface Package {
   configFile: string; // 包声明文件
   desc: string; // 包描述
 }
-type BlockType = "Code" | "Scrolly" | "Text" | "Template";
+export type BlockType = Block["type"];
 
 export type Block = CodeBlock | ScrollyCodeBlock | TextBlock | TemplateBlock;
 
 export interface BaseBlock {
   id: string;
   text: string;
-  type: BlockType;
 }
 
 type Pos = { line: number; character: number };
@@ -48,8 +47,10 @@ export interface CodeBlock extends BaseBlock {
 export interface ScrollyCodeBlock extends BaseBlock {
   type: "Scrolly";
   chain: string[];
-  renderAsGroup: boolean; // add in version 2
-  stepIndex: number; // add in version 2
+  renderAsGroup: boolean; // render as "group" mode: Scrollycoding block, or "codes" mode: group container + code blocks
+  stepIndex: number; // step index of CH.Scrollycoding component
+  groupModeWidth: number; // node width on "group" mode
+  textHeight?: number; // text height on "codes" mode
 }
 
 export interface TextBlock extends BaseBlock {
