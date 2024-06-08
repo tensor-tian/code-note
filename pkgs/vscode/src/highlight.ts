@@ -393,7 +393,7 @@ export class Highlight {
       const ranges = this._ranges;
       if (!ranges) return;
       for (let k = DecorationKind.Code; k <= DecorationKind.Link; k++) {
-        ranges[k] = ranges[k].filter((range) => !selection?.contains(range));
+        ranges[k] = ranges[k].filter((range) => !selection.contains(range));
       }
       this._ranges = ranges;
     }
