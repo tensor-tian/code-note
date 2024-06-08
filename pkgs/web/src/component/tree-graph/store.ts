@@ -907,7 +907,7 @@ const templateForTextNode = (x: number, y: number, width: number, height: number
   height,
   data: {
     id: TextNodeTemplateID,
-    text: "Create Text Node",
+    text: "Add Text Node",
     type: "Template",
   },
 });
