@@ -138,9 +138,10 @@ function codeStr({
     .join(",");
 
   const focus = focusRanges.map((range) => rangeToStr(doc, range)).join(",");
+  const markStr = markLines.length > 0 ? markLines.join("\n") + "\n" : "";
   return {
     code: `\`\`\`${ext} ${filename} lineNums=${lineNums} focus=${focus} 
-${markLines.join("\n") + "\n" + codeLines.join("\n")}
+${markStr + codeLines.join("\n")}
 \`\`\``,
     count: lineCount,
   };

@@ -35,6 +35,12 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
 
   public async openFile() {
     const files = await this.store.listNotePaths();
+    if (files.length === 0) {
+      vscode.window.showWarningMessage(
+        "No *.vnote file is available. You can create a new note."
+      );
+      return;
+    }
     const file = await vscode.window.showQuickPick(files, {
       placeHolder: "Select file to open",
     });
@@ -264,7 +270,9 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       new vscode.Range(0, 0, document.lineCount, 0),
       text
     );
-    return vscode.workspace.applyEdit(edit);
+    return vscode.workspace.applyEdit(edit).then(undefined, (err) => {
+      console.error("apply edit error:", err);
+    });
   }
   /**
    *   virtual document

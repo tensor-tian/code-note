@@ -178,10 +178,30 @@ export const useTreeNoteStore = create<TreeNote.State>(
             "toggleNodeSelection"
           );
         },
-        onNodeChange: (changes) => {
-          console.log("on node change:", changes);
-          if (changes.every((chg) => chg.type === "select")) return;
+        onNodeChange: (_changes) => {
+          console.log("on node change:", _changes);
           const { nodeMap, edges, rootIds, settings } = get();
+          const changes = _changes.filter((c) => {
+            if (c.type === "select") {
+              return false;
+            }
+            if (c.type === "dimensions") {
+              const node = nodeMap[c.id];
+              let dimChanged = false,
+                styleChanged = false;
+              if (typeof c.dimensions !== "undefined") {
+                dimChanged = c.dimensions.width !== node.width || c.dimensions.height !== node.height;
+              }
+              if (typeof c.updateStyle !== "undefined" && typeof c.dimensions !== "undefined") {
+                styleChanged =
+                  c.dimensions.width !== +(node.style?.width || 0) ||
+                  c.dimensions.height !== +(node.style?.height || 0);
+              }
+              return dimChanged || styleChanged;
+            }
+            return true;
+          });
+          if (changes.length === 0) return;
           const nextNodes = applyNodeChanges(changes, Object.values(nodeMap));
           const needLayout = changes.some(
             (change) =>
@@ -356,7 +376,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           const chain = selectedNodes.length > 1 ? getNextChain(selectedNodes, nextEdges) : undefined;
           let nextRootIds: string[];
-          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, edges, settings));
+          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, settings));
           set(
             {
               activeNodeId: node.id,
@@ -574,7 +594,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
 
           let nextRootIds: string[] = [];
-          const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, edges, KeepNodeIds);
+          const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, nextEdges, KeepNodeIds);
           ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, settings));
           set(
             {
@@ -701,23 +721,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
             "deleteNode"
           );
         },
-        // toggleGroupRenderMode(id: string) {
-        //   const { nodeMap } = get();
-        //   const nextNodeMap = { ...nodeMap };
-        //   const group = nodeMap[id];
-        //   if (!isGroupNode(group)) {
-        //     vscodeMessage.error(`Failed to switch group render: group ${id} node not found!`);
-        //     return;
-        //   }
-        //   nextNodeMap[id] = {
-        //     ...group,
-        //     data: {
-        //       ...group.data,
-        //       renderAsGroup: !group.data.renderAsGroup,
-        //     },
-        //   };
-        //   set({ nodeMap: nextNodeMap }, false, "toggleRenderAsGroup");
-        // },
         forceLayout() {
           const { nodeMap, edges, settings } = get();
           const { rootIds, nodeMap: nextNodeMap } = layout(nodeMap, edges, settings);
@@ -968,10 +971,14 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       resetNote(note);
       break;
     case "ext2web-text-change":
-      if (data.type === "Code") {
-        updateNodeText(data.id, data.text);
-      } else if (data.type === "TreeNote") {
-        setKV("text", data.text);
+      switch (data.type) {
+        case "Code":
+        case "Text":
+          updateNodeText(data.id, data.text);
+          break;
+        case "TreeNote":
+          setKV("text", data.text);
+          break;
       }
       break;
     case "ext2web-add-detail":

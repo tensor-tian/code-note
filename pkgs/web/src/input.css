@@ -148,16 +148,22 @@ strike:after {
   content: "";
   /* required property */
   position: absolute;
-  bottom: 0;
-  left: -10%;
-  border-top: 1.5px solid red;
+  bottom: 10%;
+  left: -20%;
+  right: 20%;
+  border-top: 2px solid #fca5a5;
   height: 45%;
   /* adjust as necessary, depending on line thickness */
   /* or use calc() if you don't need to support IE8: */
   height: calc(50% - 1px);
   /* 1px = half the line thickness */
   width: 120%;
-  /* transform: rotateZ(-0deg); */
+  transform: rotateZ(15deg);
+}
+
+s:after:hover,
+strike:after:hover {
+  border-top: 1px solid white;
 }
 
 .preview-container h1 {
@@ -220,4 +226,9 @@ strike:after {
 }
 .ch-scrollycoding-step-content[data-selected] {
   @apply !border-gray-600 !rounded-sm border-l-white shadow-[rgba(0,0,15,0.6)_3px_5px_4px_0px];
+}
+
+.ch-codeblock,
+.ch-codegroup {
+  margin-top: 0.25rem !important;
 }

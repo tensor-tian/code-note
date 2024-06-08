@@ -24,12 +24,13 @@ import {
 import Code from "./code";
 import Text from "./text";
 import Template from "./template";
-import Menu from "./menu";
+import Title from "./title";
 import MiniMapNode from "./minimap-node";
 import NodeInspector from "./node-inspector";
 import Scrolly from "./scrolly";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
+import Menu from "./menu";
 
 const NODE_TYPES: NodeTypes = {
   Code,
@@ -138,8 +139,9 @@ function TreeFlow() {
         zoomOnDoubleClick={false}
         onInit={setRFInstance}
       >
-        <Controls />
+        {/* <Controls /> */}
         <MiniMap pannable nodeClassName={nodeClassName} nodeComponent={MiniMapNode} />
+        <Title />
         <Menu addBlock={addCodeNode} />
         {debug && <NodeInspector />}
       </ReactFlow>

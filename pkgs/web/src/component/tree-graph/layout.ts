@@ -117,14 +117,15 @@ class TreeLayout {
 
   private getRoot(n: Node | undefined, visited: Set<string>): Node | undefined {
     if (!n) return;
-    if (n.parentId) return;
+    // if (n.parentId) return;
     if (visited.has(n.id)) return;
     if (isTemplateNote(n)) return;
 
     visited.add(n.id);
     const left = this.left(n);
     const top = this.top(n);
-    if (!left && !top) return n;
+    const parent = n.parentId ? this.nodeMap[n.parentId] : undefined;
+    if (!left && !top && !parent) return n;
     return this.getRoot(left, visited) || this.getRoot(top, visited);
   }
 
@@ -239,7 +240,7 @@ class TreeLayout {
     const roots = this.getRoots();
     const rootIds = roots.map((n) => n.id);
     if (roots.length !== 1) {
-      console.log("skip layout: multiple tree root");
+      console.log("skip layout: multiple tree root", rootIds);
       return {
         rootIds,
         nodeMap: this.nodeMap,
@@ -284,6 +285,7 @@ class TreeLayout {
           ...n,
           position: { x: sz.x, y: sz.y },
           style,
+          ...style,
           // width: sz.w,
           // height: sz.h,
         };

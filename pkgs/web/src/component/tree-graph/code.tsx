@@ -19,7 +19,7 @@ import { useBlockState } from "./hooks";
 function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   const { showCode } = data;
   const { toggleCode: _toggleCode, activateNode, toggleNodeSelection, updateCodeBlock } = useTreeNoteStore();
-  const { isSelected, isActive, isRoot, width } = useBlockState(id);
+  const { isSelected, isActive, isRoot, width: maxWidth } = useBlockState(id);
   const toggleCode = useCallback(() => {
     _toggleCode(id);
   }, [id, _toggleCode]);
@@ -150,7 +150,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
           </div>
         </div>
         <div className="px-1">
-          <MDX mdx={mdx} width={width} />
+          <MDX mdx={mdx} maxWidth={maxWidth} />
         </div>
         <NodeHandles id={id} />
       </div>
@@ -169,7 +169,8 @@ function block2MDX(block: CodeBlock): string {
 
 ${block.text}
 
-<CH.Code rows="${rows}">
+<div className="mt-4"><small>\`${block.filePath}\`</small></div>
+<CH.Code ${rows}>
 
 ${block.code}
 

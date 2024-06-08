@@ -63,7 +63,7 @@ function TextNode({ id, data: { text: mdx, type } }: NodeProps<TextBlock>) {
           </div>
         </div>
         <div>
-          <MDX mdx={mdx} width={width} />
+          <MDX mdx={mdx} />
         </div>
         <NodeHandles id={id} />
       </div>
