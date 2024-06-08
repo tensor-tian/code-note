@@ -1,4 +1,4 @@
-import type { CodeNode, Edge, GroupNode, Node } from "types";
+import type { CodeNode, Edge, GroupNode, Node, TemplateNode, TextNode } from "types";
 
 export type TreeGraphSettings = {
   X: number;
@@ -117,13 +117,15 @@ class TreeLayout {
 
   private getRoot(n: Node | undefined, visited: Set<string>): Node | undefined {
     if (!n) return;
-    if (n.parentId) return;
+    // if (n.parentId) return;
     if (visited.has(n.id)) return;
+    if (isTemplateNote(n)) return;
 
     visited.add(n.id);
     const left = this.left(n);
     const top = this.top(n);
-    if (!left && !top) return n;
+    const parent = n.parentId ? this.nodeMap[n.parentId] : undefined;
+    if (!left && !top && !parent) return n;
     return this.getRoot(left, visited) || this.getRoot(top, visited);
   }
 
@@ -234,10 +236,11 @@ class TreeLayout {
   };
 
   public layout(): { nodeMap: Record<string, Node>; rootIds: string[] } {
+    console.log("layout", this.nodeMap, this.edgeMap);
     const roots = this.getRoots();
     const rootIds = roots.map((n) => n.id);
     if (roots.length !== 1) {
-      console.log("skip layout: multiple tree root");
+      console.log("skip layout: multiple tree root", rootIds);
       return {
         rootIds,
         nodeMap: this.nodeMap,
@@ -245,12 +248,12 @@ class TreeLayout {
     }
     const nodes = Object.values(this.nodeMap);
     const groups: GroupNode[] = [];
-    const codes: CodeNode[] = [];
+    const codes: Node[] = [];
 
     for (const n of nodes) {
       let w = n.width || this.settings.W;
       let h = n.height || this.settings.H;
-      if (isCodeNode(n)) {
+      if (isCodeNode(n) || isTextNode(n)) {
         codes.push(n);
       }
       if (isGroupNode(n)) {
@@ -282,6 +285,7 @@ class TreeLayout {
           ...n,
           position: { x: sz.x, y: sz.y },
           style,
+          ...style,
           // width: sz.w,
           // height: sz.h,
         };
@@ -301,7 +305,7 @@ class TreeLayout {
         };
       }
       return acc;
-    }, {} as Record<string, CodeNode>);
+    }, {} as Record<string, Node>);
 
     const changed = Object.keys(groupMap).length + Object.keys(codeMap).length === 0;
     if (changed) {
@@ -310,10 +314,10 @@ class TreeLayout {
     return { nodeMap: { ...this.nodeMap, ...groupMap, ...codeMap }, rootIds };
   }
 
-  public getHidden() {
+  public getHidden(keepList: Set<string>) {
     const allNodes = new Set(Object.keys(this.nodeMap));
     const allEdges = new Set([...this.edgeMap.values()].map((e) => e.id));
-    const nodes = new Set<string>();
+    const nodes = new Set<string>(keepList);
     const edges = new Set<string>();
     const visitor = (node: Node) => {
       nodes.add(node.id);
@@ -330,9 +334,11 @@ class TreeLayout {
     for (const root of roots) {
       this.visit(root, visitor, VisitOrder.PreOrder);
     }
+    exclude(allNodes, nodes);
+    exclude(allEdges, edges);
     return {
-      nodes: difference(allNodes, nodes),
-      edges: difference(allEdges, edges),
+      nodes: allNodes,
+      edges: allEdges,
     };
   }
 }
@@ -341,12 +347,20 @@ export function isCodeNode(n: Node | undefined): n is CodeNode {
   return n?.data.type === "Code";
 }
 
+export function isTextNode(n: Node | undefined): n is TextNode {
+  return n?.data.type === "Text";
+}
+
+export function isTemplateNote(n: Node | undefined): n is TemplateNode {
+  return n?.data.type === "Template";
+}
+
 export function isGroupNode(n: Node | undefined): n is GroupNode {
   return n?.data.type === "Scrolly";
 }
 
-export function getHidden(nodeMap: Record<string, Node>, edges: Edge[]) {
-  return new TreeLayout(nodeMap, edges, { X: 0, Y: 0, W: 0, H: 0 }).getHidden();
+export function getHidden(nodeMap: Record<string, Node>, edges: Edge[], keepList: Set<string>) {
+  return new TreeLayout(nodeMap, edges, { X: 0, Y: 0, W: 0, H: 0 }).getHidden(keepList);
 }
 
 export function layout(nodeMap: Record<string, Node>, edges: Edge[], settings: TreeGraphSettings) {
@@ -384,12 +398,10 @@ export function hasCycle(edges: Edge[]): boolean {
   return false;
 }
 
-function difference(A: Set<string>, B: Set<string>) {
-  const diff = new Set<string>();
-  for (const s of A) {
-    if (!B.has(s)) {
-      diff.add(s);
+function exclude(A: Set<string>, B: Set<string>) {
+  for (const e of A) {
+    if (B.has(e)) {
+      A.delete(e);
     }
   }
-  return diff;
 }

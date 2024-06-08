@@ -1,7 +1,7 @@
 import { CodeNode, Edge, GroupNode, Node, Note } from "types";
 import { useTreeNoteStore, TreeNote } from "./store";
 import { createSelector } from "reselect";
-import { isCodeNode, isGroupNode } from "./layout";
+import { isGroupNode } from "./layout";
 
 export const selectNodeMap = (state: TreeNote.Store) => state.nodeMap;
 // export const selectAllEdges = (state: TreeNote.Store) => state.edges;
@@ -19,12 +19,27 @@ export const selectNodeInspectorState = (state: TreeNote.Store) => ({
   activeNodeId: state.activeNodeId,
   settings: state.settings,
 });
-export const selectCodeBlockState = (state: TreeNote.Store) => ({
+export const selectBlockState = (state: TreeNote.Store) => ({
   activeNodeId: state.activeNodeId,
   selectedNodes: state.selectedNodes,
   rootIds: state.rootIds,
   width: state.settings.W,
 });
+
+export const selectScrollyBlockState = (state: TreeNote.State) => ({
+  activeNodeId: state.activeNodeId,
+  selectedNodes: state.selectedNodes,
+  rootIds: state.rootIds,
+  width: state.settings.W,
+});
+
+export const selectTextBlockState = (state: TreeNote.Store) => ({
+  activeNodeId: state.activeNodeId,
+  selectedNodes: state.selectedNodes,
+  rootIds: state.rootIds,
+  width: state.settings.W,
+});
+
 export const selectWidthSetting = (state: TreeNote.Store) => state.settings.W;
 export const selectMenuState = (state: TreeNote.Store) => {
   const firstSelected = state.nodeMap[state.selectedNodes[0] || ""];
@@ -51,14 +66,14 @@ export const selectDebug = (state: TreeNote.Store) => state.debug;
 export const selectNodes = createSelector([selectNodeMap, selectHiddenNodes], (nodeMap, hidden) => {
   const nodes = Object.values(nodeMap);
   const groups: Node[] = [];
-  let codes: CodeNode[] = [];
+  let codes: Node[] = [];
   for (const node of nodes) {
-    if (isCodeNode(node)) {
-      codes.push(node);
-    } else if (isGroupNode(node)) {
+    if (isGroupNode(node)) {
       if (!hidden.has(node.id)) {
         groups.push(node);
       }
+    } else {
+      codes.push(node);
     }
   }
   for (const code of codes) {

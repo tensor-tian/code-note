@@ -3,6 +3,7 @@
   "displayName": "code note",
   "description": "mark code with code-hike",
   "version": "0.0.1",
+  "publisher": "tensor-tian",
   "repository": {
     "type": "git",
     "url": "https://github.com/tensor-tian/code-note.git"

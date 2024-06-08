@@ -1,8 +1,17 @@
-import { getHidden, hasCycle, isCodeNode, isGroupNode, TreeGraphSettings } from "./layout";
-import { CodeBlock, CodeNode, Edge, Ext2Web, GroupNode, Node, Note, Web2Ext } from "types";
-import { EdgeChange, NodeChange, OnConnect, addEdge, applyEdgeChanges, applyNodeChanges, Connection } from "reactflow";
+import { getHidden, hasCycle, isCodeNode, isGroupNode, isTextNode, TreeGraphSettings } from "./layout";
+import { CodeBlock, CodeNode, Edge, Ext2Web, GroupNode, Node, Note, TemplateNode, TextNode, Web2Ext } from "types";
+import {
+  EdgeChange,
+  NodeChange,
+  OnConnect,
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
+  Connection,
+  XYPosition,
+} from "reactflow";
 import { devtools, persist } from "zustand/middleware";
-import { isVscode, nanoid, saveNote, vscode, vscodeMessage } from "../../utils";
+import { isVscode, saveNote, vscode, vscodeMessage } from "../../utils";
 
 import { create } from "zustand";
 
@@ -31,6 +40,8 @@ namespace TreeNote {
     onNodeChange: (changes: NodeChange[]) => void;
     onEdgeChange: (changes: EdgeChange[]) => void;
     onConnect: OnConnect;
+    onConnectStart: (sourceHandle: string) => void;
+    onConnectEnd: (sourceHandle: string, position: XYPosition) => void;
     addCodeNode: (msg: Ext2Web.AddCode) => void;
     updateCodeBlock: (data: Pick<CodeBlock, "id"> & Partial<CodeBlock>, action: string) => void;
     updateNodeText: (id: string, text: string) => void;
@@ -167,12 +178,35 @@ export const useTreeNoteStore = create<TreeNote.State>(
             "toggleNodeSelection"
           );
         },
-        onNodeChange: (changes) => {
-          console.log("on node change:", changes);
-          if (changes.every((chg) => chg.type === "select")) return;
+        onNodeChange: (_changes) => {
+          console.log("on node change:", _changes);
           const { nodeMap, edges, rootIds, settings } = get();
+          const changes = _changes.filter((c) => {
+            if (c.type === "select") {
+              return false;
+            }
+            if (c.type === "dimensions") {
+              const node = nodeMap[c.id];
+              let dimChanged = false,
+                styleChanged = false;
+              if (typeof c.dimensions !== "undefined") {
+                dimChanged = c.dimensions.width !== node.width || c.dimensions.height !== node.height;
+              }
+              if (typeof c.updateStyle !== "undefined" && typeof c.dimensions !== "undefined") {
+                styleChanged =
+                  c.dimensions.width !== +(node.style?.width || 0) ||
+                  c.dimensions.height !== +(node.style?.height || 0);
+              }
+              return dimChanged || styleChanged;
+            }
+            return true;
+          });
+          if (changes.length === 0) return;
           const nextNodes = applyNodeChanges(changes, Object.values(nodeMap));
-          const needLayout = changes.find((change) => ["dimensions", "remove", "add"].includes(change.type));
+          const needLayout = changes.some(
+            (change) =>
+              ["remove", "add"].includes(change.type) || (change.type === "dimensions" && !KeepNodeIds.has(change.id))
+          );
           let nextNodeMap = {
             ...nodeMap,
             ...nextNodes.reduce((acc, n) => {
@@ -190,30 +224,100 @@ export const useTreeNoteStore = create<TreeNote.State>(
           const { edges } = get();
           set({ edges: applyEdgeChanges(changes, edges) }, false, "onEdgeChange");
         },
-        onConnect: (conn) => {
+
+        onConnectStart: async (sourceHandle) => {
+          const [nodeId, suffix] = sourceHandle.split("-");
+          const { nodeMap } = get();
+          const srcNode = nodeMap[nodeId];
+          const w = 120;
+          const h = 50;
+          let x: number, y: number;
+          if (suffix === "right") {
+            x = srcNode.position.x + srcNode.width! + 10;
+            y = srcNode.position.y + srcNode.height! / 2 - h - 30;
+          } else {
+            x = srcNode.position.x + srcNode.width! / 2 + 30;
+            y = srcNode.position.y + srcNode.height! + 10;
+          }
+          const n = templateForTextNode(x, y, w, h);
+          const nextNodeMap = { ...nodeMap, [n.id]: n };
+          set({ nodeMap: nextNodeMap }, false, "onConnectStart");
+        },
+        onConnectEnd: async (sourceHandle, position) => {
+          const { nodeMap, edges, settings } = get();
+          const [source, suffix] = sourceHandle.split("-");
+          const tmp = nodeMap[TextNodeTemplateID];
+          console.log("on connect end:", position, tmp.position, tmp.width, tmp.height);
+
+          let nextNodeMap = { ...nodeMap };
+          delete nextNodeMap[TextNodeTemplateID];
+
+          if (
+            tmp.position.x > position.x ||
+            position.x > tmp.position.x + tmp.width! ||
+            tmp.position.y > position.y ||
+            position.y > tmp.position.y + tmp.height!
+          ) {
+            set({ nodeMap: nextNodeMap }, false, "onConnectEnd");
+            return;
+          } else {
+            let nextEdges = [...edges];
+            const idx = edges.findIndex((e) => e.sourceHandle === sourceHandle);
+            const ids = await iDGenerator.requestIDs(2);
+            const textNode = newTextNode(ids[0], settings.W);
+            nextNodeMap[textNode.id] = textNode;
+            const targetSuffix = suffix === "right" ? "left" : "top";
+            if (idx !== -1) {
+              nextEdges[idx] = {
+                ...nextEdges[idx],
+                source: textNode.id,
+                sourceHandle: `${textNode.id}-${targetSuffix}`,
+              };
+            }
+            const conn = { source, sourceHandle, target: textNode.id, targetHandle: `${textNode.id}-${targetSuffix}` };
+            nextEdges = addEdge(newEdgeFromConn(conn, ids[1]), nextEdges);
+            let rootIds: string[];
+            ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, settings));
+            set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, false, "onConnectEnd");
+          }
+        },
+        onConnect: async (conn) => {
+          console.log("on connect:", conn);
           const { source, target, sourceHandle, targetHandle } = conn;
           if (source === target) return;
           const { edges, nodeMap, settings } = get();
+
           const isX = sourceHandle?.endsWith("right") && targetHandle?.endsWith("left");
           const isY = sourceHandle?.endsWith("bottom") && targetHandle?.endsWith("top");
           if (!isX && !isY) return;
 
+          let nextNodeMap = { ...nodeMap };
+          delete nextNodeMap[TextNodeTemplateID];
+
+          let nextEdges = [...edges];
+
           const inEdge = edges.find((e) => e.target === target);
           const outEdge = edges.find((e) => e.sourceHandle === sourceHandle);
           if (outEdge?.target === target) return;
+          const ids = await iDGenerator.requestIDs(1);
 
-          let nextEdges = inEdge || outEdge ? edges.filter((e) => e.id !== inEdge?.id && e.id !== outEdge?.id) : edges;
+          if (inEdge || outEdge) {
+            nextEdges = edges.filter((e) => e.id !== inEdge?.id && e.id !== outEdge?.id);
+          }
 
-          nextEdges = addEdge(newEdgeFromConn(conn), nextEdges);
+          nextEdges = addEdge(newEdgeFromConn(conn, ids[0]), nextEdges);
 
           if (hasCycle(nextEdges)) {
             console.log("has cycle", nextEdges);
             return;
           }
-          const { rootIds, nodeMap: nextNodeMap } = layout(nodeMap, nextEdges, settings);
+
+          let rootIds: string[];
+          ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, settings));
           set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, false, "onConnect");
         },
-        addCodeNode: ({ action, data }) => {
+
+        addCodeNode: async ({ action, data }) => {
           const { nodeMap, edges, activeNodeId, settings, selectedNodes } = get();
           const nodes = Object.values(nodeMap);
           console.log("add code node:", activeNodeId, nodes.length);
@@ -242,20 +346,18 @@ export const useTreeNoteStore = create<TreeNote.State>(
               nextNodeMap[parent.id] = { ...parent, data: { ...parent.data, chain: [...chain] } };
             }
           }
-
-          const nextEdges = [...edges, newEdge(activeNodeId, node.id, action)];
+          const ids = await iDGenerator.requestIDs(2);
+          const nextEdges = [...edges, newEdge(ids[0], activeNodeId, node.id, action)];
           // add edges
           if (action === "ext2web-add-detail") {
             const iR = edges.findIndex(({ sourceHandle }) => sourceHandle === `${activeNodeId}-right`);
             if (iR !== -1) {
-              const eR = nextEdges[iR];
-              nextEdges.splice(iR, 1, newEdge(node.id, eR.target, action));
+              nextEdges[iR] = newEdge(ids[1], node.id, nextEdges[iR].target, action);
             }
           } else if (action === "ext2web-add-next") {
             const iB = edges.findIndex(({ sourceHandle }) => sourceHandle === `${activeNodeId}-bottom`);
             if (iB !== -1) {
-              const eB = nextEdges[iB];
-              nextEdges.splice(iB, 1, newEdge(node.id, eB.target, action));
+              nextEdges[iB] = newEdge(ids[1], node.id, nextEdges[iB].target, action);
             }
             if (activeNode.parentId) {
               const group = nextNodeMap[activeNode.parentId] as GroupNode;
@@ -274,7 +376,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           const chain = selectedNodes.length > 1 ? getNextChain(selectedNodes, nextEdges) : undefined;
           let nextRootIds: string[];
-          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, edges, settings));
+          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, settings));
           set(
             {
               activeNodeId: node.id,
@@ -291,7 +393,23 @@ export const useTreeNoteStore = create<TreeNote.State>(
         },
         updateCodeBlock: (data, action) => updateCodeBlock(data, action),
         updateNodeText: (id, text) => {
-          updateCodeBlock({ id, text }, "updateNodeText");
+          const { nodeMap } = get();
+          const node = nodeMap[id];
+          if (isCodeNode(node)) {
+            updateCodeBlock({ id, text }, "updateNodeText:Code");
+          } else if (isTextNode(node)) {
+            const nextNodeMap = {
+              ...nodeMap,
+              [id]: {
+                ...node,
+                data: {
+                  ...node.data,
+                  text,
+                },
+              },
+            };
+            set({ nodeMap: nextNodeMap }, false, "updateNodeText:Text");
+          }
         },
 
         updateNodeCodeRange: (data) => {
@@ -476,7 +594,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
 
           let nextRootIds: string[] = [];
-          const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, edges);
+          const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, nextEdges, KeepNodeIds);
           ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, settings));
           set(
             {
@@ -517,7 +635,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
                 nextEdges[i] = edge;
               }
             }
-            const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, nextEdges);
+            const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, nextEdges, KeepNodeIds);
             let nextRooIds: string[] = [];
             ({ nodeMap: nextNodeMap, rootIds: nextRooIds } = layout(nextNodeMap, nextEdges, this.settings));
             set(
@@ -537,7 +655,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           const { edges, selectedEdge } = get();
           set({ edges: edges.filter((e) => e.id !== selectedEdge) }, false, "deleteEdge");
         },
-        deleteNode() {
+        deleteNode: async () => {
           const { nodeMap, selectedNodes, edges, settings } = get();
           if (selectedNodes.length !== 1) {
             vscodeMessage.warn("Can't remove multiple nodes.");
@@ -578,7 +696,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
           // connect two siblings around node
           const action = (inEdge || outEdge)?.targetHandle?.endsWith("top") ? "ext2web-add-next" : "ext2web-add-detail";
           if (inEdge && outEdge) {
-            nextEdges.push(newEdge(inEdge.source, outEdge.target, action));
+            const ids = await iDGenerator.requestIDs(1);
+            nextEdges.push(newEdge(ids[0], inEdge.source, outEdge.target, action));
           }
           // update group node chain
           if (node.parentId) {
@@ -602,23 +721,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
             "deleteNode"
           );
         },
-        // toggleGroupRenderMode(id: string) {
-        //   const { nodeMap } = get();
-        //   const nextNodeMap = { ...nodeMap };
-        //   const group = nodeMap[id];
-        //   if (!isGroupNode(group)) {
-        //     vscodeMessage.error(`Failed to switch group render: group ${id} node not found!`);
-        //     return;
-        //   }
-        //   nextNodeMap[id] = {
-        //     ...group,
-        //     data: {
-        //       ...group.data,
-        //       renderAsGroup: !group.data.renderAsGroup,
-        //     },
-        //   };
-        //   set({ nodeMap: nextNodeMap }, false, "toggleRenderAsGroup");
-        // },
         forceLayout() {
           const { nodeMap, edges, settings } = get();
           const { rootIds, nodeMap: nextNodeMap } = layout(nodeMap, edges, settings);
@@ -661,8 +763,12 @@ export const useTreeNoteStore = create<TreeNote.State>(
   )
 );
 
-export function newEdge(source: string, target: string, action: "ext2web-add-detail" | "ext2web-add-next"): Edge {
-  const id = nanoid();
+export function newEdge(
+  id: string,
+  source: string,
+  target: string,
+  action: "ext2web-add-detail" | "ext2web-add-next"
+): Edge {
   return {
     id,
     type: "CodeEdge",
@@ -675,8 +781,7 @@ export function newEdge(source: string, target: string, action: "ext2web-add-det
   };
 }
 
-export function newEdgeFromConn(conn: Connection): Edge {
-  const id = nanoid();
+export function newEdgeFromConn(conn: Connection, id: string): Edge {
   return {
     id,
     type: "CodeEdge",
@@ -719,6 +824,35 @@ export function newNode(
     deletable: false,
   };
   return node;
+}
+
+const TextNodeTemplateID = "text-node-template-id";
+const KeepNodeIds = new Set([TextNodeTemplateID]);
+const templateForTextNode = (x: number, y: number, width: number, height: number): TemplateNode => ({
+  id: TextNodeTemplateID,
+  type: "Template",
+  position: { x, y },
+  width,
+  height,
+  data: {
+    id: TextNodeTemplateID,
+    text: "Create Text Node",
+    type: "Template",
+  },
+});
+
+export function newTextNode(id: string, width: number): TextNode {
+  return {
+    id,
+    type: "Text",
+    position: { x: 0, y: 0 },
+    width,
+    data: {
+      id,
+      type: "Text",
+      text: "MDX text...",
+    },
+  };
 }
 
 function getNextChain(selections: string[], edges: Edge[]): string[] | undefined {
@@ -837,10 +971,14 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       resetNote(note);
       break;
     case "ext2web-text-change":
-      if (data.type === "Code") {
-        updateNodeText(data.id, data.text);
-      } else if (data.type === "TreeNote") {
-        setKV("text", data.text);
+      switch (data.type) {
+        case "Code":
+        case "Text":
+          updateNodeText(data.id, data.text);
+          break;
+        case "TreeNote":
+          setKV("text", data.text);
+          break;
       }
       break;
     case "ext2web-add-detail":

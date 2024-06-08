@@ -65,7 +65,7 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
     return nextId;
   }
 
-  private readonly schemaVDoc = "code-note-vdoc";
+  private readonly schemaVDoc = "code-note-memfs";
   isVDoc(uri: Uri) {
     return uri.scheme === this.schemaVDoc;
   }
@@ -135,6 +135,9 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
 
   listNotePaths = async () => {
     const wd = Uri.joinPath(this.context.globalStorageUri, workDir);
+    if (!(await this.existsDir(wd))) {
+      await workspace.fs.createDirectory(wd);
+    }
     const list = [] as string[];
     const start = this.context.globalStorageUri.path.length;
     await this.visitDir(wd, (uri: Uri) => list.push(uri.path.slice(start)));

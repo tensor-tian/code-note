@@ -11,6 +11,8 @@ export type Edge = RFEdge<EdgeData>;
 export type Node = RFNode<Block>;
 export type CodeNode = RFNode<CodeBlock>;
 export type GroupNode = RFNode<ScrollyCodeBlock>;
+export type TextNode = RFNode<TextBlock>;
+export type TemplateNode = RFNode<TemplateBlock>;
 
 export interface Package {
   name: string; // 包名
@@ -19,9 +21,9 @@ export interface Package {
   configFile: string; // 包声明文件
   desc: string; // 包描述
 }
-type BlockType = "Code" | "Scrolly";
+type BlockType = "Code" | "Scrolly" | "Text" | "Template";
 
-export type Block = CodeBlock | ScrollyCodeBlock;
+export type Block = CodeBlock | ScrollyCodeBlock | TextBlock | TemplateBlock;
 
 export interface BaseBlock {
   id: string;
@@ -48,6 +50,13 @@ export interface ScrollyCodeBlock extends BaseBlock {
   chain: string[];
   renderAsGroup: boolean; // add in version 2
   stepIndex: number; // add in version 2
+}
+
+export interface TextBlock extends BaseBlock {
+  type: "Text";
+}
+export interface TemplateBlock extends BaseBlock {
+  type: "Template";
 }
 
 export interface EdgeData {

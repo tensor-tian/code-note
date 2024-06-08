@@ -46,7 +46,7 @@ async function compileAndRun(input: string) {
 }
 
 let effectId = 0;
-function useInput(input: string, width?: number) {
+function useInput(input: string, maxWidth?: number) {
   const [{ Component, error }, setState] = useState<{
     Component: MDXContent | undefined;
     error: string | undefined;
@@ -76,7 +76,7 @@ function useInput(input: string, width?: number) {
       // console.log("cancelling", id);
       effectId++;
     };
-  }, [input, width]);
+  }, [input, maxWidth]);
 
   return { Component, error, loading };
 }
@@ -90,10 +90,10 @@ function ErrorFallback({ error }: { error: string }) {
   );
 }
 
-const InnerPreview: FC<{ input: string; width?: number }> = ({ input, width }) => {
-  const { Component, error, loading } = useInput(input, width);
+const InnerPreview: FC<{ input: string; maxWidth?: number }> = ({ input, maxWidth }) => {
+  const { Component, error, loading } = useInput(input, maxWidth);
   // console.log("error:", error, typeof Component);
-  const style = typeof width === "number" ? { maxWidth: width } : {};
+  const style = typeof maxWidth === "number" ? { maxWidth } : {};
   return (
     <>
       {error ? (
@@ -108,7 +108,7 @@ const InnerPreview: FC<{ input: string; width?: number }> = ({ input, width }) =
         })}
         style={style}
       >
-        <div style={{ opacity: loading ? 1 : 0 }} className="loading-border" />
+        {/* <div style={{ opacity: loading ? 1 : 0 }} className="loading-border" /> */}
         {Component ? <Component components={{ CH }} /> : null}
       </div>
     </>
@@ -119,10 +119,10 @@ const logError = (error: Error, info: ErrorInfo) => {
   console.log("error boundary:", error, info);
 };
 
-const MDX: FC<{ mdx: string; width?: number }> = ({ mdx, width }) => {
+const MDX: FC<{ mdx: string; maxWidth?: number }> = ({ mdx, maxWidth }) => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback} onError={logError}>
-      <InnerPreview input={mdx} width={width} />
+      <InnerPreview input={mdx} maxWidth={maxWidth} />
     </ErrorBoundary>
   );
 };

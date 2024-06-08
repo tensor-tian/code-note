@@ -5,13 +5,13 @@ import Graph from "./component/graph";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import reportWebVitals from "./reportWebVitals";
-
-const root = ReactDOM.createRoot(
-  document.getElementById("root") as HTMLElement
-);
+import { StyledEngineProvider } from "@mui/material/styles";
+const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 root.render(
   <React.StrictMode>
-    <Graph />
+    <StyledEngineProvider injectFirst>
+      <Graph />
+    </StyledEngineProvider>
   </React.StrictMode>
 );
 

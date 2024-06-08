@@ -1,30 +1,42 @@
 import { VIEWPORT, isGroupNode } from "./layout";
 import CodeEdge, { useEdge } from "./edge";
 import type { Node, Web2Ext } from "types";
-import ReactFlow, { Controls, EdgeTypes, MiniMap, NodeTypes, useReactFlow } from "reactflow";
-import {
-  selectActiveNodeAndGroup,
-  selectDebug,
-  selectNodes,
-  selectSettings,
-  selectRootIds,
-  selectSelectedNodes,
-  selectTreeFlowState,
-} from "./selector";
+import ReactFlow, {
+  Controls,
+  EdgeTypes,
+  MiniMap,
+  NodeTypes,
+  OnConnectStartParams,
+  ReactFlowInstance,
+  useReactFlow,
+} from "reactflow";
+import { selectActiveNodeAndGroup, selectNodes, selectSettings, selectTreeFlowState } from "./selector";
 import { useTreeNoteStore, TreeNote } from "./store";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  MouseEvent as ReactMouseEvent,
+  TouchEvent as ReactTouchEvent,
+} from "react";
 
 import Code from "./code";
-import Menu from "./menu";
+import Text from "./text";
+import Template from "./template";
+import Title from "./title";
 import MiniMapNode from "./minimap-node";
 import NodeInspector from "./node-inspector";
 import Scrolly from "./scrolly";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
+import Menu from "./menu";
 
 const NODE_TYPES: NodeTypes = {
   Code,
   Scrolly,
+  Text,
+  Template,
 };
 const EDGE_TYPES: EdgeTypes = {
   CodeEdge,
@@ -36,13 +48,24 @@ const DEFAULT_EDGE_OPTIONS = {
 
 function TreeFlow() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { setKV, onNodeChange, addCodeNode, onConnect } = useTreeNoteStore();
+  const {
+    setKV,
+    onNodeChange,
+    addCodeNode,
+    onConnect,
+    onConnectEnd: _onConnectEnd,
+    onConnectStart: _onConnectStart,
+  } = useTreeNoteStore();
   const { rootIds, selectedNodes, debug, handshake } = useTreeNoteStore(selectTreeFlowState);
   const nodes = useTreeNoteStore(selectNodes);
+  const [rfInstance, setRFInstance] = useState<ReactFlowInstance>();
 
   // edge operation
   const { edges, onEdgeClick, onEdgeMouseEnter, onEdgeMouseLeave, onEdgeChange } = useEdge();
 
+  if (containerRef.current) {
+    console.log("TreeFlow container:", containerRef.current.getBoundingClientRect());
+  }
   // arrow key to focus node
   useNavKeys(edges);
   // auto focus node by reset viewport
@@ -70,6 +93,29 @@ function TreeFlow() {
 
   console.log("<TreeFlow> nodes:", nodes, "edges:", edges);
 
+  const [sourceHandle, setSourceHandle] = useState<string>("");
+  const onConnectStart = useCallback(
+    (_event: ReactMouseEvent | ReactTouchEvent, params: OnConnectStartParams) => {
+      const sourceHandle = params.handleId || "";
+      setSourceHandle(sourceHandle);
+      _onConnectStart(sourceHandle);
+    },
+    [setSourceHandle, _onConnectStart]
+  );
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      if (!rfInstance) return;
+      if ("clientX" in event && "clientY" in event) {
+        const pos = rfInstance.screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
+        _onConnectEnd(sourceHandle, pos);
+      }
+    },
+    [_onConnectEnd, rfInstance, sourceHandle]
+  );
+
   return (
     <div ref={containerRef} className="top-0 bottom-0 w-full absolute">
       <ReactFlow
@@ -84,14 +130,18 @@ function TreeFlow() {
         onEdgeMouseEnter={onEdgeMouseEnter}
         onEdgeMouseLeave={onEdgeMouseLeave}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         zoomOnScroll={false}
         panOnScroll={true}
         nodesDraggable={true}
         nodesFocusable={false}
         zoomOnDoubleClick={false}
+        onInit={setRFInstance}
       >
-        <Controls />
+        {/* <Controls /> */}
         <MiniMap pannable nodeClassName={nodeClassName} nodeComponent={MiniMapNode} />
+        <Title />
         <Menu addBlock={addCodeNode} />
         {debug && <NodeInspector />}
       </ReactFlow>
