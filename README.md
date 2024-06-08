@@ -1,5 +1,17 @@
 # code-note
 
+## Features
+
+1. open or create `*.cnote` file
+2. [select and highlight code](#code-selection)
+3. [add code node to tree flow graph](#add-node)
+4. [add text node to tree flow graph](#add-node)
+5. grouping code nodes with scrolly
+6. [remove node or edge](#node-status)
+7. adjust relations of nodes
+8. update text of any kind of node
+9. reselect code range of code block
+
 ## Code Selection
 
 `Empty` -> `Code` -> `Focus` -> `Mark` -> `Link` 
