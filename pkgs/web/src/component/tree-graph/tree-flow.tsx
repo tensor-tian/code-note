@@ -20,16 +20,16 @@ import {
   TouchEvent as ReactTouchEvent,
 } from "react";
 
-import Code from "./code";
-import Text from "./text";
-import Template from "./template";
-import Title from "./title";
+import Code from "./node-code";
+import Text from "./node-text";
+import Scrolly from "./node-scrolly";
+import Template from "./node-template";
+import Title from "./note-title";
 import MiniMapNode from "./minimap-node";
 import NodeInspector from "./node-inspector";
-import Scrolly from "./scrolly";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
-import Menu from "./menu";
+import Menu from "./tree-flow-menu";
 
 const NODE_TYPES: NodeTypes = {
   Code,

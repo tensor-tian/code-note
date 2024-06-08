@@ -10,7 +10,7 @@ import NodeBox from "./node-box";
 import { useBlockState } from "./hooks";
 import NodeMenu from "./node-menu";
 
-function TreeNode({ id, data }: NodeProps<CodeBlock>) {
+function CodeNode({ id, data }: NodeProps<CodeBlock>) {
   const { showCode } = data;
   const { toggleCode: _toggleCode, activateNode, updateCodeBlock } = useTreeNoteStore();
   const { isSelected, isActive, isRoot, width } = useBlockState(id);
@@ -106,7 +106,7 @@ function TreeNode({ id, data }: NodeProps<CodeBlock>) {
   );
 }
 
-export default memo(TreeNode);
+export default memo(CodeNode);
 
 function block2MDX(block: CodeBlock): string {
   const rows = block.rowCount > 50 ? "" : "";

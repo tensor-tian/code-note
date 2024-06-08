@@ -1,4 +1,4 @@
-import { VscDebugConsole, VscSettingsGear } from "react-icons/vsc";
+import { VscDebugConsole } from "react-icons/vsc";
 import { RiText } from "react-icons/ri";
 import { AiOutlineGroup } from "react-icons/ai";
 import { MdOutlineSplitscreen } from "react-icons/md";
