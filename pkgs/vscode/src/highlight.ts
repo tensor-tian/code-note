@@ -383,9 +383,20 @@ export class Highlight {
   }
 
   public removeAll() {
-    if (this.isEditing()) return;
-
-    this._resetDecorations();
+    let selection = currentSelection();
+    if (!selection) {
+      if (this.isEditing()) {
+        return;
+      }
+      this._resetDecorations();
+    } else {
+      const ranges = this._ranges;
+      if (!ranges) return;
+      for (let k = DecorationKind.Code; k <= DecorationKind.Link; k++) {
+        ranges[k] = ranges[k].filter((range) => !selection.contains(range));
+      }
+      this._ranges = ranges;
+    }
     this._updateHighlights();
   }
 
