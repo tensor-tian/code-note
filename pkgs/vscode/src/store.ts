@@ -1,9 +1,12 @@
 import { ExtensionContext, FileType, Memento, Uri, workspace } from "vscode";
 import { getActiveWorkspacePackageInfo, isSubDirectory } from "./utils";
 
-import { MemFS } from "./file-system-provider";
+// import { MemFS } from "./file-system-provider";
 import { Note } from "types";
+import * as os from "os";
 import debounce from "lodash.debounce";
+import * as vscode from "vscode";
+import * as path from "path";
 
 interface ID {
   getBlockId(): string;
@@ -14,10 +17,10 @@ interface VirtualDocOperator {
   vDocUri(typ: string, id: string): Uri;
   parseVDocUri(uri: Uri): { id?: string; type?: string };
   removeVDoc: {
-    (typ: string, id: string): void;
-    (typ: Uri): void;
+    (typ: string, id: string): Promise<void>;
+    (typ: Uri): Promise<void>;
   };
-  writeVDoc: (typ: string, id: string, text: string) => Uri;
+  writeVDoc: (typ: string, id: string, text: string) => Promise<Uri>;
 }
 
 interface NoteOperator {
@@ -39,16 +42,17 @@ const addOne = (id: string): string => {
 
 export class Store implements VirtualDocOperator, NoteOperator, ID {
   private kv: Memento;
-  private memFS: MemFS;
+  private fs: vscode.FileSystem;
 
   constructor(private context: ExtensionContext) {
     this.kv = context.globalState;
-    this.memFS = new MemFS();
-    context.subscriptions.push(
-      workspace.registerFileSystemProvider(this.schemaVDoc, this.memFS, {
-        isCaseSensitive: true,
-      })
-    );
+    // this.memFS = new MemFS();
+    // context.subscriptions.push(
+    //   workspace.registerFileSystemProvider(this.schemaVDoc, this.memFS, {
+    //     isCaseSensitive: true,
+    //   })
+    // );
+    this.fs = vscode.workspace.fs;
   }
 
   getBlockId(): string {
@@ -65,38 +69,37 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
     return nextId;
   }
 
-  private readonly schemaVDoc = "code-note-memfs";
-  isVDoc(uri: Uri) {
-    return uri.scheme === this.schemaVDoc;
-  }
+  // private readonly schemaVDoc = "code-note-memfs";
+  private readonly tmpdir = Uri.file(os.tmpdir());
+
   vDocUri(typ: string, id: string) {
-    return Uri.parse(`${this.schemaVDoc}:/${typ}-${id}.md`);
+    return Uri.joinPath(this.tmpdir, `${typ}-${id}.md`);
   }
   parseVDocUri(uri: Uri) {
-    if (uri.scheme !== this.schemaVDoc) return {};
-    if (!uri.path.endsWith(".md") || !uri.path.startsWith("/")) return {};
-    const parts = uri.path.slice(1, uri.path.length - 3).split("-");
-    if (parts.length !== 2) return {};
+    const basename = path.basename(uri.path);
+    const parts = basename.slice(0, basename.length - 3).split("-");
+    if (
+      !basename.endsWith(".md") ||
+      parts.length !== 2 ||
+      !["Text", "TreeNote", "Scrolly", "Code"].includes(parts[0])
+    )
+      return {};
     return { id: parts[1], type: parts[0] };
   }
 
-  removeVDoc(typ: Uri): void;
-  removeVDoc(typ: string, id: string): void;
-  removeVDoc(uriOrTyp: string | Uri, id?: string): void {
+  removeVDoc(typ: Uri): Promise<void>;
+  removeVDoc(typ: string, id: string): Promise<void>;
+  async removeVDoc(uriOrTyp: string | Uri, id?: string): Promise<void> {
     if (typeof uriOrTyp === "string" && id) {
-      this.memFS.delete(this.vDocUri(uriOrTyp, id));
+      return this.fs.delete(this.vDocUri(uriOrTyp, id));
     } else {
       const uri = uriOrTyp as Uri;
-      this.memFS.delete(uri);
+      return this.fs.delete(uri);
     }
-    return;
   }
-  writeVDoc = (typ: string, id: string, text: string): Uri => {
+  writeVDoc = async (typ: string, id: string, text: string): Promise<Uri> => {
     const uri = this.vDocUri(typ, id);
-    this.memFS.writeFile(uri, Buffer.from(text), {
-      create: true,
-      overwrite: true,
-    });
+    await this.fs.writeFile(uri, Buffer.from(text));
     return uri;
   };
 

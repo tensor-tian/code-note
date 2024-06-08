@@ -23,12 +23,8 @@ function ScrollyNode({ id, data: { type, text, chain, stepIndex, renderAsGroup }
   }, [id, hideGroupCode]);
 
   const onActivate = useCallback(() => {
-    if (!renderAsGroup) {
-      activateNode(chain[0]);
-    } else {
-      activateNode(id);
-    }
-  }, [activateNode, chain, id, renderAsGroup]);
+    activateNode(id);
+  }, [activateNode, id]);
 
   const toggleRenderMode = useCallback(() => {
     _toggleRender(id);

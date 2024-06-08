@@ -224,6 +224,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
           const [nodeId, suffix] = sourceHandle.split("-");
           const { nodeMap } = get();
           const srcNode = nodeMap[nodeId];
+          if (!allowAddTextNode(srcNode, suffix)) {
+            return;
+          }
+          const parent = nodeMap[srcNode.parentId || ""];
           const w = 120;
           const h = 50;
           let x: number, y: number;
@@ -234,6 +238,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
             x = srcNode.position.x + srcNode.width! / 2 + 30;
             y = srcNode.position.y + srcNode.height! + 10;
           }
+          if (parent) {
+            x += parent.position.x;
+            y += parent.position.y;
+          }
           const n = templateForTextNode(x, y, w, h);
           const nextNodeMap = { ...nodeMap, [n.id]: n };
           set({ nodeMap: nextNodeMap }, false, "onConnectStart");
@@ -241,8 +249,12 @@ export const useTreeNoteStore = create<TreeNote.State>(
         onConnectEnd: async (sourceHandle, position) => {
           const { nodeMap, edges } = get();
           const [source, suffix] = sourceHandle.split("-");
+          const srcNode = nodeMap[source];
+          if (!allowAddTextNode(srcNode, suffix)) {
+            return;
+          }
           const tmp = nodeMap[TextNodeTemplateID];
-          console.log("on connect end:", position, tmp.position, tmp.width, tmp.height);
+          // console.log("on connect end:", position, tmp.position, tmp.width, tmp.height);
 
           let nextNodeMap = { ...nodeMap };
           delete nextNodeMap[TextNodeTemplateID];
@@ -321,10 +333,19 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
           // add node
           const activeNode = nodeMap[activeNodeId];
-          if (isGroupNode(activeNode) && activeNode.data.renderAsGroup) {
-            vscodeMessage.error("Active group node is rendered as group.");
-            return;
+          if (isGroupNode(activeNode)) {
+            if (activeNode.data.renderAsGroup) {
+              vscodeMessage.error(
+                "Adding a code node connecting to an active group node in 'renderAsGroup' mode is not allowed."
+              );
+              return;
+            }
+            if (action === "ext2web-add-detail") {
+              vscodeMessage.error("Adding a detail code node connecting to an active group node is not allowed.");
+              return;
+            }
           }
+
           const parent = nodeMap[activeNode?.parentId || ""] as GroupNode | undefined;
           const node = newNode({ data, action }, activeNode, parent);
           let nextNodeMap = { ...nodeMap, [node.id]: node };
@@ -394,6 +415,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         updateNodeText: (id, text) => {
           const { nodeMap } = get();
           const node = nodeMap[id];
+          console.log("update node text:", id, text, node);
           if (isCodeNode(node)) {
             updateCodeBlock({ id, text }, "updateNodeText:Code");
           } else if (isTextNode(node) || isGroupNode(node)) {
@@ -1024,6 +1046,7 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       switch (data.type) {
         case "Code":
         case "Text":
+        case "Scrolly":
           updateNodeText(data.id, data.text);
           break;
         case "TreeNote":
@@ -1045,3 +1068,13 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       iDGenerator.receiveIDs(data.key, data.ids);
   }
 });
+
+function allowAddTextNode(source: Node, suffix: string): boolean {
+  if (isGroupNode(source) && suffix === "right") {
+    return false;
+  }
+  if (source.parentId && suffix === "bottom") {
+    return false;
+  }
+  return true;
+}

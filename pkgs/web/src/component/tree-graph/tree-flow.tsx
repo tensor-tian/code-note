@@ -155,13 +155,13 @@ function usePanToActiveNode(
   nLen: number
 ) {
   const { activeNode, activeGroup, activeMark } = useTreeNoteStore(selectActiveNodeAndGroup);
-  const { setViewport } = useReactFlow();
+  const { setViewport, getViewport } = useReactFlow();
   const [mark, setMark] = useState<number>(activeMark);
   useEffect(() => {
     if (mark === activeMark) return;
     console.log("pan to active.");
-    if (!ref.current) return;
-    if (isGroupNode(activeNode) && !activeNode.data.renderAsGroup) return;
+    if (!ref.current || !activeNode) return;
+    // if (isGroupNode(activeNode) && !activeNode.data.renderAsGroup) return;
 
     let { x: xActive, y: yActive } = activeNode.position;
     if (activeGroup) {
@@ -174,15 +174,19 @@ function usePanToActiveNode(
     const container = ref.current?.getBoundingClientRect();
     const x = container.width / 2 - xActive - wActive / 2;
     let y = container.height / 2 - yActive - hActive / 2;
-    console.log("setViewport", hActive, container.height - 120);
+    // console.log("setViewport", hActive, container.height - 120);
     if (hActive > container.height - 120) {
       y = -yActive + 120;
+    }
+    if (isGroupNode(activeNode) && !activeNode.data.renderAsGroup) {
+      // prevent vertical scroll
+      y = getViewport().y;
     }
     setViewport({ x, y, zoom: VIEWPORT.zoom }, { duration: 800 });
     if (nLen === 1) {
       setTimeout(() => setKV("panToActiveMark", 0), 800);
     }
-  }, [activeGroup, activeMark, activeNode, setViewport, mark, setKV, nLen, ref]);
+  }, [activeGroup, activeMark, activeNode, setViewport, mark, setKV, nLen, ref, getViewport]);
 
   useEffect(() => {
     setMark(activeMark);

@@ -22,15 +22,7 @@ type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
 export default function Menu({ addBlock }: Props) {
-  const {
-    resetNote,
-    setKV,
-    groupNodes: _groupNodes,
-    splitGroup,
-    deleteEdge,
-    deleteNode,
-    forceLayout,
-  } = useTreeNoteStore();
+  const { setKV, groupNodes: _groupNodes, splitGroup, deleteEdge, deleteNode, forceLayout } = useTreeNoteStore();
   const { id, text, type: typ, debug, canGroupNodes, canSplitGroup } = useTreeNoteStore(selectMenuState);
 
   const addDetail = useCallback(async () => {
