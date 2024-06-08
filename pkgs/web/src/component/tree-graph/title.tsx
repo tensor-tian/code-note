@@ -3,6 +3,7 @@ import { selectMenuState } from "./selector";
 import { useTreeNoteStore } from "./store";
 import { useSpring, animated } from "@react-spring/web";
 import MDX from "../mdx";
+import { DefaultNodeDimension } from "./layout";
 
 function Title() {
   const { text, debug } = useTreeNoteStore(selectMenuState);
@@ -20,7 +21,7 @@ function Title() {
     <>
       <Panel position="top-left" className="border px-4 py-4">
         <div className="px-1" style={{ width: 600 }}>
-          <MDX mdx={text} />
+          <MDX mdx={text} width={DefaultNodeDimension.W} />
         </div>
         <animated.div className="flex justify-between  pt-4" style={style}>
           <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray rounded border px-3  bg-gray-300">{viewport}</pre>

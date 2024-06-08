@@ -96,8 +96,9 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     context.subscriptions.push(
       vscode.workspace.onDidCloseTextDocument((doc: vscode.TextDocument) => {
         const uri = doc.uri;
-        this.store.removeVDoc(doc.uri);
-        this.vDocToNoteFileMap.delete(uri.path);
+        this.store.removeVDoc(doc.uri).then(() => {
+          this.vDocToNoteFileMap.delete(uri.path);
+        });
       }),
       vscode.workspace.onDidChangeTextDocument(this.onDidChangeVDoc, this),
       vscode.window.registerCustomEditorProvider(
@@ -159,7 +160,9 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     async (message: Web2Ext.Message) => {
       const webviewPanel = this.getWebviewPanel(webviewKey);
       if (!webviewPanel) return;
-      console.log("web to ext:", message);
+      if (message.action !== "web2ext-save-note") {
+        console.log("web to ext:", message);
+      }
       switch (message.action) {
         case "web2ext-show-info":
           vscode.window.showInformationMessage(message.data);
@@ -282,7 +285,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     { text: content, id, type: typ }: Web2Ext.StartTextEditor["data"],
     webviewKey: string
   ) {
-    const uri = this.store.writeVDoc(typ, id, content);
+    const uri = await this.store.writeVDoc(typ, id, content);
     this.vDocToNoteFileMap.set(uri.path, webviewKey);
     const doc = await vscode.workspace.openTextDocument(uri);
     const webviewPanel = this.getWebviewPanel(webviewKey);
@@ -317,7 +320,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       data: { id, type: typ, text },
     } as Ext2Web.TextChange;
     if (webviewPanel?.visible) {
-      console.log("webview panel is visible:", id, typ, text);
+      // console.log("webview panel is visible:", id, typ, text);
       webviewPanel.webview?.postMessage(message);
     } else {
       console.log("webview panel is not visible");

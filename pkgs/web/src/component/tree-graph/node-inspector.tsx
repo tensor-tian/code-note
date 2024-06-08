@@ -3,18 +3,19 @@ import { selectNodeInspectorState } from "./selector";
 import { useTreeNoteStore } from "./store";
 
 import { Node } from "types";
+import { DefaultNodeDimension } from "./layout";
 
 export default function NodeInspector() {
   const nodes: Node[] = useNodes();
 
-  const { selectedNodes, activeNodeId, settings } = useTreeNoteStore(selectNodeInspectorState);
+  const { selectedNodes, activeNodeId } = useTreeNoteStore(selectNodeInspectorState);
   return (
     <EdgeLabelRenderer>
       <div className="react-flow__devtools-nodeinspector">
         {nodes.map((node) => {
-          const x = (node.positionAbsolute?.x || 0) + (node.width || settings.W) / 2;
+          const x = (node.positionAbsolute?.x || 0) + (node.width || DefaultNodeDimension.W) / 2;
           const y = node.positionAbsolute?.y || 0;
-          const width = (node.width || settings.W) / 2 || 0;
+          const width = (node.width || DefaultNodeDimension.W) / 2 || 0;
           const height = node.height || 0;
           const selected = selectedNodes.includes(node.id);
           const isActive = activeNodeId === node.id;

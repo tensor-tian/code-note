@@ -1,4 +1,4 @@
-import { getHidden, hasCycle, isCodeNode, isGroupNode, isTextNode, TreeGraphSettings } from "./layout";
+import { getHidden, hasCycle, isCodeNode, isGroupNode, isTextNode, DefaultNodeDimension } from "./layout";
 import { CodeBlock, CodeNode, Edge, Ext2Web, GroupNode, Node, Note, TemplateNode, TextNode, Web2Ext } from "types";
 import {
   EdgeChange,
@@ -28,7 +28,6 @@ namespace TreeNote {
     rootIds: string[];
     handshake: boolean;
     debug: boolean;
-    settings: TreeGraphSettings;
     hiddenEdges: Set<string>;
     hiddenNodes: Set<string>;
   }
@@ -57,6 +56,8 @@ namespace TreeNote {
     // toggleGroupRenderMode: (id: string) => void;
     handleCodeHikeMessage: (action: string, data: any) => void;
     forceLayout: () => void;
+    adjustNodeWidth: (id: string, widen: boolean) => void;
+    setGroupTextHeight: (id: string, height: number) => void;
   }
   export type State = Store & Actions;
 }
@@ -78,12 +79,6 @@ const initialData: TreeNote.Store = {
   rootIds: [],
   handshake: false,
   debug: false,
-  settings: {
-    X: 50,
-    Y: 46,
-    W: 600,
-    H: 58,
-  },
   version: 2,
   hiddenEdges: new Set(),
   hiddenNodes: new Set(),
@@ -127,10 +122,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
             return acc;
           }, {} as Record<string, Node>);
           set({ ...note, hiddenEdges: new Set<string>(), hiddenNodes: new Set<string>() });
-          const { activeNodeId, nodeMap, edges, settings } = get();
+          const { activeNodeId, nodeMap, edges } = get();
           if (!activeNodeId) {
             if (Object.keys(nodeMap).length === 0) return;
-            const { nodeMap: nextNodeMap, rootIds } = layout(nodeMap, edges, settings);
+            const { nodeMap: nextNodeMap, rootIds } = layout(nodeMap, edges);
             set({
               nodeMap: nextNodeMap,
               rootIds,
@@ -180,7 +175,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         },
         onNodeChange: (_changes) => {
           console.log("on node change:", _changes);
-          const { nodeMap, edges, rootIds, settings } = get();
+          const { nodeMap, edges, rootIds } = get();
           const changes = _changes.filter((c) => {
             if (c.type === "select") {
               return false;
@@ -216,7 +211,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           };
           let nextRootIds = rootIds;
           if (needLayout) {
-            ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, edges, settings));
+            ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, edges));
           }
           set({ nodeMap: nextNodeMap, rootIds: nextRootIds }, false, "onNodeChange");
         },
@@ -229,6 +224,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
           const [nodeId, suffix] = sourceHandle.split("-");
           const { nodeMap } = get();
           const srcNode = nodeMap[nodeId];
+          if (!allowAddTextNode(srcNode, suffix)) {
+            return;
+          }
+          const parent = nodeMap[srcNode.parentId || ""];
           const w = 120;
           const h = 50;
           let x: number, y: number;
@@ -239,15 +238,23 @@ export const useTreeNoteStore = create<TreeNote.State>(
             x = srcNode.position.x + srcNode.width! / 2 + 30;
             y = srcNode.position.y + srcNode.height! + 10;
           }
+          if (parent) {
+            x += parent.position.x;
+            y += parent.position.y;
+          }
           const n = templateForTextNode(x, y, w, h);
           const nextNodeMap = { ...nodeMap, [n.id]: n };
           set({ nodeMap: nextNodeMap }, false, "onConnectStart");
         },
         onConnectEnd: async (sourceHandle, position) => {
-          const { nodeMap, edges, settings } = get();
+          const { nodeMap, edges } = get();
           const [source, suffix] = sourceHandle.split("-");
+          const srcNode = nodeMap[source];
+          if (!allowAddTextNode(srcNode, suffix)) {
+            return;
+          }
           const tmp = nodeMap[TextNodeTemplateID];
-          console.log("on connect end:", position, tmp.position, tmp.width, tmp.height);
+          // console.log("on connect end:", position, tmp.position, tmp.width, tmp.height);
 
           let nextNodeMap = { ...nodeMap };
           delete nextNodeMap[TextNodeTemplateID];
@@ -264,7 +271,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             let nextEdges = [...edges];
             const idx = edges.findIndex((e) => e.sourceHandle === sourceHandle);
             const ids = await iDGenerator.requestIDs(2);
-            const textNode = newTextNode(ids[0], settings.W);
+            const textNode = newTextNode(ids[0]);
             nextNodeMap[textNode.id] = textNode;
             const targetSuffix = suffix === "right" ? "left" : "top";
             if (idx !== -1) {
@@ -277,7 +284,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             const conn = { source, sourceHandle, target: textNode.id, targetHandle: `${textNode.id}-${targetSuffix}` };
             nextEdges = addEdge(newEdgeFromConn(conn, ids[1]), nextEdges);
             let rootIds: string[];
-            ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, settings));
+            ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges));
             set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, false, "onConnectEnd");
           }
         },
@@ -285,7 +292,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           console.log("on connect:", conn);
           const { source, target, sourceHandle, targetHandle } = conn;
           if (source === target) return;
-          const { edges, nodeMap, settings } = get();
+          const { edges, nodeMap } = get();
 
           const isX = sourceHandle?.endsWith("right") && targetHandle?.endsWith("left");
           const isY = sourceHandle?.endsWith("bottom") && targetHandle?.endsWith("top");
@@ -313,12 +320,12 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
 
           let rootIds: string[];
-          ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, settings));
+          ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges));
           set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, false, "onConnect");
         },
 
         addCodeNode: async ({ action, data }) => {
-          const { nodeMap, edges, activeNodeId, settings, selectedNodes } = get();
+          const { nodeMap, edges, activeNodeId, selectedNodes } = get();
           const nodes = Object.values(nodeMap);
           console.log("add code node:", activeNodeId, nodes.length);
           // empty tree flow graph
@@ -326,8 +333,21 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
           // add node
           const activeNode = nodeMap[activeNodeId];
+          if (isGroupNode(activeNode)) {
+            if (activeNode.data.renderAsGroup) {
+              vscodeMessage.error(
+                "Adding a code node connecting to an active group node in 'renderAsGroup' mode is not allowed."
+              );
+              return;
+            }
+            if (action === "ext2web-add-detail") {
+              vscodeMessage.error("Adding a detail code node connecting to an active group node is not allowed.");
+              return;
+            }
+          }
+
           const parent = nodeMap[activeNode?.parentId || ""] as GroupNode | undefined;
-          const node = newNode({ data, action }, settings, activeNode, parent);
+          const node = newNode({ data, action }, activeNode, parent);
           let nextNodeMap = { ...nodeMap, [node.id]: node };
 
           if (!activeNode) {
@@ -376,7 +396,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           const chain = selectedNodes.length > 1 ? getNextChain(selectedNodes, nextEdges) : undefined;
           let nextRootIds: string[];
-          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, settings));
+          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges));
           set(
             {
               activeNodeId: node.id,
@@ -395,9 +415,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
         updateNodeText: (id, text) => {
           const { nodeMap } = get();
           const node = nodeMap[id];
+          console.log("update node text:", id, text, node);
           if (isCodeNode(node)) {
             updateCodeBlock({ id, text }, "updateNodeText:Code");
-          } else if (isTextNode(node)) {
+          } else if (isTextNode(node) || isGroupNode(node)) {
             const nextNodeMap = {
               ...nodeMap,
               [id]: {
@@ -408,7 +429,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
                 },
               },
             };
-            set({ nodeMap: nextNodeMap }, false, "updateNodeText:Text");
+            set({ nodeMap: nextNodeMap }, false, "updateNodeText:" + node.type);
           }
         },
 
@@ -449,7 +470,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
         },
         groupNodes: (id: string) => {
-          const { selectedNodes, canGroupNodes, edges, nodeMap, settings } = get();
+          const { selectedNodes, canGroupNodes, edges, nodeMap } = get();
           if (!canGroupNodes) {
             vscodeMessage.warn("Only a vertical edge chain can be merged to a group node");
             return;
@@ -485,7 +506,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           // calc layout
           let nextRootIds: string[];
-          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, settings));
+          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges));
           set(
             {
               nodeMap: nextNodeMap,
@@ -501,7 +522,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           panToActive();
         },
         splitGroup() {
-          const { selectedNodes, nodeMap, edges, settings } = get();
+          const { selectedNodes, nodeMap, edges } = get();
           const id = selectedNodes[0];
           const group = nodeMap[id];
           if (!isGroupNode(group) || selectedNodes.length !== 1) {
@@ -543,7 +564,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           // calc layout
           let nextRootIds: string[];
-          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, settings));
+          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges));
           set(
             {
               nodeMap: nextNodeMap,
@@ -558,7 +579,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           panToActive();
         },
         toggleRenderAsGroup(id: string) {
-          const { nodeMap, edges, settings } = get();
+          const { nodeMap, edges } = get();
           const g = nodeMap[id];
           if (!isGroupNode(g)) {
             vscodeMessage.warn("Only the group node can toggle renderAsGroup");
@@ -572,7 +593,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             nextNodeMap[g.id] = {
               ...g,
               data: { ...g.data, renderAsGroup: false, stepIndex: 0 },
-              style: { width: settings.W },
+              style: { width: DefaultNodeDimension.W },
             };
             const idx = nextEdges.findIndex((e) => e.sourceHandle === `${g.id}-right`);
             if (idx !== -1) {
@@ -595,7 +616,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
           let nextRootIds: string[] = [];
           const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, nextEdges, KeepNodeIds);
-          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, settings));
+          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges));
           set(
             {
               nodeMap: nextNodeMap,
@@ -637,7 +658,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             }
             const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, nextEdges, KeepNodeIds);
             let nextRooIds: string[] = [];
-            ({ nodeMap: nextNodeMap, rootIds: nextRooIds } = layout(nextNodeMap, nextEdges, this.settings));
+            ({ nodeMap: nextNodeMap, rootIds: nextRooIds } = layout(nextNodeMap, nextEdges));
             set(
               {
                 nodeMap: nextNodeMap,
@@ -656,7 +677,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           set({ edges: edges.filter((e) => e.id !== selectedEdge) }, false, "deleteEdge");
         },
         deleteNode: async () => {
-          const { nodeMap, selectedNodes, edges, settings } = get();
+          const { nodeMap, selectedNodes, edges } = get();
           if (selectedNodes.length !== 1) {
             vscodeMessage.warn("Can't remove multiple nodes.");
             return;
@@ -709,7 +730,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
 
           let nextRootIds: string[];
-          ({ rootIds: nextRootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, settings));
+          ({ rootIds: nextRootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges));
           set(
             {
               nodeMap: nextNodeMap,
@@ -722,8 +743,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
         },
         forceLayout() {
-          const { nodeMap, edges, settings } = get();
-          const { rootIds, nodeMap: nextNodeMap } = layout(nodeMap, edges, settings);
+          const { nodeMap, edges } = get();
+          const { rootIds, nodeMap: nextNodeMap } = layout(nodeMap, edges);
           set(
             {
               rootIds,
@@ -731,6 +752,58 @@ export const useTreeNoteStore = create<TreeNote.State>(
             },
             false,
             "forceLayout"
+          );
+        },
+        adjustNodeWidth(id, widen) {
+          const { nodeMap, edges } = get();
+          const node = nodeMap[id];
+          const isGroup = isGroupNode(node);
+          const delta = widen ? +1 : -1;
+          const width = isGroup
+            ? +(node.style?.width || 0) || node.width || DefaultNodeDimension.WGroup
+            : node.width || DefaultNodeDimension.W;
+          const nextWidth = (Math.floor((width || DefaultNodeDimension.W) / 100) + delta) * 100;
+          const nextNode = { ...node, width: nextWidth, data: { ...node.data } };
+          if (isGroupNode(nextNode)) {
+            if (nextNode.data.renderAsGroup) {
+              nextNode.data.groupModeWidth = width;
+            }
+          }
+          if (isGroup) nextNode.style = { ...node.style, width: nextWidth };
+          let nextNodeMap = { ...nodeMap, [id]: nextNode };
+          let rootIds: string[];
+          ({ nodeMap: nextNodeMap, rootIds } = layout(nextNodeMap, edges));
+          set(
+            {
+              rootIds,
+              nodeMap: nextNodeMap,
+            },
+            false,
+            widen ? "widenNodeWidth" : "narrowNodeWidth"
+          );
+        },
+        setGroupTextHeight(id, height) {
+          const { nodeMap, edges } = get();
+          const node = nodeMap[id];
+          let nextNodeMap = {
+            ...nodeMap,
+            [id]: {
+              ...node,
+              data: {
+                ...node.data,
+                textHeight: height,
+              },
+            },
+          };
+          let rootIds: string[];
+          ({ nodeMap: nextNodeMap, rootIds } = layout(nextNodeMap, edges));
+          set(
+            {
+              nodeMap: nextNodeMap,
+              rootIds,
+            },
+            false,
+            "updateGroupTextHeight"
           );
         },
       };
@@ -747,7 +820,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
           text: state.text,
           nodeMap: state.nodeMap,
           edges: state.edges,
-          settings: state.settings,
         };
       },
       storage: {
@@ -796,7 +868,6 @@ export function newEdgeFromConn(conn: Connection, id: string): Edge {
 
 export function newNode(
   { action, data: block }: Ext2Web.AddCode,
-  settings: TreeGraphSettings,
   activeNode: Node | undefined,
   parent: GroupNode | undefined
 ) {
@@ -809,9 +880,9 @@ export function newNode(
       y += parent.position.y;
     }
     if (action === "ext2web-add-detail") {
-      x += (activeNode.width || settings.W) + settings.X;
+      x += (activeNode.width || DefaultNodeDimension.W) + DefaultNodeDimension.X;
     } else if (action === "ext2web-add-next") {
-      y = (activeNode.height || settings.H) + settings.Y;
+      y = (activeNode.height || DefaultNodeDimension.H) + DefaultNodeDimension.Y;
     }
   }
   const node: Node = {
@@ -819,8 +890,8 @@ export function newNode(
     type: block.type,
     position: { x, y },
     data: block,
-    width: settings.W,
-    height: settings.H,
+    width: DefaultNodeDimension.W,
+    height: DefaultNodeDimension.H,
     deletable: false,
   };
   return node;
@@ -836,17 +907,17 @@ const templateForTextNode = (x: number, y: number, width: number, height: number
   height,
   data: {
     id: TextNodeTemplateID,
-    text: "Create Text Node",
+    text: "Add Text Node",
     type: "Template",
   },
 });
 
-export function newTextNode(id: string, width: number): TextNode {
+export function newTextNode(id: string): TextNode {
   return {
     id,
     type: "Text",
     position: { x: 0, y: 0 },
-    width,
+    width: DefaultNodeDimension.W,
     data: {
       id,
       type: "Text",
@@ -911,10 +982,11 @@ function newScrolly(id: string, chain: string[]): GroupNode {
     data: {
       id,
       type: "Scrolly",
-      text: "",
+      text: "# h1 \n## h2",
       chain,
       renderAsGroup: false,
       stepIndex: 0,
+      groupModeWidth: DefaultNodeDimension.WGroup,
     },
     position: { x: 0, y: 0 },
     style: {
@@ -974,6 +1046,7 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       switch (data.type) {
         case "Code":
         case "Text":
+        case "Scrolly":
           updateNodeText(data.id, data.text);
           break;
         case "TreeNote":
@@ -995,3 +1068,13 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       iDGenerator.receiveIDs(data.key, data.ids);
   }
 });
+
+function allowAddTextNode(source: Node, suffix: string): boolean {
+  if (isGroupNode(source) && suffix === "right") {
+    return false;
+  }
+  if (source.parentId && suffix === "bottom") {
+    return false;
+  }
+  return true;
+}

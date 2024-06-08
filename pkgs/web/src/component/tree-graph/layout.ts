@@ -1,12 +1,5 @@
 import type { CodeNode, Edge, GroupNode, Node, TemplateNode, TextNode } from "types";
 
-export type TreeGraphSettings = {
-  X: number;
-  Y: number;
-  W: number;
-  H: number;
-};
-
 const GroupPadding = {
   X: 10,
   Y: 28,
@@ -16,6 +9,14 @@ export const VIEWPORT = {
   x: 0,
   y: 0,
   zoom: 1.0,
+};
+
+export const DefaultNodeDimension = {
+  X: 50,
+  Y: 46,
+  W: 600,
+  H: 58,
+  WGroup: 800,
 };
 
 enum VisitOrder {
@@ -43,7 +44,7 @@ class TreeLayout {
   edgeMap = new Map<string, Edge>();
   layoutMap = new Map<string, NodeLayout>();
 
-  constructor(private nodeMap: Record<string, Node>, edges: Edge[], private settings: TreeGraphSettings) {
+  constructor(private nodeMap: Record<string, Node>, edges: Edge[]) {
     edges.forEach((e) => {
       this.edgeMap.set(e.sourceHandle!, e).set(e.targetHandle!, e);
     });
@@ -153,8 +154,8 @@ class TreeLayout {
   private calcTreeSize = (n: Node) => {
     const sz = this.layoutMap.get(n.id)!;
     if (isGroupNode(n) && !n.data.renderAsGroup) {
-      const { chain } = n.data;
-      sz.h = GroupPadding.Y;
+      const { chain, textHeight } = n.data;
+      sz.h = GroupPadding.Y + (textHeight || 0);
       for (let i = 0; i < chain.length; i++) {
         const _id = chain[i];
         const csz = this.layoutMap.get(_id)!;
@@ -175,7 +176,7 @@ class TreeLayout {
     }
     const bsz = this.sizeOf(n, this.bottom);
     if (bsz) {
-      sz.treeH += bsz.treeH + this.settings.Y;
+      sz.treeH += bsz.treeH + DefaultNodeDimension.Y;
     }
     if (bsz && bsz.wCol > sz.wCol) {
       sz.wCol = bsz.wCol;
@@ -183,7 +184,7 @@ class TreeLayout {
 
     sz.treeW = sz.wCol;
     if (rsz) {
-      sz.treeW += rsz.treeW + this.settings.X;
+      sz.treeW += rsz.treeW + DefaultNodeDimension.X;
     }
     if (bsz && bsz.treeW > sz.treeW) {
       sz.treeW = bsz.treeW;
@@ -197,17 +198,20 @@ class TreeLayout {
     if (n.parentId) {
       // children of group node
       const psz = this.layoutMap.get(n.parentId)!;
+
       sz.x = psz.x + GroupPadding.X;
       const top = this.sizeOf(n, this.top);
       const topRight = this.sizeOf(n, this.topRight);
-      sz.y = psz.y;
+      // sz.y = psz.y;
       if (top && top.wCol > sz.wCol) {
         sz.wCol = top.wCol;
       }
       if (top) {
-        sz.y = top.y + Math.max(topRight?.treeH || 0, top.h) + this.settings.Y;
+        sz.y = top.y + Math.max(topRight?.treeH || 0, top.h) + DefaultNodeDimension.Y;
       } else {
-        sz.y = psz.y + GroupPadding.Y;
+        const parent = this.nodeMap[n.parentId];
+        const textHeight = (isGroupNode(parent) && parent.data.textHeight) || 0;
+        sz.y = psz.y + GroupPadding.Y + textHeight;
       }
       return;
     }
@@ -225,9 +229,9 @@ class TreeLayout {
         sz.x += 10;
       }
     } else {
-      sz.x = (left ? left!.x + left!.wCol : 0) + this.settings.X;
+      sz.x = (left ? left!.x + left!.wCol : 0) + DefaultNodeDimension.X;
     }
-    sz.y = left?.y || (top ? top!.y + Math.max(topRight?.treeH || 0, top.h) : 50) + this.settings.Y;
+    sz.y = left?.y || (top ? top!.y + Math.max(topRight?.treeH || 0, top.h) : 50) + DefaultNodeDimension.Y;
     // group node
     if (isGroupNode(n)) {
       sz.x -= GroupPadding.X;
@@ -251,8 +255,9 @@ class TreeLayout {
     const codes: Node[] = [];
 
     for (const n of nodes) {
-      let w = n.width || this.settings.W;
-      let h = n.height || this.settings.H;
+      let w = n.width || DefaultNodeDimension.W;
+      if (isGroupNode(n) && n.style?.width) w = +n.style.width;
+      let h = n.height || DefaultNodeDimension.H;
       if (isCodeNode(n) || isTextNode(n)) {
         codes.push(n);
       }
@@ -360,11 +365,11 @@ export function isGroupNode(n: Node | undefined): n is GroupNode {
 }
 
 export function getHidden(nodeMap: Record<string, Node>, edges: Edge[], keepList: Set<string>) {
-  return new TreeLayout(nodeMap, edges, { X: 0, Y: 0, W: 0, H: 0 }).getHidden(keepList);
+  return new TreeLayout(nodeMap, edges).getHidden(keepList);
 }
 
-export function layout(nodeMap: Record<string, Node>, edges: Edge[], settings: TreeGraphSettings) {
-  return new TreeLayout(nodeMap, edges, settings).layout();
+export function layout(nodeMap: Record<string, Node>, edges: Edge[]) {
+  return new TreeLayout(nodeMap, edges).layout();
 }
 
 export function hasCycle(edges: Edge[]): boolean {

@@ -1,8 +1,7 @@
-import { VIEWPORT, isGroupNode } from "./layout";
+import { DefaultNodeDimension, VIEWPORT, isGroupNode } from "./layout";
 import CodeEdge, { useEdge } from "./edge";
 import type { Node, Web2Ext } from "types";
 import ReactFlow, {
-  Controls,
   EdgeTypes,
   MiniMap,
   NodeTypes,
@@ -10,7 +9,7 @@ import ReactFlow, {
   ReactFlowInstance,
   useReactFlow,
 } from "reactflow";
-import { selectActiveNodeAndGroup, selectNodes, selectSettings, selectTreeFlowState } from "./selector";
+import { selectActiveNodeAndGroup, selectNodes, selectTreeFlowState } from "./selector";
 import { useTreeNoteStore, TreeNote } from "./store";
 import {
   useCallback,
@@ -156,14 +155,13 @@ function usePanToActiveNode(
   nLen: number
 ) {
   const { activeNode, activeGroup, activeMark } = useTreeNoteStore(selectActiveNodeAndGroup);
-  const settings = useTreeNoteStore(selectSettings);
-  const { setViewport } = useReactFlow();
+  const { setViewport, getViewport } = useReactFlow();
   const [mark, setMark] = useState<number>(activeMark);
   useEffect(() => {
     if (mark === activeMark) return;
     console.log("pan to active.");
-    if (!ref.current) return;
-    if (isGroupNode(activeNode) && !activeNode.data.renderAsGroup) return;
+    if (!ref.current || !activeNode) return;
+    // if (isGroupNode(activeNode) && !activeNode.data.renderAsGroup) return;
 
     let { x: xActive, y: yActive } = activeNode.position;
     if (activeGroup) {
@@ -171,20 +169,24 @@ function usePanToActiveNode(
       yActive += activeGroup.position.y;
     }
 
-    const wActive = activeNode.width || settings.W;
-    const hActive = activeNode.height || settings.H;
+    const wActive = activeNode.width || DefaultNodeDimension.W;
+    const hActive = activeNode.height || DefaultNodeDimension.H;
     const container = ref.current?.getBoundingClientRect();
     const x = container.width / 2 - xActive - wActive / 2;
     let y = container.height / 2 - yActive - hActive / 2;
-    console.log("setViewport", hActive, container.height - 120);
+    // console.log("setViewport", hActive, container.height - 120);
     if (hActive > container.height - 120) {
       y = -yActive + 120;
+    }
+    if (isGroupNode(activeNode) && !activeNode.data.renderAsGroup) {
+      // prevent vertical scroll
+      y = getViewport().y;
     }
     setViewport({ x, y, zoom: VIEWPORT.zoom }, { duration: 800 });
     if (nLen === 1) {
       setTimeout(() => setKV("panToActiveMark", 0), 800);
     }
-  }, [activeGroup, activeMark, activeNode, setViewport, mark, setKV, nLen, ref, settings.W, settings.H]);
+  }, [activeGroup, activeMark, activeNode, setViewport, mark, setKV, nLen, ref, getViewport]);
 
   useEffect(() => {
     setMark(activeMark);

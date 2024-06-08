@@ -7,7 +7,6 @@ import type { IconType } from "react-icons";
 import { Panel } from "reactflow";
 
 import IconButton from "@mui/material/IconButton";
-import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 
 import { useHover } from "usehooks-ts";
@@ -18,22 +17,13 @@ import { vscode, isVscode, DEFAULT_BLOCK } from "../../utils";
 import { iDGenerator, useTreeNoteStore } from "./store";
 import { selectMenuState } from "./selector";
 import { Ext2Web, Web2Ext } from "types";
-import Avatar from "@mui/material/Avatar";
 
 type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
 export default function Menu({ addBlock }: Props) {
-  const {
-    resetNote,
-    setKV,
-    groupNodes: _groupNodes,
-    splitGroup,
-    deleteEdge,
-    deleteNode,
-    forceLayout,
-  } = useTreeNoteStore();
-  const { id, text, type: typ, settings, debug, canGroupNodes, canSplitGroup } = useTreeNoteStore(selectMenuState);
+  const { setKV, groupNodes: _groupNodes, splitGroup, deleteEdge, deleteNode, forceLayout } = useTreeNoteStore();
+  const { id, text, type: typ, debug, canGroupNodes, canSplitGroup } = useTreeNoteStore(selectMenuState);
 
   const addDetail = useCallback(async () => {
     const [id] = await iDGenerator.requestIDs(1);
@@ -98,7 +88,6 @@ type RoundButtonProps = {
 function RoundButton({ Icon, title, disabled, onClick }: RoundButtonProps) {
   const ref = useRef(null);
   const isHover = useHover(ref);
-  console.log("disabled:", disabled);
 
   return (
     <Tooltip title={title} arrow placement="left">
