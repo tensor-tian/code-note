@@ -11,6 +11,9 @@ import { ErrorBoundary } from "react-error-boundary";
 import type { MDXContent } from "mdx/types";
 import { remarkCodeHike } from "@code-hike-local/mdx";
 import remarkGfm from "remark-gfm";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
+import "katex/dist/katex.min.css";
 
 import cls from "classnames";
 
@@ -18,7 +21,13 @@ async function compileAndRun(input: string) {
   try {
     const c = await compile(input, {
       outputFormat: "function-body",
+      rehypePlugins: [
+        // @ts-ignore
+        rehypeKatex,
+      ],
       remarkPlugins: [
+        remarkMath,
+        remarkGfm,
         [
           remarkCodeHike,
           {
@@ -27,9 +36,9 @@ async function compileAndRun(input: string) {
             showCopyButton: false,
             autoImport: false,
             autoLink: false,
+            triggerPosition: "50%",
           },
         ],
-        [remarkGfm],
       ],
     });
     // @ts-ignore

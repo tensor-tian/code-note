@@ -82,8 +82,8 @@ function ScrollyNode({ id, data: { type, text, chain, stepIndex, renderAsGroup }
       isSelected={isSelected}
       isActive={isActive}
       isRoot={isRoot}
-      className="w-full h-full px-2 py-2 bg-white bg-opacity-0"
-      style={{ width, "--ch-scrollycoding-sticker-width": Math.max(width / 2, 420) + "px" } as CSSProperties}
+      className="w-full h-full px-2 py-2 bg-white bg-opacity-0 nowheel"
+      style={{ width, "--ch-scrollycoding-sticker-width": Math.max((3 * width) / 5, 420) + "px" } as CSSProperties}
     >
       <NodeMenu
         id={id}
@@ -105,7 +105,7 @@ function ScrollyNode({ id, data: { type, text, chain, stepIndex, renderAsGroup }
 export default ScrollyNode;
 
 function groupCodesMDX(id: string, codes: CodeNode[]): string {
-  return `<CH.Scrollycoding id="${id}" enableScroller={false} >
+  return `<CH.Scrollycoding id="${id}" enableScroller={true} >
 ${codes.map(({ data }) => `\n${data.text}\n\n${data.code}\n`).join("\n---\n")}
 </CH.Scrollycoding>
 `;

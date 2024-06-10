@@ -8,6 +8,7 @@ import { Store } from "./store";
 import fs from "fs";
 import { initCodeNote } from "./store";
 import { posix } from "path";
+import { tmpdir } from "os";
 
 type WebManifest = {
   files: Record<"main.css" | "main.js", string>;
@@ -68,7 +69,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     }
     const { name: pkgName } = await getActiveWorkspacePackageInfo();
     if (!pkgName) {
-      vscode.window.showErrorMessage("Package Name is note found!");
+      vscode.window.showErrorMessage("Package Name is not found!");
       return;
     }
 
@@ -257,6 +258,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         <title>Code Note</title>
         <script defer="defer" src="${scriptUri}"></script>
         <link href="${styleUri}" rel="stylesheet" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" integrity="sha384-wcIxkf4k558AjM3Yz3BBFQUbk/zgIYC2R0QpeeYb+TwlBVMrlgLqwRjRtGZiK7ww" crossorigin="anonymous">
       </head>
       <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
