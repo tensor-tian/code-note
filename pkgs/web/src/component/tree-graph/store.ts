@@ -21,7 +21,6 @@ import { migrateNote } from "./selector";
 namespace TreeNote {
   export interface Store extends Note {
     activeEdgeId: string;
-    canGroupNodes: boolean;
     selectedNodes: string[];
     selectedEdge: string;
     panToActiveMark: number;
@@ -72,7 +71,6 @@ const initialData: TreeNote.Store = {
   edges: [],
   activeNodeId: "", // highlight node, central in viewport, parent for adding node
   activeEdgeId: "", // highlight edge on hover
-  canGroupNodes: false,
   selectedNodes: [], // checked for merge group
   selectedEdge: "", // select for delete
   panToActiveMark: 0,
@@ -150,28 +148,15 @@ export const useTreeNoteStore = create<TreeNote.State>(
           panToActive();
         },
         toggleNodeSelection: (id) => {
-          const { selectedNodes, edges, nodeMap } = get();
+          const { selectedNodes } = get();
           let nextSelectedNodes: string[];
           if (selectedNodes.includes(id)) {
             nextSelectedNodes = selectedNodes.filter((nId) => nId !== id);
           } else {
             nextSelectedNodes = [...selectedNodes, id];
           }
-          const noGroupNode = nextSelectedNodes.every((id) => {
-            const node = nodeMap[id];
-            if (!node) return false;
-            return node.data.type === "Code" && !node.parentId;
-          });
-          const chain =
-            noGroupNode && nextSelectedNodes.length > 1 ? getNextChain(nextSelectedNodes, edges) : undefined;
-          set(
-            {
-              canGroupNodes: Boolean(chain),
-              selectedNodes: chain || nextSelectedNodes,
-            },
-            false,
-            "toggleNodeSelection"
-          );
+
+          set({ selectedNodes: nextSelectedNodes }, false, "toggleNodeSelection");
         },
         onNodeChange: (_changes) => {
           console.log("on node change:", _changes);
@@ -325,7 +310,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         },
 
         addCodeNode: async ({ action, data }) => {
-          const { nodeMap, edges, activeNodeId, selectedNodes } = get();
+          const { nodeMap, edges, activeNodeId } = get();
           const nodes = Object.values(nodeMap);
           console.log("add code node:", activeNodeId, nodes.length);
           // empty tree flow graph
@@ -394,7 +379,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
               }
             }
           }
-          const chain = selectedNodes.length > 1 ? getNextChain(selectedNodes, nextEdges) : undefined;
           let nextRootIds: string[];
           ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges));
           set(
@@ -403,7 +387,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
               nodeMap: nextNodeMap,
               edges: nextEdges,
               rootIds: nextRootIds,
-              canGroupNodes: Boolean(chain),
             },
             false,
             "addCodeNode"
@@ -470,14 +453,19 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
         },
         groupNodes: (id: string) => {
-          const { selectedNodes, canGroupNodes, edges, nodeMap } = get();
-          if (!canGroupNodes) {
-            vscodeMessage.warn("Only a vertical edge chain can be merged to a group node");
+          const { selectedNodes, edges, nodeMap } = get();
+          const chain = getNextChain(selectedNodes, edges);
+          if (!chain || chain.length <= 1) {
+            vscodeMessage.warn("Only a vertical edge chain can be merged into a group node");
             return;
           }
-          const chain = getNextChain(selectedNodes, edges);
-          if (!chain) {
-            vscodeMessage.warn("Only a vertical edge chain can be merged to a group node !");
+          const noGroupNode = selectedNodes.every((id) => {
+            const node = nodeMap[id];
+            if (!node) return false;
+            return node.data.type === "Code" && !node.parentId;
+          });
+          if (!noGroupNode) {
+            vscodeMessage.warn("Only code nodes can be merged into a group node");
             return;
           }
           const group = newScrolly(id, chain);
@@ -513,7 +501,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
               edges: nextEdges,
               activeNodeId: chain[0],
               selectedNodes: [],
-              canGroupNodes: false,
               rootIds: nextRootIds,
             },
             false,
@@ -926,7 +913,7 @@ export function newTextNode(id: string): TextNode {
   };
 }
 
-function getNextChain(selections: string[], edges: Edge[]): string[] | undefined {
+export function getNextChain(selections: string[], edges: Edge[]): string[] | undefined {
   const selectionsSet = new Set(selections);
   // prepare maps for source and target
   const maps = edges
@@ -982,7 +969,7 @@ function newScrolly(id: string, chain: string[]): GroupNode {
     data: {
       id,
       type: "Scrolly",
-      text: "# h1 \n## h2",
+      text: "MDX text...",
       chain,
       renderAsGroup: false,
       stepIndex: 0,

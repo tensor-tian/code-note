@@ -1,5 +1,5 @@
 import { CodeNode, Edge, GroupNode, Node, Note } from "types";
-import { useTreeNoteStore, TreeNote } from "./store";
+import { useTreeNoteStore, TreeNote, getNextChain } from "./store";
 import { createSelector } from "reselect";
 import { DefaultNodeDimension, isGroupNode } from "./layout";
 
@@ -25,17 +25,32 @@ export const selectBlockState = (state: TreeNote.Store) => ({
   nodeMap: state.nodeMap,
 });
 
-export const selectMenuState = (state: TreeNote.Store) => {
-  const firstSelected = state.nodeMap[state.selectedNodes[0] || ""];
+export const selectChain = createSelector([selectAllEdges, selectSelectedNodes, selectNodeMap], (edges, selections) => {
+  return getNextChain(selections, edges);
+});
+
+export const selectState = (state: TreeNote.Store) => state;
+
+export const selectMenuState = createSelector([selectState, selectChain], (state, chain) => {
+  const { nodeMap, selectedNodes } = state;
+  const firstSelected = nodeMap[selectedNodes[0] || ""];
+  const canGroupNodesToDetail = Boolean(chain) && chain!.length > 1;
+  const noGroupNode = selectedNodes.every((id) => {
+    const node = nodeMap[id];
+    if (!node) return false;
+    return node.data.type === "Code" && !node.parentId;
+  });
+  const canGroupNodes = Boolean(chain) && noGroupNode;
   return {
     id: state.id,
     text: state.text,
     type: state.type,
     debug: state.debug,
-    canGroupNodes: state.canGroupNodes,
-    canSplitGroup: state.selectedNodes.length === 1 && isGroupNode(firstSelected) && !firstSelected.data.renderAsGroup,
+    canGroupNodes,
+    canGroupNodesToDetail,
+    canSplitGroup: selectedNodes.length === 1 && isGroupNode(firstSelected) && !firstSelected.data.renderAsGroup,
   };
-};
+});
 export const selectNoteTitle = (state: TreeNote.Store) => ({
   text: state.text,
   id: state.id,

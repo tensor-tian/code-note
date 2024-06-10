@@ -17,13 +17,22 @@ import { vscode, isVscode, DEFAULT_BLOCK } from "../../utils";
 import { iDGenerator, useTreeNoteStore } from "./store";
 import { selectMenuState } from "./selector";
 import { Ext2Web, Web2Ext } from "types";
+import RightGroup from "../icons/right-group";
 
 type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
 export default function Menu({ addBlock }: Props) {
   const { setKV, groupNodes: _groupNodes, splitGroup, deleteEdge, deleteNode, forceLayout } = useTreeNoteStore();
-  const { id, text, type: typ, debug, canGroupNodes, canSplitGroup } = useTreeNoteStore(selectMenuState);
+  const {
+    id,
+    text,
+    type: typ,
+    debug,
+    canGroupNodes,
+    canGroupNodesToDetail,
+    canSplitGroup,
+  } = useTreeNoteStore(selectMenuState);
 
   const addDetail = useCallback(async () => {
     const [id] = await iDGenerator.requestIDs(1);
@@ -59,8 +68,14 @@ export default function Menu({ addBlock }: Props) {
       <RoundButton Icon={VscDebugConsole} title="Toggle Debug" onClick={toggleDebug} />
       <RoundButton Icon={FaFileArrowDown} title="Add Next Block" disabled={isVscode} onClick={addNext} />
       <RoundButton Icon={FaFileImport} title="Add Detail Block" disabled={isVscode} onClick={addDetail} />
-      <RoundButton Icon={AiOutlineGroup} title="Group Nodes" disabled={!canGroupNodes} onClick={groupNodes} />
+      <RoundButton Icon={AiOutlineGroup} title="Group Codes" disabled={!canGroupNodes} onClick={groupNodes} />
       <RoundButton Icon={MdOutlineSplitscreen} title="Split Group" disabled={!canSplitGroup} onClick={splitGroup} />
+      <RoundButton
+        Icon={RightGroup}
+        title="Extract Codes To Detail Group"
+        disabled={!canGroupNodesToDetail}
+        onClick={groupNodes}
+      />
       <RoundButton Icon={TfiLayoutGrid3} title="Force Layout" onClick={forceLayout} />
       <RoundButton Icon={Edge} title="Remove Edge" onClick={deleteEdge} />
       <RoundButton Icon={Node} title="Remove Node" onClick={deleteNode} />
@@ -79,7 +94,7 @@ function LetterIcon(letter: string) {
 }
 
 type RoundButtonProps = {
-  Icon: IconType;
+  Icon: IconType | typeof RightGroup;
   title: string;
   disabled?: boolean;
   onClick: () => void;
@@ -102,7 +117,12 @@ function RoundButton({ Icon, title, disabled, onClick }: RoundButtonProps) {
       >
         {/* <Icon /> */}
         <Icon
-          className={cls({ "fill-white text-white": isHover, "fill-gray-600": !isHover, "!fill-gray-400": disabled })}
+          className={cls({
+            "fill-white text-white stroke-white": isHover,
+            "fill-gray-600 stroke-gray-600": !isHover,
+            "!fill-gray-400": disabled,
+          })}
+          size={16}
         />
       </IconButton>
     </Tooltip>
