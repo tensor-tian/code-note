@@ -697,6 +697,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
             vscodeMessage.error("Remove node failed: node not found.");
             return;
           }
+          if (isGroupNode(node)) {
+            vscodeMessage.warn("Using split group node instead of remove node.");
+            return;
+          }
 
           const inEdges = edges.filter((e) => e.target === node.id);
           const outEdges = edges.filter((e) => e.source === node.id);
