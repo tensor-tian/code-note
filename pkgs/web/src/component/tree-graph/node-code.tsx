@@ -83,7 +83,7 @@ function CodeNode({ id, data }: NodeProps<CodeBlock>) {
       isRoot={isRoot}
       isSelected={isSelected}
       onActivate={onActivate}
-      className="p-4"
+      className="p-4 nowheel"
       style={{ width }}
     >
       <NodeMenu

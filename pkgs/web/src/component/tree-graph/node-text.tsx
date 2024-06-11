@@ -35,7 +35,14 @@ function TextNode({ id, data: { text: mdx, type } }: NodeProps<TextBlock>) {
     } as Web2Ext.StartTextEditor);
   }, [id, mdx, type]);
   return (
-    <NodeBox onActivate={onActivate} isActive={isActive} isRoot={isRoot} isSelected={isSelected} style={{ width }}>
+    <NodeBox
+      onActivate={onActivate}
+      isActive={isActive}
+      isRoot={isRoot}
+      isSelected={isSelected}
+      style={{ width }}
+      className="nowheel"
+    >
       <div style={{ width: DefaultNodeDimension.W }} className="p-4">
         <NodeMenu id={id} onStartTextEdit={onStartTextEdit} onActivate={onActivate} copyMdx={copyMdx} />
         <div className="px-1">
