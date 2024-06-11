@@ -23,7 +23,7 @@ type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
 export default function Menu({ addBlock }: Props) {
-  const { setKV, groupNodes: _groupNodes, splitGroup, deleteEdge, deleteNode, forceLayout } = useTreeNoteStore();
+  const { setKV, groupNodes, groupNodesToDetail, splitGroup, deleteEdge, deleteNode, forceLayout } = useTreeNoteStore();
   const {
     id,
     text,
@@ -55,10 +55,6 @@ export default function Menu({ addBlock }: Props) {
     } as Web2Ext.StartTextEditor);
   }, [id, text, typ]);
 
-  const groupNodes = useCallback(async () => {
-    const [id] = await iDGenerator.requestIDs(1);
-    _groupNodes(id);
-  }, [_groupNodes]);
   const Edge = useMemo(() => LetterIcon("E"), []);
   const Node = useMemo(() => LetterIcon("N"), []);
 
@@ -74,7 +70,7 @@ export default function Menu({ addBlock }: Props) {
         Icon={RightGroup}
         title="Extract Codes To Detail Group"
         disabled={!canGroupNodesToDetail}
-        onClick={groupNodes}
+        onClick={groupNodesToDetail}
       />
       <RoundButton Icon={TfiLayoutGrid3} title="Force Layout" onClick={forceLayout} />
       <RoundButton Icon={Edge} title="Remove Edge" onClick={deleteEdge} />

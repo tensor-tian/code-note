@@ -49,7 +49,8 @@ namespace TreeNote {
     hideGroupCode: (id: string) => void;
     deleteEdge: () => void;
     deleteNode: () => void;
-    groupNodes: (id: string) => void;
+    groupNodes: () => Promise<void>;
+    groupNodesToDetail: () => Promise<void>;
     splitGroup: () => void;
     toggleRenderAsGroup: (id: string) => void;
     // toggleGroupRenderMode: (id: string) => void;
@@ -452,7 +453,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             "hideGroupCode"
           );
         },
-        groupNodes: (id: string) => {
+        groupNodes: async () => {
           const { selectedNodes, edges, nodeMap } = get();
           const chain = getNextChain(selectedNodes, edges);
           if (!chain || chain.length <= 1) {
@@ -468,6 +469,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             vscodeMessage.warn("Only code nodes can be merged into a group node");
             return;
           }
+          const [id] = await iDGenerator.requestIDs(1);
           const group = newScrolly(id, chain);
           let nextNodeMap = { ...nodeMap, [group.id]: group };
           // add parentId & extent property for children
@@ -475,23 +477,14 @@ export const useTreeNoteStore = create<TreeNote.State>(
             const n = nextNodeMap[nId];
             nextNodeMap[nId] = { ...n, parentId: group.id, extent: "parent" };
           });
-          // const edgeMap = edges.reduce((acc, e) => acc.set(e.id, e), new Map<string, Edge>());
-          const nextEdges = new Array<Edge>(edges.length);
           // replace edges connect to code in chain with to group:
-          const nFist = chain[0];
-          const nLast = chain[chain.length - 1];
-          for (let i = 0; i < nextEdges.length; i++) {
-            const edge = edges[i];
-            if (edge.targetHandle === nFist + "-left") {
-              nextEdges[i] = { ...edge, target: group.id, targetHandle: group.id + "-left" };
-            } else if (edge.targetHandle === nFist + "-top") {
-              nextEdges[i] = { ...edge, target: group.id, targetHandle: group.id + "-top" };
-            } else if (edge.sourceHandle === nLast + "-bottom") {
-              nextEdges[i] = { ...edge, source: group.id, sourceHandle: group.id + "-bottom" };
-            } else {
-              nextEdges[i] = edge;
-            }
-          }
+
+          const nextEdges = updateEdges(
+            edges,
+            [`${chain[0]}-left`, group.id],
+            [`${chain[0]}-top`, group.id],
+            [`${chain[chain.length - 1]}-bottom`, group.id]
+          );
           // calc layout
           let nextRootIds: string[];
           ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges));
@@ -507,6 +500,62 @@ export const useTreeNoteStore = create<TreeNote.State>(
             "groupNodes"
           );
           panToActive();
+        },
+        groupNodesToDetail: async () => {
+          const { selectedNodes, edges, nodeMap } = get();
+          const chain = getNextChain(selectedNodes, edges);
+
+          if (!chain || chain.length <= 1) {
+            vscodeMessage.warn("Only a vertical chain can be merged into a group node.");
+            return;
+          }
+          const noGroupNodes = selectedNodes.every((id) => {
+            const node = nodeMap[id];
+            if (!node) return false;
+            return node.data.type === "Code";
+          });
+          if (!noGroupNodes) {
+            vscodeMessage.warn("Only code nodes can be merged into a group node.");
+            return;
+          }
+          const ids = await iDGenerator.requestIDs(4);
+          const firstNode = nodeMap[chain[0]];
+          const newCode = { ...firstNode, id: ids[0], data: { ...firstNode.data } };
+          let nextNodeMap = {
+            ...nodeMap,
+            [newCode.id]: newCode,
+          };
+          let nextEdges = updateEdges(
+            edges,
+            [`${firstNode.id}-bottom`, newCode.id],
+            [`${chain[chain.length - 1]}-bottom`, chain[0]]
+          );
+          let rootIds: string[];
+
+          chain[0] = newCode.id;
+          const group = newScrolly(ids[2], chain);
+          nextNodeMap[group.id] = group;
+          chain.forEach((id) => {
+            const node = nextNodeMap[id];
+            nextNodeMap[id] = {
+              ...node,
+              parentId: group.id,
+              extent: "parent",
+            };
+          });
+          nextEdges.push(newEdge(ids[1], firstNode.id, group.id, "ext2web-add-detail"));
+
+          ({ nodeMap: nextNodeMap, rootIds } = layout(nextNodeMap, nextEdges));
+          set(
+            {
+              nodeMap: nextNodeMap,
+              edges: nextEdges,
+              rootIds,
+              selectedNodes: [],
+            },
+            false,
+            "groupNOdesToDetail"
+          );
         },
         splitGroup() {
           const { selectedNodes, nodeMap, edges } = get();
@@ -532,23 +581,13 @@ export const useTreeNoteStore = create<TreeNote.State>(
               },
             };
           });
-          const nextEdges = new Array<Edge>(edges.length);
           // replace edges connect to group with edges to codes
-          const nFirst = chain[0];
-          const nLast = chain[chain.length - 1];
-
-          for (let i = 0; i < nextEdges.length; i++) {
-            const edge = edges[i];
-            if (edge.targetHandle === id + "-left") {
-              nextEdges[i] = { ...edge, target: nFirst, targetHandle: nFirst + "-left" };
-            } else if (edge.targetHandle === id + "-top") {
-              nextEdges[i] = { ...edge, target: nFirst, targetHandle: nFirst + "-top" };
-            } else if (edge.sourceHandle === id + "-bottom") {
-              nextEdges[i] = { ...edge, source: nLast, sourceHandle: nLast + "-bottom" };
-            } else {
-              nextEdges[i] = edge;
-            }
-          }
+          const nextEdges = updateEdges(
+            edges,
+            [`${id}-left`, chain[0]],
+            [`${id}-top`, chain[0]],
+            [`${id}-bottom`, chain[chain.length - 1]]
+          );
           // calc layout
           let nextRootIds: string[];
           ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges));
@@ -573,7 +612,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             return;
           }
           let nextNodeMap = { ...nodeMap };
-          const nextEdges = [...edges];
+          let nextEdges: Edge[];
           const { renderAsGroup, stepIndex, chain } = g.data;
           if (renderAsGroup) {
             delete g.height;
@@ -582,11 +621,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
               data: { ...g.data, renderAsGroup: false, stepIndex: 0 },
               style: { width: DefaultNodeDimension.W },
             };
-            const idx = nextEdges.findIndex((e) => e.sourceHandle === `${g.id}-right`);
-            if (idx !== -1) {
-              const _id = chain[stepIndex];
-              nextEdges[idx] = { ...nextEdges[idx], source: _id, sourceHandle: `${_id}-right` };
-            }
+            nextEdges = updateEdges(edges, [`${g.id}-right`, chain[stepIndex]]);
           } else {
             delete g.height;
             nextNodeMap[g.id] = {
@@ -594,11 +629,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
               data: { ...g.data, renderAsGroup: true, stepIndex: 0 },
               style: { width: 800 },
             };
-            const _id = chain[0];
-            const idx = nextEdges.findIndex((e) => e.sourceHandle === `${_id}-right`);
-            if (idx !== -1) {
-              nextEdges[idx] = { ...nextEdges[idx], source: g.id, sourceHandle: `${g.id}-right` };
-            }
+            nextEdges = updateEdges(edges, [`${chain[0]}-right`, g.id]);
           }
 
           let nextRootIds: string[] = [];
@@ -621,7 +652,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             console.log("on scrollyCoding step change:", data);
             const { id, stepIndex: nextStepIndex } = data as { id: string; stepIndex: number };
             const { nodeMap, edges } = get();
-            const nextEdges = new Array<Edge>(edges.length);
+            // const nextEdges = new Array<Edge>(edges.length);
             const g = nodeMap[id] as GroupNode;
             const { chain, stepIndex } = g.data;
             if (stepIndex === nextStepIndex) return;
@@ -630,19 +661,11 @@ export const useTreeNoteStore = create<TreeNote.State>(
               ...nodeMap,
               [id]: { ...g, data: { ...g.data, stepIndex: nextStepIndex } },
             };
-            const groupRightHandle = `${g.id}-right`;
-            const nextGroupRightHandle = `${chain[nextStepIndex]}-right`;
-            for (let i = 0; i < edges.length; i++) {
-              const edge = edges[i];
-              if (edge.sourceHandle === groupRightHandle) {
-                const _id = chain[stepIndex];
-                nextEdges[i] = { ...edge, source: _id, sourceHandle: `${_id}-right` };
-              } else if (edge.sourceHandle === nextGroupRightHandle) {
-                nextEdges[i] = { ...edge, source: g.id, sourceHandle: groupRightHandle };
-              } else {
-                nextEdges[i] = edge;
-              }
-            }
+            const nextEdges = updateEdges(
+              edges,
+              [`${g.id}-right`, chain[stepIndex]],
+              [`${chain[nextStepIndex]}-right`, g.id]
+            );
             const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(nextNodeMap, nextEdges, KeepNodeIds);
             let nextRooIds: string[] = [];
             ({ nodeMap: nextNodeMap, rootIds: nextRooIds } = layout(nextNodeMap, nextEdges));
@@ -1064,4 +1087,44 @@ function allowAddTextNode(source: Node, suffix: string): boolean {
     return false;
   }
   return true;
+}
+
+function updateEdges(edges: Edge[], ...updates: [string, string][]): Edge[] {
+  const res: Edge[] = [];
+  const updateFns = updates.map(([handle, id]) => createUpdateEdge(handle, id));
+  for (const edge of edges) {
+    let modified = false;
+    for (const fn of updateFns) {
+      const nextEdge = fn(edge);
+      if (nextEdge) {
+        res.push(nextEdge);
+        modified = true;
+        break;
+      }
+    }
+    if (!modified) {
+      res.push(edge);
+    }
+  }
+  return res;
+}
+
+function createUpdateEdge(oldHandle: string, newId: string) {
+  return (edge: Edge) => {
+    if (edge.targetHandle === oldHandle) {
+      const suffix = edge.targetHandle.split("-")[1];
+      return {
+        ...edge,
+        target: newId,
+        targetHandle: `${newId}-${suffix}`,
+      };
+    } else if (edge.sourceHandle === oldHandle) {
+      const suffix = edge.sourceHandle.split("-")[1];
+      return {
+        ...edge,
+        source: newId,
+        sourceHandle: `${newId}-${suffix}`,
+      };
+    }
+  };
 }

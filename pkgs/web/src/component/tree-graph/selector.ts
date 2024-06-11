@@ -34,13 +34,21 @@ export const selectState = (state: TreeNote.Store) => state;
 export const selectMenuState = createSelector([selectState, selectChain], (state, chain) => {
   const { nodeMap, selectedNodes } = state;
   const firstSelected = nodeMap[selectedNodes[0] || ""];
-  const canGroupNodesToDetail = Boolean(chain) && chain!.length > 1;
-  const noGroupNode = selectedNodes.every((id) => {
-    const node = nodeMap[id];
-    if (!node) return false;
-    return node.data.type === "Code" && !node.parentId;
-  });
-  const canGroupNodes = Boolean(chain) && noGroupNode;
+  const canGroupNodesToDetail =
+    Boolean(chain) &&
+    chain!.length > 1 &&
+    selectedNodes.every((id) => {
+      const node = nodeMap[id];
+      if (!node) return false;
+      return node.data.type === "Code";
+    });
+  const canGroupNodes =
+    canGroupNodesToDetail &&
+    selectedNodes.every((id) => {
+      const node = nodeMap[id];
+      if (!node) return false;
+      return node.data.type === "Code" && !node.parentId;
+    });
   return {
     id: state.id,
     text: state.text,
@@ -107,7 +115,6 @@ export const selectActiveNodeAndGroup = createSelector(
     if (activeNode?.parentId) {
       activeGroup = nodeMap[activeNode.parentId];
     }
-    console.log(activeNode, activeGroup, activeMark);
     return {
       activeNode,
       activeMark,
