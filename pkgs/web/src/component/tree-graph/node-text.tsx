@@ -12,7 +12,6 @@ import { selectBlockState } from "./selector";
 
 function TextNode({ id, data }: NodeProps<TextBlock>) {
   const { text: mdx } = data;
-  const { activateNode } = useTreeNoteStore();
   const { isSelected, isActive, isRoot, width } = useTreeNoteStore(selectBlockState(id));
   const copyMdx = useCallback(() => {
     navigator.clipboard.writeText(mdx);
@@ -21,18 +20,9 @@ function TextNode({ id, data }: NodeProps<TextBlock>) {
       data: "MDX code is copied.",
     } as Web2Ext.ShowMsg);
   }, [mdx]);
-  const onActivate = useCallback(() => {
-    activateNode(id);
-  }, [id, activateNode]);
+
   return (
-    <NodeBox
-      onActivate={onActivate}
-      isActive={isActive}
-      isRoot={isRoot}
-      isSelected={isSelected}
-      style={{ width }}
-      className="nowheel"
-    >
+    <NodeBox id={id} isActive={isActive} isRoot={isRoot} isSelected={isSelected} style={{ width }} className="nowheel">
       <div style={{ width: DefaultNodeDimension.W }} className="p-4">
         <NodeMenu data={data} copyMdx={copyMdx} />
         <div className="px-1">

@@ -542,7 +542,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
             vscodeMessage.warn("Only code nodes can be merged into a group node.");
             return;
           }
-          const ids = await iDGenerator.requestIDs(4);
+          const ids = await iDGenerator.requestIDs(3);
           const firstNode = nodeMap[chain[0]];
           const newCode = { ...firstNode, id: ids[0], data: { ...firstNode.data, id: ids[0] } };
           let nextNodeMap = {
@@ -582,7 +582,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
         },
         splitGroup() {
-          const { selectedNodes, nodeMap, edges } = get();
+          const { selectedNodes, nodeMap, edges, renderAsGroupNodes, groupStepIndexMap } = get();
           const id = selectedNodes[0];
           const group = nodeMap[id];
           if (!isGroupNode(group) || selectedNodes.length !== 1) {
@@ -591,6 +591,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           let nextNodeMap = { ...nodeMap };
           delete nextNodeMap[id];
+          renderAsGroupNodes.delete(id);
+          delete groupStepIndexMap[id];
           const chain = group.data.chain;
           // remove parentId and extent property of children, update position
           chain.forEach((nId) => {
@@ -614,7 +616,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
           // calc layout
           let nextRootIds: string[];
-          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, this.renderAsGroupNodes));
+          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, renderAsGroupNodes));
           set(
             {
               nodeMap: nextNodeMap,
@@ -622,6 +624,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
               activeNodeId: group.data.chain[0],
               selectedNodes: [],
               edges: nextEdges,
+              renderAsGroupNodes: new Set(renderAsGroupNodes),
+              groupStepIndexMap: { ...groupStepIndexMap },
             },
             false,
             "splitGroup"
@@ -674,6 +678,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
               rootIds: nextRootIds,
               hiddenEdges,
               hiddenNodes,
+              renderAsGroupNodes: new Set(renderAsGroupNodes),
+              groupStepIndexMap: { ...groupStepIndexMap },
             },
             false,
             "toggleRenderAsGroup"
@@ -879,7 +885,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
       name: "tree-note",
       skipHydration: true,
       partialize: (state) => {
-        console.log("partialize:", state);
         return {
           id: state.id,
           type: state.type,
@@ -893,7 +898,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
         getItem: (_name) => ({ state: {} }),
         setItem: (_name, value) => {
           const { state } = value;
-          console.log("set item:", state);
           saveNote(state);
         },
         removeItem: (_name) => {},
@@ -994,6 +998,9 @@ export function newTextNode(id: string): TextNode {
 }
 
 export function getNextChain(selections: string[], edges: Edge[]): string[] | undefined {
+  if (selections.length < 2) {
+    return;
+  }
   const selectionsSet = new Set(selections);
   // prepare maps for source and target
   const maps = edges

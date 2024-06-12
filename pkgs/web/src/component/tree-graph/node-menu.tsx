@@ -30,6 +30,7 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
   }, [id, debug]);
   const onActivate = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
+      event.stopPropagation();
       if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
         return;
       }
@@ -62,6 +63,7 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
   const narrow = useCallback(() => {
     adjustNodeWidth(id, false);
   }, [id, adjustNodeWidth]);
+  const hideWidthButtons = typ === "Scrolly" && !renderAsGroup;
 
   const checkboxId = "node-menu-" + id;
   return (
@@ -75,8 +77,8 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
       {ID}
       <div className="flex flex-grow justify-end gap-2">
         {typ === "Scrolly" ? <GroupRenderIcon id={id} renderAsGroup={renderAsGroup} /> : null}
-        <IconButton Icon={TbViewportWide} onClick={widen} />
-        <IconButton Icon={TbViewportNarrow} onClick={narrow} />
+        <IconButton Icon={TbViewportWide} onClick={widen} hide={hideWidthButtons} />
+        <IconButton Icon={TbViewportNarrow} onClick={narrow} hide={hideWidthButtons} />
         <BiCopy
           className="cursor-auto text-gray-500 hover:text-gray-900 hover:scale-110 hover:bg-gray-200"
           onClick={copyMdx}
@@ -106,12 +108,16 @@ type Props = {
   Icon: IconType;
   onClick?: () => void;
   children?: string | ReactNode;
+  hide?: boolean;
 };
 
-function IconButton({ Icon, onClick, children }: Props) {
+function IconButton({ Icon, onClick, children, hide }: Props) {
   return (
     <div
-      className="ignore-click flex text-xs hover:text-gray-900  hover:bg-gray-200 cursor-auto text-gray-600 bg-white rounded-sm pr-2 gap-1"
+      className={cls(
+        "ignore-click flex text-xs hover:text-gray-900  hover:bg-gray-200 cursor-auto text-gray-600 bg-white rounded-sm pr-2 gap-1",
+        { hidden: hide }
+      )}
       onClick={onClick}
     >
       <Icon size={16} />

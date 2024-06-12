@@ -33,7 +33,6 @@ export function useNavKeys(edges: Edge[]) {
   const parentId = activeNode?.parentId;
   const onKeyPress = useCallback(
     (event: KeyboardEvent) => {
-      console.log(activeId, event);
       if (!activateNode) return;
       switch (event.key) {
         case "ArrowLeft": {

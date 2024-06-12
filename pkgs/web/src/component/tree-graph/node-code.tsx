@@ -11,18 +11,7 @@ import NodeMenu from "./node-menu";
 import { selectBlockState } from "./selector";
 
 function CodeNode({ id, data }: NodeProps<CodeBlock>) {
-  const { activateNode } = useTreeNoteStore();
   const { isSelected, isActive, isRoot, width, showCode } = useTreeNoteStore(selectBlockState(id));
-
-  const onActivate = useCallback(
-    (event: ReactMouseEvent<HTMLDivElement>) => {
-      if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
-        return;
-      }
-      activateNode(id);
-    },
-    [activateNode, id]
-  );
 
   const { mdx, copyMdx } = useMemo(() => {
     const mdx = showCode ? block2MDX(data) : data.text;
@@ -38,10 +27,10 @@ function CodeNode({ id, data }: NodeProps<CodeBlock>) {
 
   return (
     <NodeBox
+      id={id}
       isActive={isActive}
       isRoot={isRoot}
       isSelected={isSelected}
-      onActivate={onActivate}
       className="p-4 nowheel"
       style={{ width }}
     >

@@ -8,7 +8,7 @@ import { Panel } from "reactflow";
 
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
-
+import { BsFileEarmarkArrowUp } from "react-icons/bs";
 import { useHover } from "usehooks-ts";
 import { useCallback, useMemo, useRef } from "react";
 import cls from "classnames";
@@ -16,15 +16,24 @@ import { FaFileArrowDown, FaFileImport } from "react-icons/fa6";
 import { vscode, isVscode, DEFAULT_BLOCK } from "../../utils";
 import { iDGenerator, useTreeNoteStore } from "./store";
 import { selectMenuState } from "./selector";
-import { Ext2Web, Web2Ext } from "types";
+import { Ext2Web, Note, Web2Ext } from "types";
 import RightGroup from "../icons/right-group";
 
 type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
 export default function Menu({ addBlock }: Props) {
-  const { setKV, groupNodes, groupNodesToDetail, splitGroup, deleteEdge, deleteNode, forceLayout, resetExtents } =
-    useTreeNoteStore();
+  const {
+    setKV,
+    groupNodes,
+    groupNodesToDetail,
+    splitGroup,
+    deleteEdge,
+    deleteNode,
+    forceLayout,
+    resetExtents,
+    resetNote,
+  } = useTreeNoteStore();
   const {
     id,
     text,
@@ -62,6 +71,7 @@ export default function Menu({ addBlock }: Props) {
 
   return (
     <Panel className="flex flex-col gap-1 absolute top-1/4 text-lg" position="bottom-right">
+      <FileButton title="Open *.cnote File" resetNote={resetNote} disabled={isVscode} />
       <RoundButton Icon={RiText} title="Edit Note Title" onClick={editNoteTitle} />
       <RoundButton Icon={VscDebugConsole} title="Toggle Debug" onClick={toggleDebug} />
       <RoundButton Icon={FaFileArrowDown} title="Add Next Block" disabled={isVscode} onClick={addNext} />
@@ -113,7 +123,6 @@ function RoundButton({ Icon, title, disabled, onClick }: RoundButtonProps) {
         disabled={disabled}
         onClick={onClick}
       >
-        {/* <Icon /> */}
         <Icon
           className={cls({
             "fill-white text-white stroke-white": isHover,
@@ -123,6 +132,54 @@ function RoundButton({ Icon, title, disabled, onClick }: RoundButtonProps) {
           size={16}
         />
       </IconButton>
+    </Tooltip>
+  );
+}
+type FileButtonProps = {
+  title: string;
+  disabled?: boolean;
+  resetNote: (note: Note) => void;
+};
+function FileButton({ title, disabled, resetNote }: FileButtonProps) {
+  const ref = useRef(null);
+  const isHover = useHover(ref);
+  const onChange = useCallback(
+    async (event: React.ChangeEvent) => {
+      const input = event.target as HTMLInputElement;
+      if (input.files && input.files.length > 0) {
+        const file = input.files[0];
+        const content = await file.text();
+        resetNote(JSON.parse(content));
+      }
+    },
+    [resetNote]
+  );
+
+  return (
+    <Tooltip title={title} arrow placement="left">
+      <div>
+        <input type="file" className="hidden" id="menu-open-note-file-id" onChange={onChange} accept=".cnote" />
+        <label htmlFor="menu-open-note-file-id">
+          <IconButton
+            color="default"
+            size="small"
+            ref={ref}
+            className="hover:bg-gray-600"
+            disabled={disabled}
+            component="span"
+            // onClick={onClick}
+          >
+            <BsFileEarmarkArrowUp
+              className={cls({
+                "fill-white text-white stroke-white": isHover,
+                "fill-gray-600 stroke-gray-600": !isHover,
+                "!fill-gray-400": disabled,
+              })}
+              size={16}
+            />
+          </IconButton>
+        </label>
+      </div>
     </Tooltip>
   );
 }

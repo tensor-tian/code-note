@@ -78,7 +78,9 @@ function useInput(input: string, width: number) {
         Component: content,
         error: error,
       });
-      console.log("compile error: ", input, error, width);
+      if (error) {
+        console.log("mdx compile error: ", input, error, width);
+      }
       setLoading(false);
     });
     return () => {

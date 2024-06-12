@@ -3,7 +3,7 @@ import { selectBlockState, selectGroupCodes } from "./selector";
 
 import { NodeProps } from "reactflow";
 import { CodeNode, ScrollyCodeBlock, Web2Ext } from "types";
-import { CSSProperties, useCallback, useEffect, useMemo, useRef } from "react";
+import { CSSProperties, useEffect, useMemo, useRef } from "react";
 import NodeHandles from "./node-handles";
 
 import { vscode } from "../../utils";
@@ -14,18 +14,13 @@ import { useResizeObserver } from "usehooks-ts";
 
 function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
   const { text } = data;
-  const { activateNode, setGroupTextHeight } = useTreeNoteStore();
+  const { setGroupTextHeight } = useTreeNoteStore();
   const codes = useTreeNoteStore(selectGroupCodes(id));
   const { isSelected, isActive, isRoot, width, renderAsGroup } = useTreeNoteStore(selectBlockState(id));
 
-  const onActivate = useCallback(() => {
-    activateNode(id);
-  }, [activateNode, id]);
-
-  console.log("scrolly width:", width);
   const { content: scrollyContent, copyMdx } = useMemo(() => {
     if (!renderAsGroup) return { content: null, copyMdx: () => {} };
-    console.log("codes:", codes);
+    console.log("scrolly codes:", codes);
     if (!codes) {
       return { content: null, copyMdx: () => {} };
     }
@@ -39,6 +34,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
       } as Web2Ext.ShowMsg);
     };
     const content = <MDX mdx={mdx} width={width} />;
+    console.log("scrolly:", content);
     return { content, copyMdx };
   }, [codes, id, renderAsGroup, width]);
   const textRef = useRef<HTMLDivElement>(null);
@@ -60,7 +56,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
   }, [text, width]);
   return (
     <NodeBox
-      onActivate={onActivate}
+      id={id}
       isSelected={isSelected}
       isActive={isActive}
       isRoot={isRoot}

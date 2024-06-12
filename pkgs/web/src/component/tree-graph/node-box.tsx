@@ -1,23 +1,26 @@
 import cx from "classnames";
-import { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
+import { CSSProperties, useCallback } from "react";
+import { useTreeNoteStore } from "./store";
 export type NodeBoxProps = React.PropsWithChildren<{
+  id: string;
   isActive: boolean;
   isRoot: boolean;
   isSelected: boolean;
-  onActivate: (event: ReactMouseEvent<HTMLDivElement>) => void;
   className?: string;
   style: CSSProperties;
 }>;
 
-export default function NodeBox({
-  isActive,
-  isRoot,
-  isSelected,
-  onActivate,
-  children,
-  className,
-  style,
-}: NodeBoxProps) {
+export default function NodeBox({ id, isActive, isRoot, isSelected, children, className, style }: NodeBoxProps) {
+  const { activateNode } = useTreeNoteStore();
+  const onActivate = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
+        return;
+      }
+      activateNode(id);
+    },
+    [activateNode, id]
+  );
   return (
     <div
       className={cx(

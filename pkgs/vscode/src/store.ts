@@ -142,13 +142,14 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
   }
 
   listNotePaths = async () => {
-    const wd = Uri.joinPath(this.workingDir);
+    const wd = this.workingDir;
     if (!(await this.existsDir(wd))) {
       await workspace.fs.createDirectory(wd);
     }
     const list = [] as string[];
-    const start = this.workingDir.path.length;
-    await this.visitDir(wd, (uri: Uri) => list.push(uri.path.slice(start)));
+    await this.visitDir(wd, (uri: Uri) =>
+      list.push(uri.path.slice(wd.path.length))
+    );
     return list;
   };
   readNote = async (uri: Uri): Promise<Note> => {
