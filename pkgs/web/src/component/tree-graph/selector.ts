@@ -1,72 +1,132 @@
-import { CodeNode, Edge, GroupNode, Node, Note } from "types";
+import { CodeNode, Node } from "types";
 import { useTreeNoteStore, TreeNote, getNextChain } from "./store";
 import { createSelector } from "reselect";
-import { DefaultNodeDimension, isGroupNode } from "./layout";
+import { DefaultNodeDimension, isCodeNode, isGroupNode } from "./layout";
 
-export const selectNodeMap = (state: TreeNote.Store) => state.nodeMap;
-// export const selectAllEdges = (state: TreeNote.Store) => state.edges;
-export const selectAllEdges = (state: TreeNote.Store) => state.edges;
-export const selectHiddenNodes = (state: TreeNote.Store) => state.hiddenNodes;
-export const selectHiddenEdges = (state: TreeNote.Store) => state.hiddenEdges;
+const selectNodeMap = (state: TreeNote.Store) => state.nodeMap;
 
-export const selectSelectedNodes = (state: TreeNote.Store) => state.selectedNodes;
+const selectAllEdges = (state: TreeNote.Store) => state.edges;
+const selectHiddenNodes = (state: TreeNote.Store) => state.hiddenNodes;
+const selectHiddenEdges = (state: TreeNote.Store) => state.hiddenEdges;
+
+const selectSelectedNodes = (state: TreeNote.Store) => state.selectedNodes;
 export const selectActiveEdgeId = (state: TreeNote.Store) => state.activeEdgeId;
 export const selectActiveNodeId = (state: TreeNote.Store) => state.activeNodeId;
 export const selectActiveNode = (state: TreeNote.Store) => state.nodeMap[state.activeNodeId];
+const selectRenderAsGroupNodes = (state: TreeNote.Store) => state.renderAsGroupNodes;
+const selectGroupStepIndexMap = (state: TreeNote.Store) => state.groupStepIndexMap;
+export const selectTextEditing = (state: TreeNote.Store) => state.textEditing;
+export const selectCodeRangeEditingNode = (state: TreeNote.Store) => state.codeRangeEditingNode;
+export const selectShowCodeNodes = (state: TreeNote.Store) => state.showCodeNodes;
 
 export const selectNodeInspectorState = (state: TreeNote.Store) => ({
   selectedNodes: state.selectedNodes,
   activeNodeId: state.activeNodeId,
 });
-export const selectBlockState = (state: TreeNote.Store) => ({
-  activeNodeId: state.activeNodeId,
-  selectedNodes: state.selectedNodes,
-  rootIds: state.rootIds,
-  nodeMap: state.nodeMap,
-});
 
-export const selectChain = createSelector([selectAllEdges, selectSelectedNodes, selectNodeMap], (edges, selections) => {
+export const selectNode = (id: string) => (state: TreeNote.Store) => state.nodeMap[id];
+
+export const selectBlockState = (id: string) =>
+  createSelector(
+    [
+      selectNode(id),
+      selectActiveNodeId,
+      selectRootIds,
+      selectSelectedNodes,
+      selectShowCode(id),
+      selectRenderAsGroupNodes,
+      selectCodeRangeEditingNode,
+      selectTextEditing,
+    ],
+    (node, activeNodeId, rootIds, selectedNodes, showCode, renderAsGroupNodes, codeRangeEditingNode, textEditing) => {
+      const width = isGroupNode(node)
+        ? +(node.style?.width || node.width || DefaultNodeDimension.W)
+        : node?.width || DefaultNodeDimension.W;
+      return {
+        isSelected: selectedNodes.includes(id),
+        isActive: id === activeNodeId,
+        isRoot: rootIds.includes(id),
+        width,
+        showCode,
+        renderAsGroup: renderAsGroupNodes.has(id),
+        isCodeRangeEditing: id === codeRangeEditingNode,
+        isTextEditing: node.id === textEditing?.id && node.type === textEditing.type,
+      };
+    }
+  );
+
+const selectChain = createSelector([selectAllEdges, selectSelectedNodes, selectNodeMap], (edges, selections) => {
   return getNextChain(selections, edges);
 });
 
-export const selectState = (state: TreeNote.Store) => state;
+export const selectTitleState = (state: TreeNote.Store) => ({
+  text: state.text,
+  debug: state.debug,
+  nodeIds: Object.keys(state.nodeMap).sort(),
+});
 
-export const selectMenuState = createSelector([selectState, selectChain], (state, chain) => {
-  const { nodeMap, selectedNodes } = state;
-  const firstSelected = nodeMap[selectedNodes[0] || ""];
-  const canGroupNodesToDetail =
+const selectNoteID = (state: TreeNote.Store) => state.id;
+const selectNoteText = (state: TreeNote.Store) => state.text;
+const selectNoteType = (state: TreeNote.Store) => state.type;
+export const selectDebug = (state: TreeNote.Store) => state.debug;
+
+const selectCanGroupToDetail = createSelector(
+  [selectNodeMap, selectSelectedNodes, selectChain],
+  (nodeMap, selectedNodes, chain) =>
     Boolean(chain) &&
     chain!.length > 1 &&
     selectedNodes.every((id) => {
       const node = nodeMap[id];
       if (!node) return false;
       return node.data.type === "Code";
-    });
-  const canGroupNodes =
+    })
+);
+const selectCanGroup = createSelector(
+  [selectCanGroupToDetail, selectSelectedNodes, selectNodeMap],
+  (canGroupNodesToDetail, selectedNodes, nodeMap) =>
     canGroupNodesToDetail &&
     selectedNodes.every((id) => {
       const node = nodeMap[id];
       if (!node) return false;
       return node.data.type === "Code" && !node.parentId;
-    });
-  return {
-    id: state.id,
-    text: state.text,
-    type: state.type,
-    debug: state.debug,
-    canGroupNodes,
-    canGroupNodesToDetail,
-    canSplitGroup: selectedNodes.length === 1 && isGroupNode(firstSelected) && !firstSelected.data.renderAsGroup,
-  };
+    })
+);
+
+const selectFirstSelected = createSelector([selectNodeMap, selectSelectedNodes], (nodeMap, selectedNodes) => {
+  return nodeMap[selectedNodes[0]];
 });
-export const selectNoteTitle = (state: TreeNote.Store) => ({
-  text: state.text,
-  id: state.id,
-  type: state.type,
-});
-export const selectPanToActiveMark = (state: TreeNote.Store) => state.panToActiveMark;
-export const selectRootIds = (state: TreeNote.Store) => state.rootIds;
-export const selectDebug = (state: TreeNote.Store) => state.debug;
+
+const selectCanSplitGroup = createSelector(
+  [selectSelectedNodes, selectFirstSelected, selectRenderAsGroupNodes],
+  (selectedNodes, firstSelected, renderAsGroupNodes) =>
+    selectedNodes.length === 1 && isGroupNode(firstSelected) && !renderAsGroupNodes.has(firstSelected.id)
+);
+
+export const selectMenuState = createSelector(
+  [
+    selectNoteID,
+    selectNoteText,
+    selectNoteType,
+    selectDebug,
+    selectCanGroupToDetail,
+    selectCanGroup,
+    selectCanSplitGroup,
+  ],
+  (id, text, typ, debug, canGroupNodesToDetail, canGroupNodes, canSplitGroup) => {
+    return {
+      id,
+      text,
+      type: typ,
+      debug,
+      canGroupNodes,
+      canGroupNodesToDetail,
+      canSplitGroup,
+    };
+  }
+);
+
+const selectPanToActiveMark = (state: TreeNote.Store) => state.panToActiveMark;
+const selectRootIds = (state: TreeNote.Store) => state.rootIds;
 
 export const selectNodes = createSelector([selectNodeMap, selectHiddenNodes], (nodeMap, hidden) => {
   const nodes = Object.values(nodeMap);
@@ -89,27 +149,26 @@ export const selectNodes = createSelector([selectNodeMap, selectHiddenNodes], (n
   return groups;
 });
 
-export const selectGroups = (state: TreeNote.Store) =>
-  Object.values(state.nodeMap).filter((n) => n.type === "Scrolly" && (n as GroupNode).data.renderAsGroup);
-
 export const selectEdges = createSelector([selectAllEdges, selectHiddenEdges], (edges, hidden) => {
   return edges.filter((e) => !hidden.has(e.id));
 });
 
-export const selectGroupCodes = createSelector(
-  [selectNodeMap, (_state: TreeNote.Store, id: string) => id],
-  (nodeMap, id) => {
+export const selectGroupCodes = (id: string) =>
+  createSelector([selectNodeMap, selectRenderAsGroupNodes], (nodeMap, renderAsGroupNodes) => {
     const group = nodeMap[id];
     if (!isGroupNode(group)) return;
-    if (!group.data.renderAsGroup) return [];
-    console.log("chain:", group.data.chain);
+    if (!renderAsGroupNodes.has(id)) return [];
     return group.data.chain.map((_id) => nodeMap[_id] as CodeNode);
-  }
+  });
+
+export const selectIsActiveNodeRenderAsGroup = createSelector(
+  [selectActiveNodeId, selectRenderAsGroupNodes],
+  (activeNodeId, renderAsGroupNodes) => renderAsGroupNodes.has(activeNodeId)
 );
 
 export const selectActiveNodeAndGroup = createSelector(
-  [selectActiveNodeId, selectNodeMap, selectPanToActiveMark],
-  (activeId, nodeMap, activeMark) => {
+  [selectActiveNodeId, selectNodeMap, selectPanToActiveMark, selectIsActiveNodeRenderAsGroup],
+  (activeId, nodeMap, activeMark, isActiveNodeRenderAsGroup) => {
     let activeNode = nodeMap[activeId];
     let activeGroup: Node | undefined = undefined;
     if (activeNode?.parentId) {
@@ -119,15 +178,23 @@ export const selectActiveNodeAndGroup = createSelector(
       activeNode,
       activeMark,
       activeGroup,
+      isActiveNodeRenderAsGroup,
     };
   }
 );
 
-export const selectGroupShowCode = (id: string) =>
-  createSelector([selectNodeMap], (nodeMap) => {
-    const group = nodeMap[id] as GroupNode;
-    if (!group) return false;
-    return !!group.data.chain.find((id) => (nodeMap[id] as CodeNode).data.showCode);
+const selectShowCode = (id: string) =>
+  createSelector([selectNodeMap, selectShowCodeNodes], (nodeMap, showCodeNodes) => {
+    const n = nodeMap[id];
+    if (isCodeNode(n)) {
+      return showCodeNodes.has(id);
+    } else if (isGroupNode(n)) {
+      return n.data.chain
+        .map((id) => nodeMap[id])
+        .filter(isCodeNode)
+        .some((n) => showCodeNodes.has(n.id));
+    }
+    return false;
   });
 
 export const selectActiveEdge = createSelector([selectAllEdges, selectActiveEdgeId], (edges, id) =>
@@ -143,80 +210,11 @@ export const selectTreeFlowState = createSelector(
   }
 );
 
-export const selectSelectedEdgeId = (state: TreeNote.Store) => state.selectedEdge;
+const selectSelectedEdgeId = (state: TreeNote.Store) => state.selectedEdge;
 
 export const selectSelectedEdge = createSelector([selectAllEdges, selectSelectedEdgeId], (edges, id) =>
   edges.find((e) => e.id === id)
 );
-
-function v1Tov2(note: Note): Note {
-  const { nodeMap, edges } = note;
-  const map = new Map<string, Edge>();
-  for (const e of edges) {
-    map.set(e.sourceHandle!, e);
-    map.set(e.targetHandle!, e);
-  }
-  const nodes = Object.values(nodeMap);
-  for (const node of nodes) {
-    if (isGroupNode(node)) {
-      node.data.stepIndex = 0;
-      node.data.renderAsGroup = false;
-      node.data.groupModeWidth = node.data.groupModeWidth || DefaultNodeDimension.WGroup;
-      const chain = node.data.chain;
-      // replace edges connecting to 1st and last code node with to group node
-      const nFist = chain[0];
-      const left = map.get(nFist + "-left");
-      if (left) {
-        left.target = node.id;
-        left.targetHandle = node.id + "-left";
-      }
-      const top = map.get(nFist + "-top");
-      if (top) {
-        top.target = node.id;
-        top.targetHandle = node.id + "-top";
-      }
-      const nLast = chain[chain.length - 1];
-      const bottom = map.get(nLast + "-bottom");
-      if (bottom) {
-        bottom.source = node.id;
-        bottom.sourceHandle = node.id + "-bottom";
-      }
-    }
-    note.version = 2;
-    return note;
-  }
-  return note;
-}
-
-export function migrateNote(note: Note): Note {
-  if (note.version === 2) {
-    return note;
-  }
-  // ScrollyCodeBlockV1 -> ScrollyCodeBlockV2
-  if (typeof note.version === "undefined") {
-    return v1Tov2(note);
-  }
-  for (const n of Object.values(note.nodeMap)) {
-    // reset all group nodes
-    if (isGroupNode(n)) {
-      const { renderAsGroup, chain, stepIndex } = n.data;
-      if (renderAsGroup) {
-        const rightHandle = `${n.id}-right`;
-        for (let i = 0; i < note.edges.length; i++) {
-          const edge = note.edges[i];
-          if (edge.sourceHandle === rightHandle) {
-            edge.source = chain[stepIndex];
-            edge.sourceHandle = `${chain[stepIndex]}-right`;
-          }
-        }
-      }
-      n.data.renderAsGroup = false;
-      n.data.stepIndex = 0;
-    }
-  }
-  note.version = 2;
-  return note;
-}
 
 /**
  * handle message from code hike by defined window.postMessageToCodeNoteEditor method

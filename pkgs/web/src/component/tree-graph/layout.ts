@@ -44,7 +44,7 @@ class TreeLayout {
   edgeMap = new Map<string, Edge>();
   layoutMap = new Map<string, NodeLayout>();
 
-  constructor(private nodeMap: Record<string, Node>, edges: Edge[]) {
+  constructor(private nodeMap: Record<string, Node>, edges: Edge[], private renderAsGroupNodes: Set<string>) {
     edges.forEach((e) => {
       this.edgeMap.set(e.sourceHandle!, e).set(e.targetHandle!, e);
     });
@@ -95,7 +95,8 @@ class TreeLayout {
     if (order === VisitOrder.PreOrder) {
       visitor(node);
       if (isGroupNode(node)) {
-        const { chain, renderAsGroup } = node.data;
+        const { chain } = node.data;
+        const renderAsGroup = this.renderAsGroupNodes.has(node.id);
         if (!renderAsGroup) {
           const firstChild = this.nodeMap[chain[0]];
           this.visit(firstChild, visitor, order);
@@ -106,7 +107,8 @@ class TreeLayout {
     this.visit(this.bottom(node), visitor, order);
     if (order === VisitOrder.PostOrder) {
       if (isGroupNode(node)) {
-        const { chain, renderAsGroup } = node.data;
+        const { chain } = node.data;
+        const renderAsGroup = this.renderAsGroupNodes.has(node.id);
         if (!renderAsGroup) {
           const child = this.nodeMap[chain[0]];
           this.visit(child, visitor, order);
@@ -153,7 +155,8 @@ class TreeLayout {
   /** calc size of sub tree */
   private calcTreeSize = (n: Node) => {
     const sz = this.layoutMap.get(n.id)!;
-    if (isGroupNode(n) && !n.data.renderAsGroup) {
+    const renderAsGroup = this.renderAsGroupNodes.has(n.id);
+    if (isGroupNode(n) && !renderAsGroup) {
       const { chain, textHeight } = n.data;
       sz.h = GroupPadding.Y + (textHeight || 0);
       for (let i = 0; i < chain.length; i++) {
@@ -285,7 +288,8 @@ class TreeLayout {
     const groupMap = groups.reduce((acc, n) => {
       const sz = this.layoutMap.get(n.id)!;
       if (sz.x !== n.position.x || sz.y !== n.position.y || sz.w !== n.style?.width || sz.h !== n.style.height) {
-        const style = n.data.renderAsGroup ? { width: sz.w } : { width: sz.w, height: sz.h };
+        const renderAsGroup = this.renderAsGroupNodes.has(n.id);
+        const style = renderAsGroup ? { width: sz.w } : { width: sz.w, height: sz.h };
         acc[n.id] = {
           ...n,
           position: { x: sz.x, y: sz.y },
@@ -364,41 +368,70 @@ export function isGroupNode(n: Node | undefined): n is GroupNode {
   return n?.data.type === "Scrolly";
 }
 
-export function getHidden(nodeMap: Record<string, Node>, edges: Edge[], keepList: Set<string>) {
-  return new TreeLayout(nodeMap, edges).getHidden(keepList);
+export function getHidden(
+  nodeMap: Record<string, Node>,
+  edges: Edge[],
+  keepList: Set<string>,
+  renderAsGroupNodes: Set<string>
+) {
+  return new TreeLayout(nodeMap, edges, renderAsGroupNodes).getHidden(keepList);
 }
 
-export function layout(nodeMap: Record<string, Node>, edges: Edge[]) {
-  return new TreeLayout(nodeMap, edges).layout();
+export function layout(nodeMap: Record<string, Node>, edges: Edge[], renderAsGroupNodes: Set<string>) {
+  return new TreeLayout(nodeMap, edges, renderAsGroupNodes).layout();
 }
 
-export function hasCycle(edges: Edge[]): boolean {
+export function hasCycle(edges: Edge[], nodeMap: Record<string, Node>): boolean {
   const map = new Map<string, Edge>();
   edges.forEach((e) => {
     if (e.sourceHandle) map.set(e.sourceHandle!, e);
     if (e.targetHandle) map.set(e.targetHandle!, e);
   });
 
-  const dfs = (id: string, visited: Set<string>, parent: string | undefined): boolean => {
-    if (visited.has(id)) {
+  const dfs = (id: string | undefined, pathTo: Map<string, string>, paths: string[]): boolean => {
+    if (!id) return false;
+    const prev = paths[paths.length - 2];
+    const last = paths[paths.length - 1];
+    if (prev === id) {
+      return false;
+    }
+    paths.push(id);
+    if (pathTo.has(id)) {
+      const cycle = [];
+      for (let cur: string | undefined = id; cur; cur = pathTo.get(cur)) {
+        cycle.push(cur);
+      }
+      console.log("has cycle:", paths);
+      cycle.push(...paths);
+      console.log("has cycle:", cycle);
       return true;
     }
-    visited.add(id);
+    if (last) {
+      pathTo.set(id, last);
+    }
     const left = map.get(id + "-left");
-    if (left && left.source !== parent && dfs(left.source, visited, id)) return true;
+    if (dfs(left?.source, pathTo, paths)) return true;
     const top = map.get(id + "-top");
-    if (top && top.source !== parent && dfs(top.source, visited, id)) return true;
+    if (dfs(top?.source, pathTo, paths)) return true;
+    const node = nodeMap[id];
+    if (!top && !left && node?.parentId) {
+      if (dfs(node.parentId, pathTo, paths)) return true;
+    }
     const right = map.get(id + "-right");
-    if (right && right.target !== parent && dfs(right.target, visited, id)) return true;
+    if (dfs(right?.target, pathTo, paths)) return true;
     const bottom = map.get(id + "-bottom");
-    if (bottom && bottom.target !== parent && dfs(bottom.target, visited, id)) return true;
+    if (dfs(bottom?.target, pathTo, paths)) return true;
+    if (isGroupNode(node)) {
+      if (dfs(node.data.chain[0], pathTo, paths)) return true;
+    }
+    paths.pop();
     return false;
   };
 
-  const visited = new Set<string>();
+  const pathTo = new Map<string, string>();
   for (const edge of edges) {
-    if (visited.has(edge.source)) continue;
-    if (dfs(edge.source, visited, undefined)) return true;
+    if (pathTo.has(edge.source)) continue;
+    if (dfs(edge.source, pathTo, [])) return true;
   }
   return false;
 }

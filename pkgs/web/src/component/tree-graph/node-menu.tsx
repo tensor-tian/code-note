@@ -1,86 +1,56 @@
-import { ReactNode, useMemo, useRef, MouseEvent, useCallback } from "react";
+import { ReactNode, useMemo, useCallback } from "react";
 import { IoMdArrowDropright, IoMdArrowDropdown } from "react-icons/io";
 import { IconType } from "react-icons";
 import cls from "classnames";
 import { BiCopy, BiText } from "react-icons/bi";
-import { useBlockState } from "./hooks";
 import { useTreeNoteStore } from "./store";
 import { IoCode } from "react-icons/io5";
-import { selectDebug } from "./selector";
+import { selectBlockState, selectDebug } from "./selector";
 import { AiOutlineGroup } from "react-icons/ai";
 import { FaRegRectangleList } from "react-icons/fa6";
 import { TbViewportNarrow, TbViewportWide } from "react-icons/tb";
+import { Block, CodeBlock, Web2Ext } from "types";
+import { vscode } from "../../utils";
 
 export type NodeMenuProps = {
-  id: string;
-  showCode?: () => void;
-  hideCode?: () => void;
-  codeStatus?: boolean;
-  onActivate: (event: MouseEvent<HTMLDivElement>) => void;
-  // nodeType: Web2Ext.StartTextEditor["data"]["type"];
-  onStartTextEdit: () => void;
-  isCodeEditing?: boolean;
-  toggleCodeEditing?: () => void;
+  data: Block;
   copyMdx: () => void;
-  renderAsGroup?: boolean;
-  toggleRenderMode?: () => void;
 };
 
-export default function NodeMenu({
-  id,
-  showCode,
-  hideCode,
-  codeStatus,
-  onActivate,
-  copyMdx,
-  onStartTextEdit,
-  isCodeEditing,
-  toggleCodeEditing,
-  renderAsGroup,
-  toggleRenderMode,
-}: NodeMenuProps) {
-  const { adjustNodeWidth } = useTreeNoteStore();
-  const { isSelected } = useBlockState(id);
+export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
+  const { id, text, type: typ } = data;
+  const { adjustNodeWidth, activateNode, toggleCodeShow, toggleNodeSelection } = useTreeNoteStore();
+  const { isSelected, renderAsGroup, isCodeRangeEditing, isTextEditing, showCode } = useTreeNoteStore(
+    selectBlockState(id)
+  );
   const debug = useTreeNoteStore(selectDebug);
   const ID = useMemo(() => {
     if (!debug) return;
     return <pre className=" text-xs border-none rounded-sm px-3 bg-gray-300">{id}</pre>;
   }, [id, debug]);
-  const expandCode = useMemo(() => {
-    if (typeof codeStatus !== "boolean") {
-      // text
+  const onActivate = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
+        return;
+      }
+      activateNode(id);
+    },
+    [activateNode, id]
+  );
+  const codeShowElement = useMemo(() => {
+    if (typ !== "Code" && typ !== "Scrolly") {
       return null;
-    } else if (codeStatus) {
-      return (
-        <IconButton Icon={IoMdArrowDropdown} onClick={hideCode}>
-          Hide Code
-        </IconButton>
-      );
-    } else {
-      return (
-        <IconButton Icon={IoMdArrowDropright} onClick={showCode}>
-          Show Code
-        </IconButton>
-      );
     }
-  }, [codeStatus, hideCode, showCode]);
-  const groupRenderMode = useMemo(() => {
-    if (typeof renderAsGroup === "undefined") return null;
-    if (renderAsGroup) {
-      return (
-        <IconButton Icon={AiOutlineGroup} onClick={toggleRenderMode}>
-          Render as Codes
-        </IconButton>
-      );
-    } else {
-      return (
-        <IconButton Icon={FaRegRectangleList} onClick={toggleRenderMode}>
-          Render as Group
-        </IconButton>
-      );
-    }
-  }, [renderAsGroup, toggleRenderMode]);
-  const { toggleNodeSelection } = useTreeNoteStore();
+    return showCode ? (
+      <IconButton Icon={IoMdArrowDropdown} onClick={() => toggleCodeShow(id)}>
+        Hide Code
+      </IconButton>
+    ) : (
+      <IconButton Icon={IoMdArrowDropright} onClick={() => toggleCodeShow(id)}>
+        Show Code
+      </IconButton>
+    );
+  }, [typ, showCode, toggleCodeShow, id]);
 
   const toggleSelection = useCallback(() => {
     toggleNodeSelection(id);
@@ -97,25 +67,14 @@ export default function NodeMenu({
   return (
     <div className="flex align-baseline text-gray-600 font-medium text-xs" onClick={onActivate}>
       <div className="flex flex-grow justify-start gap-2">
-        {expandCode}
+        {codeShowElement}
 
-        <BiText
-          onClick={onStartTextEdit}
-          size={15}
-          className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-auto hover:bg-gray-200"
-        />
-        <IoCode
-          className={cls(
-            "mr-5 cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200",
-            isCodeEditing ? "text-red scale-110" : "text-gray-500"
-          )}
-          onClick={toggleCodeEditing}
-          size={16}
-        />
+        <TextEditIcon id={id} type={typ} text={text} isTextEditing={isTextEditing} />
+        {typ === "Code" ? <CodeEditIcon data={data} isCodeRangeEditing={isCodeRangeEditing} /> : null}
       </div>
       {ID}
       <div className="flex flex-grow justify-end gap-2">
-        {groupRenderMode}
+        {typ === "Scrolly" ? <GroupRenderIcon id={id} renderAsGroup={renderAsGroup} /> : null}
         <IconButton Icon={TbViewportWide} onClick={widen} />
         <IconButton Icon={TbViewportNarrow} onClick={narrow} />
         <BiCopy
@@ -148,6 +107,7 @@ type Props = {
   onClick?: () => void;
   children?: string | ReactNode;
 };
+
 function IconButton({ Icon, onClick, children }: Props) {
   return (
     <div
@@ -157,5 +117,89 @@ function IconButton({ Icon, onClick, children }: Props) {
       <Icon size={16} />
       <span>{children}</span>
     </div>
+  );
+}
+
+function GroupRenderIcon({ id, renderAsGroup }: { id: string; renderAsGroup: boolean }) {
+  const { toggleRenderAsGroup } = useTreeNoteStore();
+  const onClick = useCallback(() => {
+    toggleRenderAsGroup(id);
+  }, [id, toggleRenderAsGroup]);
+  if (renderAsGroup) {
+    return (
+      <IconButton Icon={AiOutlineGroup} onClick={onClick}>
+        Render as Codes
+      </IconButton>
+    );
+  } else {
+    return (
+      <IconButton Icon={FaRegRectangleList} onClick={onClick}>
+        Render as Group
+      </IconButton>
+    );
+  }
+}
+
+function TextEditIcon({
+  id,
+  type: typ,
+  text,
+  isTextEditing,
+}: Pick<Block, "id" | "type" | "text"> & { isTextEditing: boolean }) {
+  const onStartTextEdit = useCallback(() => {
+    vscode.postMessage({
+      action: "web2ext-text-edit-start",
+      data: { id, text, type: typ },
+    } as Web2Ext.TextEditStart);
+  }, [id, text, typ]);
+  const onStopTextEdit = useCallback(() => {
+    vscode.postMessage({
+      action: "web2ext-text-edit-stop",
+      data: { id, type: typ },
+    } as Web2Ext.TextEditStop);
+  }, [id, typ]);
+  return (
+    <BiText
+      onClick={isTextEditing ? onStopTextEdit : onStartTextEdit}
+      size={15}
+      className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-auto hover:bg-gray-200"
+    />
+  );
+}
+function CodeEditIcon({
+  data: { id, type: typ, filePath, pkgPath, ranges },
+  isCodeRangeEditing,
+}: {
+  data: CodeBlock;
+  isCodeRangeEditing: boolean;
+}) {
+  const onClick = useCallback(() => {
+    if (isCodeRangeEditing) {
+      vscode.postMessage({
+        action: "web2ext-code-range-edit-stop",
+        data: { id },
+      } as Web2Ext.CodeRangeEditStop);
+    } else {
+      vscode.postMessage({
+        action: "web2ext-code-range-edit-start",
+        data: {
+          id: id,
+          type: typ,
+          filePath,
+          pkgPath,
+          ranges,
+        },
+      } as Web2Ext.CodeRangeEditStart);
+    }
+  }, [filePath, id, isCodeRangeEditing, pkgPath, ranges, typ]);
+  return (
+    <IoCode
+      className={cls(
+        "mr-5 cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200",
+        isCodeRangeEditing ? "text-red scale-110" : "text-gray-500"
+      )}
+      onClick={onClick}
+      size={16}
+    />
   );
 }

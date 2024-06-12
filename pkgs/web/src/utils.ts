@@ -55,6 +55,7 @@ export const vscodeMessage = {
     } as Web2Ext.ShowMsg);
   },
 };
+
 export const DEFAULT_BLOCK: Ext2Web.AddCode["data"] = {
   type: "Code",
   code: `\`\`\`ts src/dispose.ts lineNums=18:33 focus=22[1:32],23:25,26[1:15],33
@@ -86,7 +87,6 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   Emphasis, aka italics, with *asterisks* or _underscores_.
 
 `,
-  showCode: true,
   ranges: [],
   id: "",
 };

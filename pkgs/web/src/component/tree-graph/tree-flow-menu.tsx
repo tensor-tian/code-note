@@ -23,7 +23,8 @@ type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
 export default function Menu({ addBlock }: Props) {
-  const { setKV, groupNodes, groupNodesToDetail, splitGroup, deleteEdge, deleteNode, forceLayout } = useTreeNoteStore();
+  const { setKV, groupNodes, groupNodesToDetail, splitGroup, deleteEdge, deleteNode, forceLayout, resetExtents } =
+    useTreeNoteStore();
   const {
     id,
     text,
@@ -46,13 +47,14 @@ export default function Menu({ addBlock }: Props) {
 
   const toggleDebug = useCallback(() => {
     setKV("debug", !debug);
-  }, [debug, setKV]);
+    resetExtents();
+  }, [debug, setKV, resetExtents]);
 
   const editNoteTitle = useCallback(() => {
     vscode.postMessage({
-      action: "web2ext-start-text-editor",
+      action: "web2ext-text-edit-start",
       data: { id, text, type: typ },
-    } as Web2Ext.StartTextEditor);
+    } as Web2Ext.TextEditStart);
   }, [id, text, typ]);
 
   const Edge = useMemo(() => LetterIcon("E"), []);

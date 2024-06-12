@@ -24,7 +24,7 @@ import Code from "./node-code";
 import Text from "./node-text";
 import Scrolly from "./node-scrolly";
 import Template from "./node-template";
-import Title from "./note-title";
+import Title from "./tree-flow-header";
 import MiniMapNode from "./minimap-node";
 import NodeInspector from "./node-inspector";
 import { useNavKeys } from "./use-nav-keys";
@@ -62,9 +62,6 @@ function TreeFlow() {
   // edge operation
   const { edges, onEdgeClick, onEdgeMouseEnter, onEdgeMouseLeave, onEdgeChange } = useEdge();
 
-  if (containerRef.current) {
-    console.log("TreeFlow container:", containerRef.current.getBoundingClientRect());
-  }
   // arrow key to focus node
   useNavKeys(edges);
   // auto focus node by reset viewport
@@ -90,7 +87,9 @@ function TreeFlow() {
     [selectedNodes, rootIds]
   );
 
-  console.log("<TreeFlow> nodes:", nodes, "edges:", edges);
+  if (debug) {
+    console.log("<TreeFlow> nodes:", nodes, "edges:", edges);
+  }
 
   const [sourceHandle, setSourceHandle] = useState<string>("");
   const onConnectStart = useCallback(
@@ -154,7 +153,7 @@ function usePanToActiveNode(
   setKV: <T extends keyof TreeNote.Store>(key: T, val: TreeNote.Store[T]) => void,
   nLen: number
 ) {
-  const { activeNode, activeGroup, activeMark } = useTreeNoteStore(selectActiveNodeAndGroup);
+  const { activeNode, activeGroup, activeMark, isActiveNodeRenderAsGroup } = useTreeNoteStore(selectActiveNodeAndGroup);
   const { setViewport, getViewport } = useReactFlow();
   const [mark, setMark] = useState<number>(activeMark);
   useEffect(() => {
@@ -178,7 +177,7 @@ function usePanToActiveNode(
     if (hActive > container.height - 120) {
       y = -yActive + 120;
     }
-    if (isGroupNode(activeNode) && !activeNode.data.renderAsGroup) {
+    if (isGroupNode(activeNode) && !isActiveNodeRenderAsGroup) {
       // prevent vertical scroll
       y = getViewport().y;
     }
@@ -186,7 +185,18 @@ function usePanToActiveNode(
     if (nLen === 1) {
       setTimeout(() => setKV("panToActiveMark", 0), 800);
     }
-  }, [activeGroup, activeMark, activeNode, setViewport, mark, setKV, nLen, ref, getViewport]);
+  }, [
+    activeGroup,
+    activeMark,
+    activeNode,
+    setViewport,
+    mark,
+    setKV,
+    nLen,
+    ref,
+    getViewport,
+    isActiveNodeRenderAsGroup,
+  ]);
 
   useEffect(() => {
     setMark(activeMark);
