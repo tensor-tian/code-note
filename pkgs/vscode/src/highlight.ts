@@ -172,12 +172,14 @@ export class Highlight {
     const firstLine = editor.document.lineAt(0);
     const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
     const { Code, Focus, Mark, Link } = DecorationKind;
-    const ranges = _ranges.map((list) =>
+    const ranges = (
+      JSON.parse(_ranges) as [[number, number], [number, number]][][]
+    ).map((list) =>
       list.map(
         (range) =>
           new vscode.Range(
-            new vscode.Position(range.start.line, range.start.character),
-            new vscode.Position(range.end.line, range.end.character)
+            new vscode.Position(range[0][0], range[0][1]),
+            new vscode.Position(range[1][0], range[1][1])
           )
       )
     );
@@ -433,7 +435,14 @@ export class Highlight {
         id,
         code,
         rowCount,
-        ranges: _ranges,
+        ranges: JSON.stringify(
+          _ranges?.map((kind) =>
+            kind.map(({ start, end }) => [
+              [start.line, start.character],
+              [end.line, end.character],
+            ])
+          )
+        ),
       },
     } as Ext2Web.CodeRangeChange);
   }

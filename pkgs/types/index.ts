@@ -7,6 +7,11 @@ export type {
   NodePositionChange,
 } from "reactflow";
 
+export type VscodeRange = {
+  start: { line: number; character: number };
+  end: { line: number; character: number };
+};
+
 export type Edge = RFEdge<EdgeData>;
 export type Node = RFNode<Block>;
 export type CodeNode = RFNode<CodeBlock>;
@@ -39,7 +44,7 @@ export interface CodeBlock extends BaseBlock {
   filePath: string; // source code file path relative to pkgPath
   pkgPath: string; // package root path of source code
   pkgName: string; // package name defined in module config file
-  ranges: { start: Pos; end: Pos }[][]; // highlight ranges in source code
+  ranges: string; // highlight ranges in source code, [[[[startLine, startCharacter], [endLine, endCharacter]]], [], [], []]
 }
 
 export interface ScrollyCodeBlock extends BaseBlock {

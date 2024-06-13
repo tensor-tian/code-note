@@ -87,6 +87,6 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   Emphasis, aka italics, with *asterisks* or _underscores_.
 
 `,
-  ranges: [],
+  ranges: "[[], [], [], []]",
   id: "",
 };

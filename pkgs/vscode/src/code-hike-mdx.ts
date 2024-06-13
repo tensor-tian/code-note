@@ -56,11 +56,13 @@ export async function getPartialBlock({
     filePath,
     pkgPath,
     pkgName,
-    ranges: ranges.map((list) =>
-      list.map((range) => ({
-        start: { line: range.start.line, character: range.start.character },
-        end: { line: range.end.line, character: range.end.character },
-      }))
+    ranges: JSON.stringify(
+      ranges.map((kind) =>
+        kind.map(({ start, end }) => [
+          [start.line, start.character],
+          [end.line, end.character],
+        ])
+      )
     ),
     links,
     marks,

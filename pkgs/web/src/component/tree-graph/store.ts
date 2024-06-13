@@ -1,5 +1,17 @@
 import { getHidden, hasCycle, isCodeNode, isGroupNode, isTextNode, DefaultNodeDimension } from "./layout";
-import { CodeBlock, Edge, Ext2Web, GroupNode, Node, Note, TemplateNode, TextNode, TextNodeType, Web2Ext } from "types";
+import {
+  CodeBlock,
+  Edge,
+  Ext2Web,
+  GroupNode,
+  Node,
+  Note,
+  TemplateNode,
+  TextNode,
+  TextNodeType,
+  VscodeRange,
+  Web2Ext,
+} from "types";
 import {
   EdgeChange,
   NodeChange,
@@ -16,6 +28,7 @@ import { isVscode, saveNote, vscode, vscodeMessage } from "../../utils";
 import { create } from "zustand";
 
 import { layout } from "./layout";
+import { range } from "lodash";
 
 namespace TreeNote {
   export interface Store extends Note {
@@ -131,7 +144,28 @@ export const useTreeNoteStore = create<TreeNote.State>(
             KeepNodeIds,
             renderAsGroupNodes
           );
-          set({ ...note, hiddenEdges, hiddenNodes }, false, "resetNote1");
+          for (const [id, n] of Object.entries(note.nodeMap)) {
+            // migrate old version ranges
+            if (isCodeNode(n)) {
+              // @ts-ignore
+              const ranges = n.data.ranges as (VscodeRange | [[number, number], [number, number]])[][];
+              if (ranges[0][0] && !Array.isArray(ranges[0][0])) {
+                n.data.ranges = JSON.stringify(
+                  ranges.map((kind) =>
+                    kind.map((range) => {
+                      const { start, end } = range as VscodeRange;
+                      return [
+                        [start.line, start.character],
+                        [end.line, end.character],
+                      ];
+                    })
+                  )
+                );
+                note.nodeMap[id] = n;
+              }
+            }
+          }
+          set({ ...note, hiddenEdges, hiddenNodes }, false, "resetNote:1");
           const { activeNodeId, nodeMap, edges } = get();
 
           if (!activeNodeId) {
@@ -144,7 +178,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
                 activeNodeId: rootIds[0],
               },
               false,
-              "resetNote2"
+              "resetNote:2"
             );
           }
         },
