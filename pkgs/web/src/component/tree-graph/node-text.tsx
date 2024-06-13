@@ -22,7 +22,7 @@ function TextNode({ id, data }: NodeProps<TextBlock>) {
   }, [mdx]);
 
   return (
-    <NodeBox id={id} isActive={isActive} isRoot={isRoot} isSelected={isSelected} style={{ width }} className="nowheel">
+    <NodeBox id={id} isActive={isActive} isRoot={isRoot} isSelected={isSelected} style={{ width }}>
       <div style={{ width: DefaultNodeDimension.W }} className="p-4">
         <NodeMenu data={data} copyMdx={copyMdx} />
         <div className="px-1">
