@@ -122,6 +122,7 @@ function RoundButton({ Icon, title, disabled, onClick }: RoundButtonProps) {
         className="hover:bg-gray-600"
         disabled={disabled}
         onClick={onClick}
+        component="span"
       >
         <Icon
           className={cls({

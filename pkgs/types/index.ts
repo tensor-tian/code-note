@@ -74,6 +74,9 @@ export interface Note {
   pkgName: string; // package name of workspace which include active editor document file
   nodeMap: Record<string, Node>;
   edges: Edge[];
+  // `renderAsGroupNodes` and `groupStepIndexes` affect edges
+  renderAsGroupNodes: string[];
+  groupStepIndexMap: Record<string, number>;
 }
 
 export type TextNodeType = Note["type"] | Block["type"];
