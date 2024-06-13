@@ -926,6 +926,12 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           set({ nodeMap: nextNodeMap }, "resetExtents", false);
         },
+        textEditDone(id: string, typ: string) {
+          const { textEditing } = get();
+          if (id === textEditing?.id && typ === textEditing.type) {
+            set({ textEditing: undefined }, "textEditDone", false);
+          }
+        },
       };
     }),
     {
@@ -1170,7 +1176,7 @@ class IDGenerator {
 export const iDGenerator = new IDGenerator();
 
 window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
-  const { setKV, resetNote, addCodeNode, updateNodeText, updateNodeCodeRange, stopNodeCodeRangeEditing } =
+  const { setKV, resetNote, addCodeNode, updateNodeText, updateNodeCodeRange, stopNodeCodeRangeEditing, textEditDone } =
     useTreeNoteStore.getState();
   const { action, data } = event.data;
   if (!action?.startsWith("ext2web")) return;
@@ -1196,7 +1202,7 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       setKV("textEditing", data);
       break;
     case "ext2web-text-edit-done":
-      setKV("textEditing", undefined);
+      textEditDone(data.id, data.type);
       break;
     case "ext2web-add-detail":
     case "ext2web-add-next":
