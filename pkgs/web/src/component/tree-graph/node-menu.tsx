@@ -3,14 +3,16 @@ import { IoMdArrowDropright, IoMdArrowDropdown } from "react-icons/io";
 import { IconType } from "react-icons";
 import cls from "classnames";
 import { BiCopy, BiText } from "react-icons/bi";
+import { FaTextSlash } from "react-icons/fa6";
 import { useTreeNoteStore } from "./store";
-import { IoCode } from "react-icons/io5";
+// import { IoCode } from "react-icons/io5";
 import { selectBlockState, selectDebug } from "./selector";
 import { AiOutlineGroup } from "react-icons/ai";
 import { FaRegRectangleList } from "react-icons/fa6";
 import { TbViewportNarrow, TbViewportWide } from "react-icons/tb";
 import { Block, CodeBlock, Web2Ext } from "types";
 import { vscode, vscodeMessage } from "../../utils";
+import { MdCodeOff, MdCode } from "react-icons/md";
 
 export type NodeMenuProps = {
   data: Block;
@@ -155,7 +157,7 @@ function TextEditIcon({
 }: Pick<Block, "id" | "type" | "text"> & { textEditing: { id: string; type: string } | undefined }) {
   const isTextEditing = textEditing?.id === id && textEditing.type === typ;
   const available = typeof textEditing === "undefined";
-  const onStartTextEdit = useCallback(() => {
+  const startTextEdit = useCallback(() => {
     if (available) {
       vscode.postMessage({
         action: "web2ext-text-edit-start",
@@ -165,20 +167,31 @@ function TextEditIcon({
       vscodeMessage.warn("A text editor is already open, close it before open a new one.");
     }
   }, [id, text, typ, available]);
-  const onStopTextEdit = useCallback(() => {
+  const stopTextEdit = useCallback(() => {
     vscode.postMessage({
       action: "web2ext-text-edit-stop",
       data: { id, type: typ },
     } as Web2Ext.TextEditStop);
   }, [id, typ]);
-  return (
-    <BiText
-      onClick={isTextEditing ? onStopTextEdit : onStartTextEdit}
-      size={15}
-      className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-auto hover:bg-gray-200"
-    />
-  );
+  if (isTextEditing) {
+    return (
+      <FaTextSlash
+        onClick={stopTextEdit}
+        size={15}
+        className="text-red hover-scale-110 cursor-auto hover:bg-gray-200"
+      />
+    );
+  } else {
+    return (
+      <BiText
+        onClick={startTextEdit}
+        size={15}
+        className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-auto hover:bg-gray-200"
+      />
+    );
+  }
 }
+
 function CodeEditIcon({
   data: { id, type: typ, filePath, pkgPath, ranges },
   codeRangeEditingNode,
@@ -211,14 +224,21 @@ function CodeEditIcon({
       }
     }
   }, [filePath, id, isCodeRangeEditing, pkgPath, ranges, typ, available]);
-  return (
-    <IoCode
-      className={cls(
-        "mr-5 cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200",
-        isCodeRangeEditing ? "text-red scale-110" : "text-gray-500"
-      )}
-      onClick={onClick}
-      size={16}
-    />
-  );
+  if (isCodeRangeEditing) {
+    return (
+      <MdCodeOff
+        className="mr-5 cursor-auto hover:scale-110 hover:bg-gray-200 text-red scale-110"
+        onClick={onClick}
+        size={16}
+      />
+    );
+  } else {
+    return (
+      <MdCode
+        className="mr-5 cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200 text-gray-500"
+        onClick={onClick}
+        size={16}
+      />
+    );
+  }
 }

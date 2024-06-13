@@ -112,8 +112,10 @@ export const selectMenuState = createSelector(
     selectCanGroupToDetail,
     selectCanGroup,
     selectCanSplitGroup,
+    selectTextEditing,
+    selectCodeRangeEditingNode,
   ],
-  (id, text, typ, debug, canGroupNodesToDetail, canGroupNodes, canSplitGroup) => {
+  (id, text, typ, debug, canGroupNodesToDetail, canGroupNodes, canSplitGroup, textEditing, codeRangeEditingNode) => {
     return {
       id,
       text,
@@ -122,6 +124,8 @@ export const selectMenuState = createSelector(
       canGroupNodes,
       canGroupNodesToDetail,
       canSplitGroup,
+      textEditing,
+      codeRangeEditingNode,
     };
   }
 );

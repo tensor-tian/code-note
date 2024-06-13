@@ -28,6 +28,9 @@ import { isVscode, saveNote, vscode, vscodeMessage } from "../../utils";
 import { create } from "zustand";
 
 import { layout } from "./layout";
+import Debug from "debug";
+
+const log = Debug("vscode-note:store");
 
 namespace TreeNote {
   export interface Store extends Note {
@@ -149,7 +152,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         ...initialData,
         resetNote: (note) => {
           const { renderAsGroupNodes } = get();
-          console.log("reset note:", note);
+          log("reset note:", note);
           const { edges: hiddenEdges, nodes: hiddenNodes } = getHidden(
             note.nodeMap,
             note.edges,
@@ -225,7 +228,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           set({ selectedNodes: nextSelectedNodes }, "toggleNodeSelection", false);
         },
         onNodeChange: (_changes) => {
-          console.log("on node change:", _changes);
+          log("on node change:", _changes);
           const { nodeMap, edges, rootIds, renderAsGroupNodes } = get();
           const changes = _changes.filter((c) => {
             if (c.type === "select") {
@@ -308,7 +311,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
             return;
           }
           const tmp = nodeMap[TextNodeTemplateID];
-          // console.log("on connect end:", position, tmp.position, tmp.width, tmp.height);
 
           let nextNodeMap = { ...nodeMap };
           delete nextNodeMap[TextNodeTemplateID];
@@ -344,7 +346,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
         },
         onConnect: async (conn) => {
-          console.log("on connect:", conn);
+          log("on connect:", conn);
           const { source, target, sourceHandle, targetHandle } = conn;
           if (source === target) return;
           const { edges, nodeMap, debug, rootIds, renderAsGroupNodes } = get();
@@ -370,7 +372,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           nextEdges = addEdge(newEdgeFromConn(conn, ids[0]), nextEdges);
 
           if (!debug && hasCycle(nextEdges, nextNodeMap)) {
-            console.log("has cycle", nextEdges);
+            log("has cycle", nextEdges);
             return;
           }
 
@@ -384,7 +386,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         addCodeNode: async ({ action, data }) => {
           const { nodeMap, edges, activeNodeId, renderAsGroupNodes } = get();
           const nodes = Object.values(nodeMap);
-          console.log("add code node:", activeNodeId, nodes.length);
+          log("add code node:", activeNodeId, nodes.length);
           // empty tree flow graph
           if (!activeNodeId && nodes.length > 0) return;
 
@@ -470,7 +472,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         updateNodeText: (id, text) => {
           const { nodeMap } = get();
           const node = nodeMap[id];
-          console.log("update node text:", id, text, node);
+          log("update node text:", id, text, node);
           if (isCodeNode(node)) {
             updateCodeBlock({ id, text }, "updateNodeText:Code", true);
           } else if (isTextNode(node) || isGroupNode(node)) {
@@ -711,9 +713,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
             nextNodeMap,
             nextEdges,
             KeepNodeIds,
-            renderAsGroupNodes
+            nextRenderAsGroupNodes
           );
-          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, renderAsGroupNodes));
+          log("toggleRenderAsGroup, getHidden:", hiddenEdges, hiddenNodes);
+          ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, nextRenderAsGroupNodes));
           set(
             {
               nodeMap: nextNodeMap,
@@ -730,7 +733,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
         },
         handleCodeHikeMessage(action, data) {
           if (action === "on-scrolly-step-change") {
-            console.log("on scrollyCoding step change:", data);
+            log("on scrollyCoding step change:", data);
             const { id, stepIndex: nextStepIndex } = data as { id: string; stepIndex: number };
             const { nodeMap, edges, groupStepIndexMap, renderAsGroupNodes } = get();
             // const nextEdges = new Array<Edge>(edges.length);
@@ -933,10 +936,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
         setItem: (_name, value) => {
           const { state } = value;
           if (typeof state !== "undefined") {
-            console.log("save note");
+            log("save note");
             saveNote(state);
           } else {
-            console.log("skip save note");
+            log("skip save note");
           }
         },
         removeItem: (_name) => {},
@@ -1088,7 +1091,7 @@ export function getNextChain(selections: string[], edges: Edge[]): string[] | un
   });
 
   if (!nIDFirst) {
-    console.log("stop grouping: first node not found");
+    log("stop grouping: first node not found");
     return;
   }
 
@@ -1104,7 +1107,7 @@ export function getNextChain(selections: string[], edges: Edge[]): string[] | un
   }
 
   if (chain.length !== selections.length) {
-    console.log("stop grouping: more than one chain");
+    log("stop grouping: more than one chain");
     return;
   }
 
@@ -1170,10 +1173,10 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
     useTreeNoteStore.getState();
   const { action, data } = event.data;
   if (!action?.startsWith("ext2web")) return;
-  console.log("ext to web:", { action, data });
+  log("ext to web:", { action, data });
   switch (action) {
     case "ext2web-init-tree-note":
-      console.log("init tree note:", data);
+      log("init tree note:", data);
       resetNote(data);
       break;
     case "ext2web-text-change":

@@ -30,6 +30,9 @@ import NodeInspector from "./node-inspector";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
 import Menu from "./tree-flow-menu";
+import Debug from "debug";
+
+const log = Debug("vscode-note:tree");
 
 const NODE_TYPES: NodeTypes = {
   Code,
@@ -87,9 +90,7 @@ function TreeFlow() {
     [selectedNodes, rootIds]
   );
 
-  if (debug) {
-    console.log("<TreeFlow> nodes:", nodes, "edges:", edges);
-  }
+  log("<TreeFlow> nodes:", nodes, "edges:", edges);
 
   const [sourceHandle, setSourceHandle] = useState<string>("");
   const onConnectStart = useCallback(

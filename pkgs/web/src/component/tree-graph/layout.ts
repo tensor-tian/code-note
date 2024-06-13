@@ -1,4 +1,7 @@
 import type { CodeNode, Edge, GroupNode, Node, TemplateNode, TextNode } from "types";
+import Debug from "debug";
+
+const log = Debug("vscode-note:layout");
 
 const GroupPadding = {
   X: 10,
@@ -375,6 +378,7 @@ export function getHidden(
   keepList: Set<string>,
   renderAsGroupNodes: string[]
 ) {
+  log("getHidden:", nodeMap, edges, keepList, renderAsGroupNodes);
   return new TreeLayout(nodeMap, edges, new Set(renderAsGroupNodes)).getHidden(keepList);
 }
 

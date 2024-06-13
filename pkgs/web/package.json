@@ -13,6 +13,7 @@
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "classnames": "^2.5.1",
     "dayjs": "^1.11.10",
+    "debug": "^4.3.5",
     "events": "^3.3.0",
     "javascript-time-ago": "^2.5.9",
     "lodash": "^4.17.21",
