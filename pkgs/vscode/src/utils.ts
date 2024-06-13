@@ -12,8 +12,12 @@ export const isSubDirectory = (dir: string) => (p: string) => {
 };
 
 async function fileExists(filePath: string): Promise<boolean> {
-  const stat = await fs.promises.stat(filePath);
-  return stat.isFile();
+  try {
+    const stat = await fs.promises.stat(filePath);
+    return stat.isFile();
+  } catch (err) {
+    return false;
+  }
 }
 
 type PackageInfo = { rootPath: string; name: string };

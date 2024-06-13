@@ -109,7 +109,6 @@ async function submitNote(
       pkgPath: block.pkgPath,
       pkgName: block.pkgName,
       ranges: block.ranges,
-      showCode: true,
     },
   };
   await webview.postMessage(msg);

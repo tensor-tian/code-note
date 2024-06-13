@@ -94,6 +94,7 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
       return this.fs.delete(this.vDocUri(uriOrTyp, id));
     } else {
       const uri = uriOrTyp as Uri;
+      if (!uri.path.startsWith(this.tmpdir.path)) return;
       return this.fs.delete(uri);
     }
   }
@@ -106,15 +107,10 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
   // path is endsWith '.cnote'
   noteUri = (pkgOrPath: string, title?: string) => {
     if (!title) {
-      return Uri.joinPath(this.context.globalStorageUri, pkgOrPath);
+      return Uri.joinPath(this.workingDir, pkgOrPath);
     }
     const pkg = pkgOrPath;
-    return Uri.joinPath(
-      this.context.globalStorageUri,
-      workDir,
-      pkg,
-      title + ".cnote"
-    );
+    return Uri.joinPath(this.workingDir, pkg, title + ".cnote");
   };
   existsNote = async (uri: Uri) => {
     try {
@@ -136,14 +132,24 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
     }
   }
 
+  get workingDir() {
+    const dir = vscode.workspace
+      .getConfiguration("vscode-note")
+      .get("workingDir") as string | undefined;
+    if (dir) return vscode.Uri.file(dir);
+    // globalStorageUri dir will be removed when uninstall this extension.
+    return this.context.globalStorageUri;
+  }
+
   listNotePaths = async () => {
-    const wd = Uri.joinPath(this.context.globalStorageUri, workDir);
+    const wd = this.workingDir;
     if (!(await this.existsDir(wd))) {
       await workspace.fs.createDirectory(wd);
     }
     const list = [] as string[];
-    const start = this.context.globalStorageUri.path.length;
-    await this.visitDir(wd, (uri: Uri) => list.push(uri.path.slice(start)));
+    await this.visitDir(wd, (uri: Uri) =>
+      list.push(uri.path.slice(wd.path.length))
+    );
     return list;
   };
   readNote = async (uri: Uri): Promise<Note> => {
@@ -161,11 +167,7 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
   createNote = async (title: string): Promise<Uri | undefined> => {
     const note = await initCodeNote(title);
     if (!note) return;
-    const dir = Uri.joinPath(
-      this.context.globalStorageUri,
-      workDir,
-      note.pkgName
-    );
+    const dir = Uri.joinPath(this.workingDir, note.pkgName);
     if (!(await this.existsDir(dir))) {
       await workspace.fs.createDirectory(dir);
     }
@@ -187,7 +189,7 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
   };
 
   getOpenedNoteFiles(): string[] {
-    const isNotePath = isSubDirectory(this.context.globalStorageUri.path);
+    const isNotePath = isSubDirectory(this.workingDir.path);
     return workspace.textDocuments
       .map((doc) => doc.uri.path)
       .filter(isNotePath);
@@ -206,7 +208,6 @@ export async function initCodeNote(title: string): Promise<Note | undefined> {
     await getActiveWorkspacePackageInfo();
   if (!pkgPath || !pkgName) return;
   return {
-    version: 2,
     id: await nanoid(),
     type: "TreeNote",
     text: `### ${title}`,
@@ -214,6 +215,5 @@ export async function initCodeNote(title: string): Promise<Note | undefined> {
     pkgName,
     nodeMap: {},
     edges: [],
-    activeNodeId: "",
   };
 }

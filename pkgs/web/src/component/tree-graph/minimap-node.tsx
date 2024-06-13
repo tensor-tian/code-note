@@ -15,7 +15,6 @@ const MiniMapNode = ({
   onClick,
   selected,
 }: MiniMapNodeProps) => {
-  console.log("minimap node:", className);
   const isRoot = className.includes("root");
   const isSelected = className.includes("selected");
   const isGroup = className.includes("group");

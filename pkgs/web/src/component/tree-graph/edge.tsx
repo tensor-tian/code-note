@@ -42,6 +42,7 @@ export function useEdge() {
   const { setKV, onEdgeChange, activateNode } = useTreeNoteStore();
   const onEdgeClick: EdgeMouseHandler = useCallback(
     (_event, edge) => {
+      console.log("click edge:", edge);
       setKV("selectedEdge", edge.id);
       if (activeNodeId === edge.source) {
         activateNode(edge.target);

@@ -8,7 +8,7 @@ import { Panel } from "reactflow";
 
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
-
+import { BsFileEarmarkArrowUp } from "react-icons/bs";
 import { useHover } from "usehooks-ts";
 import { useCallback, useMemo, useRef } from "react";
 import cls from "classnames";
@@ -16,14 +16,33 @@ import { FaFileArrowDown, FaFileImport } from "react-icons/fa6";
 import { vscode, isVscode, DEFAULT_BLOCK } from "../../utils";
 import { iDGenerator, useTreeNoteStore } from "./store";
 import { selectMenuState } from "./selector";
-import { Ext2Web, Web2Ext } from "types";
+import { Ext2Web, Note, Web2Ext } from "types";
+import RightGroup from "../icons/right-group";
 
 type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
 export default function Menu({ addBlock }: Props) {
-  const { setKV, groupNodes: _groupNodes, splitGroup, deleteEdge, deleteNode, forceLayout } = useTreeNoteStore();
-  const { id, text, type: typ, debug, canGroupNodes, canSplitGroup } = useTreeNoteStore(selectMenuState);
+  const {
+    setKV,
+    groupNodes,
+    groupNodesToDetail,
+    splitGroup,
+    deleteEdge,
+    deleteNode,
+    forceLayout,
+    resetExtents,
+    resetNote,
+  } = useTreeNoteStore();
+  const {
+    id,
+    text,
+    type: typ,
+    debug,
+    canGroupNodes,
+    canGroupNodesToDetail,
+    canSplitGroup,
+  } = useTreeNoteStore(selectMenuState);
 
   const addDetail = useCallback(async () => {
     const [id] = await iDGenerator.requestIDs(1);
@@ -37,30 +56,34 @@ export default function Menu({ addBlock }: Props) {
 
   const toggleDebug = useCallback(() => {
     setKV("debug", !debug);
-  }, [debug, setKV]);
+    resetExtents();
+  }, [debug, setKV, resetExtents]);
 
   const editNoteTitle = useCallback(() => {
     vscode.postMessage({
-      action: "web2ext-start-text-editor",
+      action: "web2ext-text-edit-start",
       data: { id, text, type: typ },
-    } as Web2Ext.StartTextEditor);
+    } as Web2Ext.TextEditStart);
   }, [id, text, typ]);
 
-  const groupNodes = useCallback(async () => {
-    const [id] = await iDGenerator.requestIDs(1);
-    _groupNodes(id);
-  }, [_groupNodes]);
   const Edge = useMemo(() => LetterIcon("E"), []);
   const Node = useMemo(() => LetterIcon("N"), []);
 
   return (
     <Panel className="flex flex-col gap-1 absolute top-1/4 text-lg" position="bottom-right">
+      <FileButton title="Open *.cnote File" resetNote={resetNote} disabled={isVscode} />
       <RoundButton Icon={RiText} title="Edit Note Title" onClick={editNoteTitle} />
       <RoundButton Icon={VscDebugConsole} title="Toggle Debug" onClick={toggleDebug} />
       <RoundButton Icon={FaFileArrowDown} title="Add Next Block" disabled={isVscode} onClick={addNext} />
       <RoundButton Icon={FaFileImport} title="Add Detail Block" disabled={isVscode} onClick={addDetail} />
-      <RoundButton Icon={AiOutlineGroup} title="Group Nodes" disabled={!canGroupNodes} onClick={groupNodes} />
+      <RoundButton Icon={AiOutlineGroup} title="Group Codes" disabled={!canGroupNodes} onClick={groupNodes} />
       <RoundButton Icon={MdOutlineSplitscreen} title="Split Group" disabled={!canSplitGroup} onClick={splitGroup} />
+      <RoundButton
+        Icon={RightGroup}
+        title="Extract Codes To Detail Group"
+        disabled={!canGroupNodesToDetail}
+        onClick={groupNodesToDetail}
+      />
       <RoundButton Icon={TfiLayoutGrid3} title="Force Layout" onClick={forceLayout} />
       <RoundButton Icon={Edge} title="Remove Edge" onClick={deleteEdge} />
       <RoundButton Icon={Node} title="Remove Node" onClick={deleteNode} />
@@ -79,7 +102,7 @@ function LetterIcon(letter: string) {
 }
 
 type RoundButtonProps = {
-  Icon: IconType;
+  Icon: IconType | typeof RightGroup;
   title: string;
   disabled?: boolean;
   onClick: () => void;
@@ -100,11 +123,63 @@ function RoundButton({ Icon, title, disabled, onClick }: RoundButtonProps) {
         disabled={disabled}
         onClick={onClick}
       >
-        {/* <Icon /> */}
         <Icon
-          className={cls({ "fill-white text-white": isHover, "fill-gray-600": !isHover, "!fill-gray-400": disabled })}
+          className={cls({
+            "fill-white text-white stroke-white": isHover,
+            "fill-gray-600 stroke-gray-600": !isHover,
+            "!fill-gray-400": disabled,
+          })}
+          size={16}
         />
       </IconButton>
+    </Tooltip>
+  );
+}
+type FileButtonProps = {
+  title: string;
+  disabled?: boolean;
+  resetNote: (note: Note) => void;
+};
+function FileButton({ title, disabled, resetNote }: FileButtonProps) {
+  const ref = useRef(null);
+  const isHover = useHover(ref);
+  const onChange = useCallback(
+    async (event: React.ChangeEvent) => {
+      const input = event.target as HTMLInputElement;
+      if (input.files && input.files.length > 0) {
+        const file = input.files[0];
+        const content = await file.text();
+        resetNote(JSON.parse(content));
+      }
+    },
+    [resetNote]
+  );
+
+  return (
+    <Tooltip title={title} arrow placement="left">
+      <div>
+        <input type="file" className="hidden" id="menu-open-note-file-id" onChange={onChange} accept=".cnote" />
+        <label htmlFor="menu-open-note-file-id">
+          <IconButton
+            color="default"
+            size="small"
+            ref={ref}
+            className="hover:bg-gray-600"
+            disabled={disabled}
+            component="span"
+            // onClick={onClick}
+          >
+            <BsFileEarmarkArrowUp
+              className={cls({
+                "fill-white text-white stroke-white": isHover,
+                "fill-gray-600 stroke-gray-600": !isHover,
+                "!fill-gray-400": disabled,
+              })}
+              size={16}
+            />
+          </IconButton>
+        </label>
+      </div>
     </Tooltip>
   );
 }

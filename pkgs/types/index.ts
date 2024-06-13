@@ -30,7 +30,7 @@ export interface BaseBlock {
   text: string;
 }
 
-type Pos = { line: number; character: number };
+export type Pos = { line: number; character: number };
 
 export interface CodeBlock extends BaseBlock {
   type: "Code";
@@ -40,15 +40,12 @@ export interface CodeBlock extends BaseBlock {
   pkgPath: string; // package root path of source code
   pkgName: string; // package name defined in module config file
   ranges: { start: Pos; end: Pos }[][]; // highlight ranges in source code
-  showCode: boolean;
-  isCodeRangeEditing?: boolean;
 }
 
 export interface ScrollyCodeBlock extends BaseBlock {
   type: "Scrolly";
   chain: string[];
-  renderAsGroup: boolean; // render as "group" mode: Scrollycoding block, or "codes" mode: group container + code blocks
-  stepIndex: number; // step index of CH.Scrollycoding component
+  // renderAsGroup: boolean; // render as "group" mode: Scrollycoding block, or "codes" mode: group container + code blocks
   groupModeWidth: number; // node width on "group" mode
   textHeight?: number; // text height on "codes" mode
 }
@@ -64,7 +61,7 @@ export interface EdgeData {
   id: string;
 }
 
-export interface NoteV1 {
+export interface Note {
   id: string;
   type: "TreeNote";
   text: string;
@@ -72,14 +69,9 @@ export interface NoteV1 {
   pkgName: string; // package name of workspace which include active editor document file
   nodeMap: Record<string, Node>;
   edges: Edge[];
-  activeNodeId: string;
 }
 
-export interface NoteV2 extends NoteV1 {
-  version: 2;
-}
-
-export type Note = NoteV2;
+export type TextNodeType = Note["type"] | Block["type"];
 
 namespace Ext2Web {
   export type AddCodeData = CodeBlock;
@@ -95,16 +87,28 @@ namespace Ext2Web {
     action: "ext2web-text-change";
     data: {
       id: string;
-      type: Note["type"] | Block["type"];
+      type: TextNodeType;
       text: string;
     };
+  };
+  export type TextEditReady = {
+    action: "ext2web-text-edit-ready";
+    data: { id: string; type: TextNodeType };
+  };
+  export type TextEditDone = {
+    action: "ext2web-text-edit-done";
+    data: { id: string; type: TextNodeType };
+  };
+  export type CodeRangeEditReady = {
+    action: "ext2web-code-range-edit-ready";
+    data: { id: string };
   };
   export type CodeRangeChange = {
     action: "ext2web-code-range-change";
     data: Pick<CodeBlock, "id" | "ranges" | "code" | "rowCount">;
   };
-  export type CodeRangeEditStopped = {
-    action: "ext2web-code-range-edit-stopped";
+  export type CodeRangeEditDone = {
+    action: "ext2web-code-range-edit-done";
     data: { id: string };
   };
   export type ResponseForIDs = {
@@ -118,8 +122,11 @@ namespace Ext2Web {
     | AddCode
     | InitTreeNote
     | TextChange
+    | TextEditReady
+    | TextEditDone
+    | CodeRangeEditReady
     | CodeRangeChange
-    | CodeRangeEditStopped
+    | CodeRangeEditDone
     | ResponseForIDs;
 }
 
@@ -138,20 +145,27 @@ namespace Web2Ext {
     data: "";
   };
 
-  export type StartTextEditor = {
-    action: "web2ext-start-text-editor";
+  export type TextEditStart = {
+    action: "web2ext-text-edit-start";
     data: {
       id: string;
       type: Note["type"] | Block["type"];
       text: string;
     };
   };
-  export type StartCodeRangeEditor = {
-    action: "web2ext-start-code-range-editor";
+  export type TextEditStop = {
+    action: "web2ext-text-edit-stop";
+    data: {
+      id: string;
+      type: Note["type"] | Block["type"];
+    };
+  };
+  export type CodeRangeEditStart = {
+    action: "web2ext-code-range-edit-start";
     data: Pick<CodeBlock, "id" | "type" | "filePath" | "pkgPath" | "ranges">;
   };
-  export type StopCodeRangeEditor = {
-    action: "web2ext-stop-code-range-editor";
+  export type CodeRangeEditStop = {
+    action: "web2ext-code-range-edit-stop";
     data: { id: string };
   };
 
@@ -167,9 +181,10 @@ namespace Web2Ext {
     | SaveNote
     | ShowMsg
     | AskInitTreeNote
-    | StartTextEditor
-    | StartCodeRangeEditor
-    | StopCodeRangeEditor
+    | TextEditStart
+    | TextEditStop
+    | CodeRangeEditStart
+    | CodeRangeEditStop
     | RequestForIDs;
 }
 

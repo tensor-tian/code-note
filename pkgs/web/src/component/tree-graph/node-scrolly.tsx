@@ -1,51 +1,27 @@
 import { useTreeNoteStore } from "./store";
-import { selectGroupCodes, selectGroupShowCode } from "./selector";
+import { selectBlockState, selectGroupCodes } from "./selector";
 
 import { NodeProps } from "reactflow";
 import { CodeNode, ScrollyCodeBlock, Web2Ext } from "types";
-import { CSSProperties, useCallback, useEffect, useMemo, useRef } from "react";
+import { CSSProperties, useEffect, useMemo, useRef } from "react";
 import NodeHandles from "./node-handles";
 
 import { vscode } from "../../utils";
 import MDX from "../mdx";
-import { useBlockState } from "./hooks";
 import NodeBox from "./node-box";
 import NodeMenu from "./node-menu";
 import { useResizeObserver } from "usehooks-ts";
 
-function ScrollyNode({ id, data: { type, text, chain, stepIndex, renderAsGroup } }: NodeProps<ScrollyCodeBlock>) {
-  const { hideGroupCode, activateNode, toggleRenderAsGroup: _toggleRender, setGroupTextHeight } = useTreeNoteStore();
-  const codes = useTreeNoteStore((state) => selectGroupCodes(state, id));
-  const showCode = useTreeNoteStore(selectGroupShowCode(id));
-  const { isSelected, isActive, isRoot, width } = useBlockState(id);
-  const hideCode = useCallback(() => {
-    hideGroupCode(id);
-  }, [id, hideGroupCode]);
+function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
+  const { text } = data;
+  const { setGroupTextHeight } = useTreeNoteStore();
+  const codes = useTreeNoteStore(selectGroupCodes(id));
+  const { isSelected, isActive, isRoot, width, renderAsGroup } = useTreeNoteStore(selectBlockState(id));
 
-  const onActivate = useCallback(() => {
-    activateNode(id);
-  }, [activateNode, id]);
-
-  const toggleRenderMode = useCallback(() => {
-    _toggleRender(id);
-  }, [id, _toggleRender]);
-
-  const onStartTextEdit = useCallback(() => {
-    vscode.postMessage({
-      action: "web2ext-start-text-editor",
-      data: {
-        id,
-        text,
-        type,
-      },
-    } as Web2Ext.StartTextEditor);
-  }, [id, text, type]);
-  console.log("scrolly width:", width);
-  const { content: scrollyContent, copyMdx } = useMemo(() => {
-    if (!renderAsGroup) return { content: null, copyMdx: () => {} };
-    console.log("codes:", codes);
+  const { mdx, copyMdx } = useMemo(() => {
+    if (!renderAsGroup) return { mdx: "", copyMdx: () => {} };
     if (!codes) {
-      return { content: null, copyMdx: () => {} };
+      return { mdx: "", copyMdx: () => {} };
     }
     const mdx = groupCodesMDX(id, codes);
 
@@ -56,9 +32,8 @@ function ScrollyNode({ id, data: { type, text, chain, stepIndex, renderAsGroup }
         data: "MDX code is copied.",
       } as Web2Ext.ShowMsg);
     };
-    const content = <MDX mdx={mdx} width={width} />;
-    return { content, copyMdx };
-  }, [codes, id, renderAsGroup, width]);
+    return { mdx, copyMdx };
+  }, [codes, id, renderAsGroup]);
   const textRef = useRef<HTMLDivElement>(null);
   const { height } = useResizeObserver({
     ref: textRef,
@@ -72,31 +47,22 @@ function ScrollyNode({ id, data: { type, text, chain, stepIndex, renderAsGroup }
   const textContent = useMemo(() => {
     return (
       <div ref={textRef}>
-        <MDX mdx={text} width={width} />
+        <MDX mdx={text} width={width} id={"scrolly-text-" + id} />
       </div>
     );
-  }, [text, width]);
+  }, [id, text, width]);
   return (
     <NodeBox
-      onActivate={onActivate}
+      id={id}
       isSelected={isSelected}
       isActive={isActive}
       isRoot={isRoot}
-      className="w-full h-full px-2 py-2 bg-white bg-opacity-0"
-      style={{ width, "--ch-scrollycoding-sticker-width": Math.max(width / 2, 420) + "px" } as CSSProperties}
+      className="w-full h-full px-2 py-2 bg-white bg-opacity-0 nowheel"
+      style={{ width, "--ch-scrollycoding-sticker-width": Math.max((3 * width) / 5, 420) + "px" } as CSSProperties}
     >
-      <NodeMenu
-        id={id}
-        hideCode={hideCode}
-        codeStatus={showCode}
-        onActivate={onActivate}
-        copyMdx={copyMdx}
-        onStartTextEdit={onStartTextEdit}
-        renderAsGroup={renderAsGroup}
-        toggleRenderMode={toggleRenderMode}
-      />
+      <NodeMenu data={data} copyMdx={copyMdx} />
       {textContent}
-      {scrollyContent}
+      {mdx.length > 0 && <MDX mdx={mdx} width={width} id={"scrolly-code-" + id} />}
       <NodeHandles id={id} />
     </NodeBox>
   );
@@ -105,7 +71,7 @@ function ScrollyNode({ id, data: { type, text, chain, stepIndex, renderAsGroup }
 export default ScrollyNode;
 
 function groupCodesMDX(id: string, codes: CodeNode[]): string {
-  return `<CH.Scrollycoding id="${id}" enableScroller={false} >
+  return `<CH.Scrollycoding id="${id}" enableScroller={true} >
 ${codes.map(({ data }) => `\n${data.text}\n\n${data.code}\n`).join("\n---\n")}
 </CH.Scrollycoding>
 `;

@@ -8,6 +8,7 @@ import { Store } from "./store";
 import fs from "fs";
 import { initCodeNote } from "./store";
 import { posix } from "path";
+import { tmpdir } from "os";
 
 type WebManifest = {
   files: Record<"main.css" | "main.js", string>;
@@ -68,7 +69,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     }
     const { name: pkgName } = await getActiveWorkspacePackageInfo();
     if (!pkgName) {
-      vscode.window.showErrorMessage("Package Name is note found!");
+      vscode.window.showErrorMessage("Package Name is not found!");
       return;
     }
 
@@ -200,14 +201,32 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
           });
           break;
         }
-        case "web2ext-start-text-editor":
-          this.startEditText(message.data, webviewKey);
+        case "web2ext-text-edit-start":
+          try {
+            const done = await this.startTextEdit(message.data, webviewKey);
+            if (done) {
+              const { id, type } = message.data;
+              webviewPanel.webview.postMessage({
+                action: "ext2web-text-edit-ready",
+                data: { id, type },
+              } as Ext2Web.TextEditReady);
+            }
+          } catch (err) {
+            console.error("start text editor failed:", err);
+          }
           break;
-        case "web2ext-start-code-range-editor":
+        case "web2ext-text-edit-stop":
+          await this.stopTextEdit(message.data);
+          webviewPanel.webview.postMessage({
+            action: "ext2web-text-edit-done",
+            data: message.data,
+          } as Ext2Web.TextEditDone);
+          break;
+        case "web2ext-code-range-edit-start":
           const getWebviewPanel = () => this.getWebviewPanel(webviewKey);
           this.highlight.startCodeRangeEdit(message.data, getWebviewPanel);
           break;
-        case "web2ext-stop-code-range-editor":
+        case "web2ext-code-range-edit-stop":
           this.highlight.stopCodeRangeEdit(message.data.id);
           break;
         case "web2ext-request-for-ids":
@@ -257,6 +276,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         <title>Code Note</title>
         <script defer="defer" src="${scriptUri}"></script>
         <link href="${styleUri}" rel="stylesheet" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" integrity="sha384-wcIxkf4k558AjM3Yz3BBFQUbk/zgIYC2R0QpeeYb+TwlBVMrlgLqwRjRtGZiK7ww" crossorigin="anonymous">
       </head>
       <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -281,8 +301,8 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
    *   virtual document
    */
 
-  private async startEditText(
-    { text: content, id, type: typ }: Web2Ext.StartTextEditor["data"],
+  private async startTextEdit(
+    { text: content, id, type: typ }: Web2Ext.TextEditStart["data"],
     webviewKey: string
   ) {
     const uri = await this.store.writeVDoc(typ, id, content);
@@ -305,6 +325,12 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         "workbench.action.decreaseViewHeight"
       );
     }
+    return true;
+  }
+
+  private async stopTextEdit({ id, type: typ }: Web2Ext.TextEditStop["data"]) {
+    const uri = this.store.vDocUri(typ, id);
+    closeFileIfOpen(uri);
   }
 
   // post changed text to paired webview

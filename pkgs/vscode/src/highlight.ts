@@ -143,7 +143,7 @@ export class Highlight {
       pkgPath,
       ranges: _ranges,
       id,
-    }: Web2Ext.StartCodeRangeEditor["data"],
+    }: Web2Ext.CodeRangeEditStart["data"],
     getWebviewPanel: () => vscode.WebviewPanel | undefined
   ) {
     const uri = vscode.Uri.joinPath(vscode.Uri.file(pkgPath), filePath);
@@ -227,9 +227,9 @@ export class Highlight {
     }
     this._editingMap.delete(filePath);
     this._getWebviewPanel?.()?.webview.postMessage({
-      action: "ext2web-code-range-edit-stopped",
+      action: "ext2web-code-range-edit-done",
       data: { id },
-    } as Ext2Web.CodeRangeEditStopped);
+    } as Ext2Web.CodeRangeEditDone);
   }
 
   private _resetDecorations() {

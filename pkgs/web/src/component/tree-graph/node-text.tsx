@@ -6,13 +6,13 @@ import MDX from "../mdx";
 import { useTreeNoteStore } from "./store";
 import { vscode } from "../../utils";
 import NodeBox from "./node-box";
-import { useBlockState } from "./hooks";
 import { DefaultNodeDimension } from "./layout";
 import NodeMenu from "./node-menu";
+import { selectBlockState } from "./selector";
 
-function TextNode({ id, data: { text: mdx, type } }: NodeProps<TextBlock>) {
-  const { activateNode } = useTreeNoteStore();
-  const { isSelected, isActive, isRoot, width } = useBlockState(id);
+function TextNode({ id, data }: NodeProps<TextBlock>) {
+  const { text: mdx } = data;
+  const { isSelected, isActive, isRoot, width } = useTreeNoteStore(selectBlockState(id));
   const copyMdx = useCallback(() => {
     navigator.clipboard.writeText(mdx);
     vscode.postMessage({
@@ -20,26 +20,13 @@ function TextNode({ id, data: { text: mdx, type } }: NodeProps<TextBlock>) {
       data: "MDX code is copied.",
     } as Web2Ext.ShowMsg);
   }, [mdx]);
-  const onActivate = useCallback(() => {
-    activateNode(id);
-  }, [id, activateNode]);
-  const onStartTextEdit = useCallback(() => {
-    console.log("start text edit");
-    vscode.postMessage({
-      action: "web2ext-start-text-editor",
-      data: {
-        id,
-        text: mdx,
-        type,
-      },
-    } as Web2Ext.StartTextEditor);
-  }, [id, mdx, type]);
+
   return (
-    <NodeBox onActivate={onActivate} isActive={isActive} isRoot={isRoot} isSelected={isSelected} style={{ width }}>
+    <NodeBox id={id} isActive={isActive} isRoot={isRoot} isSelected={isSelected} style={{ width }} className="nowheel">
       <div style={{ width: DefaultNodeDimension.W }} className="p-4">
-        <NodeMenu id={id} onStartTextEdit={onStartTextEdit} onActivate={onActivate} copyMdx={copyMdx} />
+        <NodeMenu data={data} copyMdx={copyMdx} />
         <div className="px-1">
-          <MDX mdx={mdx} width={width} />
+          <MDX mdx={mdx} width={width} id={"text-" + id} />
         </div>
         <NodeHandles id={id} />
       </div>

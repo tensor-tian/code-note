@@ -11,6 +11,9 @@ import { ErrorBoundary } from "react-error-boundary";
 import type { MDXContent } from "mdx/types";
 import { remarkCodeHike } from "@code-hike-local/mdx";
 import remarkGfm from "remark-gfm";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
+import "katex/dist/katex.min.css";
 
 import cls from "classnames";
 
@@ -18,7 +21,13 @@ async function compileAndRun(input: string) {
   try {
     const c = await compile(input, {
       outputFormat: "function-body",
+      rehypePlugins: [
+        // @ts-ignore
+        rehypeKatex,
+      ],
       remarkPlugins: [
+        remarkMath,
+        remarkGfm,
         [
           remarkCodeHike,
           {
@@ -27,9 +36,9 @@ async function compileAndRun(input: string) {
             showCopyButton: false,
             autoImport: false,
             autoLink: false,
+            triggerPosition: "50%",
           },
         ],
-        [remarkGfm],
       ],
     });
     // @ts-ignore
@@ -44,9 +53,8 @@ async function compileAndRun(input: string) {
     return { content: undefined, error: "unknown error" };
   }
 }
-
-let effectId = 0;
-function useInput(input: string, width: number) {
+const compileIds = new Map<string, number>();
+function useInput(input: string, width: number, id: string) {
   const [{ Component, error }, setState] = useState<{
     Component: MDXContent | undefined;
     error: string | undefined;
@@ -56,27 +64,32 @@ function useInput(input: string, width: number) {
   });
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    const id = effectId;
-    // console.log("compiling...", id);
+    const compileId = compileIds.get(id) || 0;
+    if (compileId === 0) {
+      compileIds.set(id, 0);
+    }
+    // console.log("compiling...", compileId, input.length, width);
     setLoading(true);
     compileAndRun(input).then(({ content, error }) => {
-      // console.log("compiled", id, error);
-      if (id !== effectId) {
-        // console.log("skipping", id);
+      // console.log("compiled", compileId, error, input.length, width);
+      if (compileId !== compileIds.get(id)) {
+        // console.log("skipping", compileId, input.length, width);
         return;
       }
       setState({
         Component: content,
         error: error,
       });
-      console.log("compile error: ", input, error, width);
+      if (error) {
+        console.log("mdx compile error: ", input, error, width);
+      }
       setLoading(false);
     });
     return () => {
-      // console.log("cancelling", id);
-      effectId++;
+      // console.log("cancelling", id, input.length, width);
+      compileIds.set(id, compileIds.get(id)! + 1);
     };
-  }, [input, width]);
+  }, [id, input, width]);
 
   return { Component, error, loading };
 }
@@ -90,11 +103,10 @@ function ErrorFallback({ error }: { error: string }) {
   );
 }
 
-const InnerPreview: FC<{ input: string; width: number }> = ({ input, width }) => {
+const InnerPreview: FC<{ input: string; width: number; id: string }> = ({ input, width, id }) => {
   // trigger rerender when width changed
-  const { Component, error, loading } = useInput(input, width);
-  // console.log("error:", error, typeof Component);
-  // const style = typeof maxWidth === "number" ? { maxWidth } : {};
+
+  const { Component, error, loading } = useInput(input, width, id);
   return (
     <>
       {error ? (
@@ -119,10 +131,10 @@ const logError = (error: Error, info: ErrorInfo) => {
   console.log("error boundary:", error, info);
 };
 
-const MDX: FC<{ mdx: string; width: number }> = ({ mdx, width }) => {
+const MDX: FC<{ mdx: string; width: number; id: string }> = ({ mdx, width, id }) => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback} onError={logError}>
-      <InnerPreview input={mdx} width={width} />
+      <InnerPreview input={mdx} width={width} id={id} />
     </ErrorBoundary>
   );
 };
