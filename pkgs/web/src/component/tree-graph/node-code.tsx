@@ -26,14 +26,7 @@ function CodeNode({ id, data }: NodeProps<CodeBlock>) {
   }, [data, showCode]);
 
   return (
-    <NodeBox
-      id={id}
-      isActive={isActive}
-      isRoot={isRoot}
-      isSelected={isSelected}
-      className="p-4 nowheel"
-      style={{ width }}
-    >
+    <NodeBox id={id} isActive={isActive} isRoot={isRoot} isSelected={isSelected} className="p-4" style={{ width }}>
       <NodeMenu data={data} copyMdx={copyMdx} />
       <div className="px-1">
         <MDX mdx={mdx} width={width} id={"code-" + id} />

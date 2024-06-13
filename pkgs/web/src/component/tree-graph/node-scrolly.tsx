@@ -57,7 +57,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
       isSelected={isSelected}
       isActive={isActive}
       isRoot={isRoot}
-      className="w-full h-full px-2 py-2 bg-white bg-opacity-0 nowheel"
+      className="w-full h-full px-2 py-2 bg-white bg-opacity-0 "
       style={{ width, "--ch-scrollycoding-sticker-width": Math.max((3 * width) / 5, 420) + "px" } as CSSProperties}
     >
       <NodeMenu data={data} copyMdx={copyMdx} />
@@ -71,7 +71,11 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
 export default ScrollyNode;
 
 function groupCodesMDX(id: string, codes: CodeNode[]): string {
-  return `<CH.Scrollycoding id="${id}" enableScroller={true} >
+  const maxRows = codes.reduce((rows, code) => Math.max(rows, code.data.rowCount), 10) + 2;
+  if (id === "3k") {
+    console.log("scrolly coding rows:", id, maxRows);
+  }
+  return `<CH.Scrollycoding id="${id}" enableScroller={true} rows={${maxRows}} >
 ${codes.map(({ data }) => `\n${data.text}\n\n${data.code}\n`).join("\n---\n")}
 </CH.Scrollycoding>
 `;
