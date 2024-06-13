@@ -81,6 +81,7 @@ namespace TreeNote {
     adjustNodeWidth: (id: string, widen: boolean) => void;
     setGroupTextHeight: (id: string, height: number) => void;
     resetExtents: () => void;
+    textEditDone: (id: string, typ: string) => void;
   }
   export type State = Store & Actions;
 }
