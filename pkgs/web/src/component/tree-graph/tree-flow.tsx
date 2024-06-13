@@ -30,9 +30,10 @@ import NodeInspector from "./node-inspector";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
 import Menu from "./tree-flow-menu";
+
 import Debug from "debug";
 
-const log = Debug("vscode-note:tree");
+const log = Debug("vscode-note:tree-flow");
 
 const NODE_TYPES: NodeTypes = {
   Code,

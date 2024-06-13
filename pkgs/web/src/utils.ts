@@ -4,7 +4,7 @@ import debounce from "lodash.debounce";
 import { Ext2Web, Web2Ext } from "types";
 import Debug from "debug";
 
-const log = Debug("vscode-note:message");
+const log = Debug("vscode-note:utils");
 
 export const nanoid = customAlphabet("01234567890abcdefghijklmnopqrstuvwxyz", 10);
 

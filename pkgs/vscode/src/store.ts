@@ -17,8 +17,8 @@ interface VirtualDocOperator {
   vDocUri(typ: string, id: string): Uri;
   parseVDocUri(uri: Uri): { id?: string; type?: string };
   removeVDoc: {
-    (typ: string, id: string): Promise<void>;
-    (typ: Uri): Promise<void>;
+    (typ: string, id: string): Promise<{ type?: string; id?: string }>;
+    (typ: Uri): Promise<{ type?: string; id?: string }>;
   };
   writeVDoc: (typ: string, id: string, text: string) => Promise<Uri>;
 }
@@ -87,15 +87,20 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
     return { id: parts[1], type: parts[0] };
   }
 
-  removeVDoc(typ: Uri): Promise<void>;
-  removeVDoc(typ: string, id: string): Promise<void>;
-  async removeVDoc(uriOrTyp: string | Uri, id?: string): Promise<void> {
+  removeVDoc(typ: Uri): Promise<{ type?: string; id?: string }>;
+  removeVDoc(typ: string, id: string): Promise<{ type?: string; id?: string }>;
+  async removeVDoc(
+    uriOrTyp: string | Uri,
+    id?: string
+  ): Promise<{ type?: string; id?: string }> {
     if (typeof uriOrTyp === "string" && id) {
-      return this.fs.delete(this.vDocUri(uriOrTyp, id));
+      this.fs.delete(this.vDocUri(uriOrTyp, id));
+      return {};
     } else {
       const uri = uriOrTyp as Uri;
-      if (!uri.path.startsWith(this.tmpdir.path)) return;
-      return this.fs.delete(uri);
+      if (!uri.path.startsWith(this.tmpdir.path)) return {};
+      this.fs.delete(uri);
+      return this.parseVDocUri(uri);
     }
   }
   writeVDoc = async (typ: string, id: string, text: string): Promise<Uri> => {
@@ -215,5 +220,7 @@ export async function initCodeNote(title: string): Promise<Note | undefined> {
     pkgName,
     nodeMap: {},
     edges: [],
+    renderAsGroupNodes: [],
+    groupStepIndexMap: {},
   };
 }

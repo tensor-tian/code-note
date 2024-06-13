@@ -8,7 +8,6 @@ import { Store } from "./store";
 import fs from "fs";
 import { initCodeNote } from "./store";
 import { posix } from "path";
-import { tmpdir } from "os";
 
 type WebManifest = {
   files: Record<"main.css" | "main.js", string>;
@@ -97,8 +96,15 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     context.subscriptions.push(
       vscode.workspace.onDidCloseTextDocument((doc: vscode.TextDocument) => {
         const uri = doc.uri;
-        this.store.removeVDoc(doc.uri).then(() => {
+        this.store.removeVDoc(doc.uri).then(({ id, type }) => {
           this.vDocToNoteFileMap.delete(uri.path);
+          if (id && type) {
+            const webviewPanel = this.getWebViewByVDoc(uri);
+            webviewPanel?.webview.postMessage({
+              action: "ext2web-text-edit-done",
+              data: { id, type },
+            } as Ext2Web.TextEditDone);
+          }
         });
       }),
       vscode.workspace.onDidChangeTextDocument(this.onDidChangeVDoc, this),
@@ -224,7 +230,14 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
           break;
         case "web2ext-code-range-edit-start":
           const getWebviewPanel = () => this.getWebviewPanel(webviewKey);
-          this.highlight.startCodeRangeEdit(message.data, getWebviewPanel);
+          await this.highlight.startCodeRangeEdit(
+            message.data,
+            getWebviewPanel
+          );
+          webviewPanel.webview.postMessage({
+            action: "ext2web-code-range-edit-ready",
+            data: { id: message.data.id },
+          } as Ext2Web.CodeRangeEditReady);
           break;
         case "web2ext-code-range-edit-stop":
           this.highlight.stopCodeRangeEdit(message.data.id);
@@ -267,7 +280,8 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       vscode.Uri.joinPath(this.extensionUri, manifest["files"]["main.css"])
     );
 
-    return `<!DOCTYPE html>
+    return (
+      `<!DOCTYPE html>
     <html lang="en">
       <head>
         <meta charset="utf-8" />
@@ -277,13 +291,20 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         <script defer="defer" src="${scriptUri}"></script>
         <link href="${styleUri}" rel="stylesheet" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" integrity="sha384-wcIxkf4k558AjM3Yz3BBFQUbk/zgIYC2R0QpeeYb+TwlBVMrlgLqwRjRtGZiK7ww" crossorigin="anonymous">
+        <script>
+          localStorage.debug = '` +
+      // @ts-ignore
+      LOCALSTORAGE_DEBUG +
+      `'
+        </script>
       </head>
       <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
       </body>
     </html>
-  `;
+  `
+    );
   }
 
   private saveTextDocument(document: vscode.TextDocument, text: string) {

@@ -24,11 +24,11 @@ import {
 } from "reactflow";
 import { devtools, persist } from "zustand/middleware";
 import { isVscode, saveNote, vscode, vscodeMessage } from "../../utils";
+import Debug from "debug";
 
 import { create } from "zustand";
 
 import { layout } from "./layout";
-import Debug from "debug";
 
 const log = Debug("vscode-note:store");
 
@@ -163,7 +163,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
             // migrate old version ranges
             if (isCodeNode(n)) {
               // @ts-ignore
-              const ranges = n.data.ranges as (VscodeRange | [[number, number], [number, number]])[][];
+              const ranges = n.data.ranges as VscodeRange[][] | string;
+              if (typeof ranges === "string") break;
               if (ranges[0][0] && !Array.isArray(ranges[0][0])) {
                 n.data.ranges = JSON.stringify(
                   ranges.map((kind) =>
