@@ -18,11 +18,10 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
   const codes = useTreeNoteStore(selectGroupCodes(id));
   const { isSelected, isActive, isRoot, width, renderAsGroup } = useTreeNoteStore(selectBlockState(id));
 
-  const { content: scrollyContent, copyMdx } = useMemo(() => {
-    if (!renderAsGroup) return { content: null, copyMdx: () => {} };
-    console.log("scrolly codes:", codes);
+  const { mdx, copyMdx } = useMemo(() => {
+    if (!renderAsGroup) return { mdx: "", copyMdx: () => {} };
     if (!codes) {
-      return { content: null, copyMdx: () => {} };
+      return { mdx: "", copyMdx: () => {} };
     }
     const mdx = groupCodesMDX(id, codes);
 
@@ -33,10 +32,8 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
         data: "MDX code is copied.",
       } as Web2Ext.ShowMsg);
     };
-    const content = <MDX mdx={mdx} width={width} />;
-    console.log("scrolly:", content);
-    return { content, copyMdx };
-  }, [codes, id, renderAsGroup, width]);
+    return { mdx, copyMdx };
+  }, [codes, id, renderAsGroup]);
   const textRef = useRef<HTMLDivElement>(null);
   const { height } = useResizeObserver({
     ref: textRef,
@@ -50,10 +47,10 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
   const textContent = useMemo(() => {
     return (
       <div ref={textRef}>
-        <MDX mdx={text} width={width} />
+        <MDX mdx={text} width={width} id={"scrolly-text-" + id} />
       </div>
     );
-  }, [text, width]);
+  }, [id, text, width]);
   return (
     <NodeBox
       id={id}
@@ -65,7 +62,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
     >
       <NodeMenu data={data} copyMdx={copyMdx} />
       {textContent}
-      {scrollyContent}
+      {mdx.length > 0 && <MDX mdx={mdx} width={width} id={"scrolly-code-" + id} />}
       <NodeHandles id={id} />
     </NodeBox>
   );

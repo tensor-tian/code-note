@@ -60,6 +60,7 @@ const selectChain = createSelector([selectAllEdges, selectSelectedNodes, selectN
 });
 
 export const selectTitleState = (state: TreeNote.Store) => ({
+  id: state.id,
   text: state.text,
   debug: state.debug,
   nodeIds: Object.keys(state.nodeMap).sort(),

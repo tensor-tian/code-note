@@ -159,7 +159,7 @@ class TreeLayout {
     if (isGroupNode(n) && !renderAsGroup) {
       const { chain, textHeight } = n.data;
       sz.h = GroupPadding.Y + (textHeight || 0);
-      // sz.w = 0;
+      sz.w = 0;
       for (let i = 0; i < chain.length; i++) {
         const _id = chain[i];
         const csz = this.layoutMap.get(_id)!;

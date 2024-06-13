@@ -26,7 +26,7 @@ function TextNode({ id, data }: NodeProps<TextBlock>) {
       <div style={{ width: DefaultNodeDimension.W }} className="p-4">
         <NodeMenu data={data} copyMdx={copyMdx} />
         <div className="px-1">
-          <MDX mdx={mdx} width={width} />
+          <MDX mdx={mdx} width={width} id={"text-" + id} />
         </div>
         <NodeHandles id={id} />
       </div>

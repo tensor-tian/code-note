@@ -36,7 +36,7 @@ function CodeNode({ id, data }: NodeProps<CodeBlock>) {
     >
       <NodeMenu data={data} copyMdx={copyMdx} />
       <div className="px-1">
-        <MDX mdx={mdx} width={width} />
+        <MDX mdx={mdx} width={width} id={"code-" + id} />
       </div>
       <NodeHandles id={id} />
     </NodeBox>

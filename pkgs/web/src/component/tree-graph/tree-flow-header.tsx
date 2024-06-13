@@ -6,7 +6,7 @@ import { DefaultNodeDimension } from "./layout";
 import cls from "classnames";
 
 function Title() {
-  const { text, debug, nodeIds } = useTreeNoteStore(selectTitleState);
+  const { text, debug, nodeIds, id } = useTreeNoteStore(selectTitleState);
 
   const { activateNode } = useTreeNoteStore();
   const viewport = useStore(
@@ -17,7 +17,7 @@ function Title() {
     <>
       <Panel position="top-left" className="border px-4 py-4 max-w-xl">
         <div className="px-1" style={{ width: 600 }}>
-          <MDX mdx={text} width={DefaultNodeDimension.W} />
+          <MDX mdx={text} width={DefaultNodeDimension.W} id={"note-header-" + id} />
         </div>
         <div className={cls("pt-4", { hidden: !debug })}>
           <pre className="text-xs m-2 mt-1 h-6 leading-6 border-gray rounded border px-3  bg-gray-300">{viewport}</pre>

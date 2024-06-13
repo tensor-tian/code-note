@@ -53,9 +53,8 @@ async function compileAndRun(input: string) {
     return { content: undefined, error: "unknown error" };
   }
 }
-
-let effectId = 0;
-function useInput(input: string, width: number) {
+const compileIds = new Map<string, number>();
+function useInput(input: string, width: number, id: string) {
   const [{ Component, error }, setState] = useState<{
     Component: MDXContent | undefined;
     error: string | undefined;
@@ -65,13 +64,16 @@ function useInput(input: string, width: number) {
   });
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    const id = effectId;
-    // console.log("compiling...", id);
+    const compileId = compileIds.get(id) || 0;
+    if (compileId === 0) {
+      compileIds.set(id, 0);
+    }
+    // console.log("compiling...", compileId, input.length, width);
     setLoading(true);
     compileAndRun(input).then(({ content, error }) => {
-      // console.log("compiled", id, error);
-      if (id !== effectId) {
-        // console.log("skipping", id);
+      // console.log("compiled", compileId, error, input.length, width);
+      if (compileId !== compileIds.get(id)) {
+        // console.log("skipping", compileId, input.length, width);
         return;
       }
       setState({
@@ -84,10 +86,10 @@ function useInput(input: string, width: number) {
       setLoading(false);
     });
     return () => {
-      // console.log("cancelling", id);
-      effectId++;
+      // console.log("cancelling", id, input.length, width);
+      compileIds.set(id, compileIds.get(id)! + 1);
     };
-  }, [input, width]);
+  }, [id, input, width]);
 
   return { Component, error, loading };
 }
@@ -101,11 +103,10 @@ function ErrorFallback({ error }: { error: string }) {
   );
 }
 
-const InnerPreview: FC<{ input: string; width: number }> = ({ input, width }) => {
+const InnerPreview: FC<{ input: string; width: number; id: string }> = ({ input, width, id }) => {
   // trigger rerender when width changed
-  const { Component, error, loading } = useInput(input, width);
-  // console.log("error:", error, typeof Component);
-  // const style = typeof maxWidth === "number" ? { maxWidth } : {};
+
+  const { Component, error, loading } = useInput(input, width, id);
   return (
     <>
       {error ? (
@@ -130,10 +131,10 @@ const logError = (error: Error, info: ErrorInfo) => {
   console.log("error boundary:", error, info);
 };
 
-const MDX: FC<{ mdx: string; width: number }> = ({ mdx, width }) => {
+const MDX: FC<{ mdx: string; width: number; id: string }> = ({ mdx, width, id }) => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback} onError={logError}>
-      <InnerPreview input={mdx} width={width} />
+      <InnerPreview input={mdx} width={width} id={id} />
     </ErrorBoundary>
   );
 };
