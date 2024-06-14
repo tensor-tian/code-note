@@ -48,9 +48,9 @@ export const selectBlockState = (id: string) =>
         isRoot: rootIds.includes(id),
         width,
         showCode,
-        renderAsGroup: renderAsGroupNodes.has(id),
-        isCodeRangeEditing: id === codeRangeEditingNode,
-        isTextEditing: node.id === textEditing?.id && node.type === textEditing.type,
+        renderAsGroup: renderAsGroupNodes.includes(id),
+        codeRangeEditingNode,
+        textEditing,
       };
     }
   );
@@ -100,7 +100,7 @@ const selectFirstSelected = createSelector([selectNodeMap, selectSelectedNodes],
 const selectCanSplitGroup = createSelector(
   [selectSelectedNodes, selectFirstSelected, selectRenderAsGroupNodes],
   (selectedNodes, firstSelected, renderAsGroupNodes) =>
-    selectedNodes.length === 1 && isGroupNode(firstSelected) && !renderAsGroupNodes.has(firstSelected.id)
+    selectedNodes.length === 1 && isGroupNode(firstSelected) && !renderAsGroupNodes.includes(firstSelected.id)
 );
 
 export const selectMenuState = createSelector(
@@ -112,8 +112,10 @@ export const selectMenuState = createSelector(
     selectCanGroupToDetail,
     selectCanGroup,
     selectCanSplitGroup,
+    selectTextEditing,
+    selectCodeRangeEditingNode,
   ],
-  (id, text, typ, debug, canGroupNodesToDetail, canGroupNodes, canSplitGroup) => {
+  (id, text, typ, debug, canGroupNodesToDetail, canGroupNodes, canSplitGroup, textEditing, codeRangeEditingNode) => {
     return {
       id,
       text,
@@ -122,6 +124,8 @@ export const selectMenuState = createSelector(
       canGroupNodes,
       canGroupNodesToDetail,
       canSplitGroup,
+      textEditing,
+      codeRangeEditingNode,
     };
   }
 );
@@ -158,13 +162,13 @@ export const selectGroupCodes = (id: string) =>
   createSelector([selectNodeMap, selectRenderAsGroupNodes], (nodeMap, renderAsGroupNodes) => {
     const group = nodeMap[id];
     if (!isGroupNode(group)) return;
-    if (!renderAsGroupNodes.has(id)) return [];
+    if (!renderAsGroupNodes.includes(id)) return [];
     return group.data.chain.map((_id) => nodeMap[_id] as CodeNode);
   });
 
 export const selectIsActiveNodeRenderAsGroup = createSelector(
   [selectActiveNodeId, selectRenderAsGroupNodes],
-  (activeNodeId, renderAsGroupNodes) => renderAsGroupNodes.has(activeNodeId)
+  (activeNodeId, renderAsGroupNodes) => renderAsGroupNodes.includes(activeNodeId)
 );
 
 export const selectActiveNodeAndGroup = createSelector(

@@ -2,12 +2,15 @@ import { WebviewApi } from "vscode-webview";
 import { customAlphabet } from "nanoid";
 import debounce from "lodash.debounce";
 import { Ext2Web, Web2Ext } from "types";
+import Debug from "debug";
+
+const log = Debug("vscode-note:utils");
 
 export const nanoid = customAlphabet("01234567890abcdefghijklmnopqrstuvwxyz", 10);
 
 const mock: WebviewApi<any> = {
   postMessage(message: unknown) {
-    console.log("post message to extension:", message);
+    log("post message to extension:", message);
   },
   getState(): any {
     return "";
@@ -27,6 +30,7 @@ if (!window.acquireVsCodeApi) {
 export const vscode: WebviewApi<Web2Ext.Message> = acquireVsCodeApi();
 
 export const saveNote = debounce((data: any) => {
+  log("save note:", data);
   vscode.postMessage({
     action: "web2ext-save-note",
     data: JSON.stringify(data, null, 2),
@@ -87,6 +91,6 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   Emphasis, aka italics, with *asterisks* or _underscores_.
 
 `,
-  ranges: [],
+  ranges: "[[], [], [], []]",
   id: "",
 };

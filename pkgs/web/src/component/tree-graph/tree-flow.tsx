@@ -31,6 +31,10 @@ import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
 import Menu from "./tree-flow-menu";
 
+import Debug from "debug";
+
+const log = Debug("vscode-note:tree-flow");
+
 const NODE_TYPES: NodeTypes = {
   Code,
   Scrolly,
@@ -87,9 +91,7 @@ function TreeFlow() {
     [selectedNodes, rootIds]
   );
 
-  if (debug) {
-    console.log("<TreeFlow> nodes:", nodes, "edges:", edges);
-  }
+  log("<TreeFlow> nodes:", nodes, "edges:", edges);
 
   const [sourceHandle, setSourceHandle] = useState<string>("");
   const onConnectStart = useCallback(
@@ -148,11 +150,7 @@ function TreeFlow() {
 }
 export default TreeFlow;
 
-function usePanToActiveNode(
-  ref: React.RefObject<HTMLDivElement>,
-  setKV: <T extends keyof TreeNote.Store>(key: T, val: TreeNote.Store[T]) => void,
-  nLen: number
-) {
+function usePanToActiveNode(ref: React.RefObject<HTMLDivElement>, setKV: TreeNote.SetKVFn, nLen: number) {
   const { activeNode, activeGroup, activeMark, isActiveNodeRenderAsGroup } = useTreeNoteStore(selectActiveNodeAndGroup);
   const { setViewport, getViewport } = useReactFlow();
   const [mark, setMark] = useState<number>(activeMark);
@@ -203,9 +201,7 @@ function usePanToActiveNode(
   }, [activeMark]);
 }
 
-type SetKVFn = <T extends keyof TreeNote.Store>(key: T, val: TreeNote.Store[T]) => void;
-
-function useInitNote(handshake: boolean, setKV: SetKVFn) {
+function useInitNote(handshake: boolean, setKV: TreeNote.SetKVFn) {
   useEffect(() => {
     if (!handshake) {
       vscode.postMessage({ action: "web2ext-ask-init-tree-note", data: "" } as Web2Ext.AskInitTreeNote);

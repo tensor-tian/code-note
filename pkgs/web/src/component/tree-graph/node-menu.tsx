@@ -3,14 +3,16 @@ import { IoMdArrowDropright, IoMdArrowDropdown } from "react-icons/io";
 import { IconType } from "react-icons";
 import cls from "classnames";
 import { BiCopy, BiText } from "react-icons/bi";
+import { FaTextSlash } from "react-icons/fa6";
 import { useTreeNoteStore } from "./store";
-import { IoCode } from "react-icons/io5";
+// import { IoCode } from "react-icons/io5";
 import { selectBlockState, selectDebug } from "./selector";
 import { AiOutlineGroup } from "react-icons/ai";
 import { FaRegRectangleList } from "react-icons/fa6";
 import { TbViewportNarrow, TbViewportWide } from "react-icons/tb";
 import { Block, CodeBlock, Web2Ext } from "types";
-import { vscode } from "../../utils";
+import { vscode, vscodeMessage } from "../../utils";
+import { MdCodeOff, MdCode } from "react-icons/md";
 
 export type NodeMenuProps = {
   data: Block;
@@ -20,9 +22,10 @@ export type NodeMenuProps = {
 export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
   const { id, text, type: typ } = data;
   const { adjustNodeWidth, activateNode, toggleCodeShow, toggleNodeSelection } = useTreeNoteStore();
-  const { isSelected, renderAsGroup, isCodeRangeEditing, isTextEditing, showCode } = useTreeNoteStore(
+  const { isSelected, renderAsGroup, codeRangeEditingNode, textEditing, showCode } = useTreeNoteStore(
     selectBlockState(id)
   );
+
   const debug = useTreeNoteStore(selectDebug);
   const ID = useMemo(() => {
     if (!debug) return;
@@ -71,8 +74,8 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
       <div className="flex flex-grow justify-start gap-2">
         {codeShowElement}
 
-        <TextEditIcon id={id} type={typ} text={text} isTextEditing={isTextEditing} />
-        {typ === "Code" ? <CodeEditIcon data={data} isCodeRangeEditing={isCodeRangeEditing} /> : null}
+        <TextEditIcon id={id} type={typ} text={text} textEditing={textEditing} />
+        {typ === "Code" ? <CodeEditIcon data={data} codeRangeEditingNode={codeRangeEditingNode} /> : null}
       </div>
       {ID}
       <div className="flex flex-grow justify-end gap-2">
@@ -150,35 +153,54 @@ function TextEditIcon({
   id,
   type: typ,
   text,
-  isTextEditing,
-}: Pick<Block, "id" | "type" | "text"> & { isTextEditing: boolean }) {
-  const onStartTextEdit = useCallback(() => {
-    vscode.postMessage({
-      action: "web2ext-text-edit-start",
-      data: { id, text, type: typ },
-    } as Web2Ext.TextEditStart);
-  }, [id, text, typ]);
-  const onStopTextEdit = useCallback(() => {
+  textEditing,
+}: Pick<Block, "id" | "type" | "text"> & { textEditing: { id: string; type: string } | undefined }) {
+  const isTextEditing = textEditing?.id === id && textEditing.type === typ;
+  const available = typeof textEditing === "undefined";
+  const startTextEdit = useCallback(() => {
+    if (available) {
+      vscode.postMessage({
+        action: "web2ext-text-edit-start",
+        data: { id, text, type: typ },
+      } as Web2Ext.TextEditStart);
+    } else {
+      vscodeMessage.warn("A text editor is already open, close it before open a new one.");
+    }
+  }, [id, text, typ, available]);
+  const stopTextEdit = useCallback(() => {
     vscode.postMessage({
       action: "web2ext-text-edit-stop",
       data: { id, type: typ },
     } as Web2Ext.TextEditStop);
   }, [id, typ]);
-  return (
-    <BiText
-      onClick={isTextEditing ? onStopTextEdit : onStartTextEdit}
-      size={15}
-      className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-auto hover:bg-gray-200"
-    />
-  );
+  if (isTextEditing) {
+    return (
+      <FaTextSlash
+        onClick={stopTextEdit}
+        size={15}
+        className="text-red hover-scale-110 cursor-auto hover:bg-gray-200"
+      />
+    );
+  } else {
+    return (
+      <BiText
+        onClick={startTextEdit}
+        size={15}
+        className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-auto hover:bg-gray-200"
+      />
+    );
+  }
 }
+
 function CodeEditIcon({
   data: { id, type: typ, filePath, pkgPath, ranges },
-  isCodeRangeEditing,
+  codeRangeEditingNode,
 }: {
   data: CodeBlock;
-  isCodeRangeEditing: boolean;
+  codeRangeEditingNode: string;
 }) {
+  const isCodeRangeEditing = codeRangeEditingNode === id;
+  const available = codeRangeEditingNode === "";
   const onClick = useCallback(() => {
     if (isCodeRangeEditing) {
       vscode.postMessage({
@@ -186,26 +208,37 @@ function CodeEditIcon({
         data: { id },
       } as Web2Ext.CodeRangeEditStop);
     } else {
-      vscode.postMessage({
-        action: "web2ext-code-range-edit-start",
-        data: {
-          id: id,
-          type: typ,
-          filePath,
-          pkgPath,
-          ranges,
-        },
-      } as Web2Ext.CodeRangeEditStart);
+      if (available) {
+        vscode.postMessage({
+          action: "web2ext-code-range-edit-start",
+          data: {
+            id: id,
+            type: typ,
+            filePath,
+            pkgPath,
+            ranges,
+          },
+        } as Web2Ext.CodeRangeEditStart);
+      } else {
+        vscodeMessage.warn("A code range editing is in using,  stop it before start a new.");
+      }
     }
-  }, [filePath, id, isCodeRangeEditing, pkgPath, ranges, typ]);
-  return (
-    <IoCode
-      className={cls(
-        "mr-5 cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200",
-        isCodeRangeEditing ? "text-red scale-110" : "text-gray-500"
-      )}
-      onClick={onClick}
-      size={16}
-    />
-  );
+  }, [filePath, id, isCodeRangeEditing, pkgPath, ranges, typ, available]);
+  if (isCodeRangeEditing) {
+    return (
+      <MdCodeOff
+        className="mr-5 cursor-auto hover:scale-110 hover:bg-gray-200 text-red scale-110"
+        onClick={onClick}
+        size={16}
+      />
+    );
+  } else {
+    return (
+      <MdCode
+        className="mr-5 cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200 text-gray-500"
+        onClick={onClick}
+        size={16}
+      />
+    );
+  }
 }

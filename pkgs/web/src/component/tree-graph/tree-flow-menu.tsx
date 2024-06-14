@@ -1,5 +1,5 @@
 import { VscDebugConsole } from "react-icons/vsc";
-import { RiText } from "react-icons/ri";
+import { BiText } from "react-icons/bi";
 import { AiOutlineGroup } from "react-icons/ai";
 import { MdOutlineSplitscreen } from "react-icons/md";
 import { TfiLayoutGrid3 } from "react-icons/tfi";
@@ -18,6 +18,8 @@ import { iDGenerator, useTreeNoteStore } from "./store";
 import { selectMenuState } from "./selector";
 import { Ext2Web, Note, Web2Ext } from "types";
 import RightGroup from "../icons/right-group";
+import { FaTextSlash } from "react-icons/fa6";
+import { MdCodeOff } from "react-icons/md";
 
 type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
@@ -42,6 +44,8 @@ export default function Menu({ addBlock }: Props) {
     canGroupNodes,
     canGroupNodesToDetail,
     canSplitGroup,
+    textEditing,
+    codeRangeEditingNode,
   } = useTreeNoteStore(selectMenuState);
 
   const addDetail = useCallback(async () => {
@@ -59,12 +63,26 @@ export default function Menu({ addBlock }: Props) {
     resetExtents();
   }, [debug, setKV, resetExtents]);
 
-  const editNoteTitle = useCallback(() => {
+  const startTextEdit = useCallback(() => {
     vscode.postMessage({
       action: "web2ext-text-edit-start",
       data: { id, text, type: typ },
     } as Web2Ext.TextEditStart);
   }, [id, text, typ]);
+
+  const stopTextEdit = useCallback(() => {
+    vscode.postMessage({
+      action: "web2ext-text-edit-stop",
+      data: textEditing,
+    } as Web2Ext.TextEditStop);
+  }, [textEditing]);
+
+  const stopCodeRageEdit = useCallback(() => {
+    vscode.postMessage({
+      action: "web2ext-code-range-edit-stop",
+      data: { id: codeRangeEditingNode },
+    } as Web2Ext.CodeRangeEditStop);
+  }, [codeRangeEditingNode]);
 
   const Edge = useMemo(() => LetterIcon("E"), []);
   const Node = useMemo(() => LetterIcon("N"), []);
@@ -72,7 +90,17 @@ export default function Menu({ addBlock }: Props) {
   return (
     <Panel className="flex flex-col gap-1 absolute top-1/4 text-lg" position="bottom-right">
       <FileButton title="Open *.cnote File" resetNote={resetNote} disabled={isVscode} />
-      <RoundButton Icon={RiText} title="Edit Note Title" onClick={editNoteTitle} />
+      <RoundButton
+        Icon={textEditing ? FaTextSlash : BiText}
+        title="Edit Note Title"
+        onClick={textEditing ? stopTextEdit : startTextEdit}
+      />
+      <RoundButton
+        Icon={MdCodeOff}
+        title="Stop Code Range Editing"
+        onClick={stopCodeRageEdit}
+        disabled={codeRangeEditingNode === ""}
+      />
       <RoundButton Icon={VscDebugConsole} title="Toggle Debug" onClick={toggleDebug} />
       <RoundButton Icon={FaFileArrowDown} title="Add Next Block" disabled={isVscode} onClick={addNext} />
       <RoundButton Icon={FaFileImport} title="Add Detail Block" disabled={isVscode} onClick={addDetail} />
@@ -122,6 +150,7 @@ function RoundButton({ Icon, title, disabled, onClick }: RoundButtonProps) {
         className="hover:bg-gray-600"
         disabled={disabled}
         onClick={onClick}
+        component="span"
       >
         <Icon
           className={cls({
