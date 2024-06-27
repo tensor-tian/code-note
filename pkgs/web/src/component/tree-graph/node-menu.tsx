@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useCallback } from "react";
+import { ReactNode, useMemo, useCallback, MouseEvent as ReactMouseEvent } from "react";
 import { IoMdArrowDropright, IoMdArrowDropdown } from "react-icons/io";
 import { IconType } from "react-icons";
 import cls from "classnames";
@@ -13,6 +13,9 @@ import { TbViewportNarrow, TbViewportWide } from "react-icons/tb";
 import { Block, CodeBlock, Web2Ext } from "types";
 import { vscode, vscodeMessage } from "../../utils";
 import { MdCodeOff, MdCode } from "react-icons/md";
+import { BsFillEyeFill as EyeOpen, BsEyeSlash as EyeClosed } from "react-icons/bs";
+import { IoMdShareAlt as ShareForward } from "react-icons/io";
+import { BiSolidShare as ShareBack } from "react-icons/bi";
 
 export type NodeMenuProps = {
   data: Block;
@@ -20,9 +23,17 @@ export type NodeMenuProps = {
 };
 
 export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
-  const { id, text, type: typ } = data;
-  const { adjustNodeWidth, activateNode, toggleCodeShow, toggleNodeSelection } = useTreeNoteStore();
-  const { isSelected, renderAsGroup, codeRangeEditingNode, textEditing, showCode } = useTreeNoteStore(
+  const { id, text, type: typ, copyOf, shared } = data;
+  const {
+    adjustNodeWidth,
+    activateNode,
+    toggleCodeShow,
+    toggleNodeSelection,
+    toggleNodeShare,
+    historyForward,
+    historyBack,
+  } = useTreeNoteStore();
+  const { isSelected, renderAsGroup, codeRangeEditingNode, textEditing, showCode, historyTop } = useTreeNoteStore(
     selectBlockState(id)
   );
 
@@ -34,9 +45,10 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
   const onActivate = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
       event.stopPropagation();
-      if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
+      if ((event.target as HTMLDivElement).classList.contains("ignore-activate")) {
         return;
       }
+      console.log("trigger activate: ", id);
       activateNode(id);
     },
     [activateNode, id]
@@ -68,14 +80,43 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
   }, [id, adjustNodeWidth]);
   const hideWidthButtons = typ === "Scrolly" && !renderAsGroup;
 
+  const toggleShare = useCallback(
+    (e: ReactMouseEvent) => {
+      e.stopPropagation();
+      toggleNodeShare(id);
+    },
+    [toggleNodeShare, id]
+  );
+
+  const forwardElement = useMemo(() => {
+    if (copyOf) {
+      const onClick = (event: React.MouseEvent) => {
+        event.stopPropagation();
+        historyForward(id, copyOf);
+      };
+      return <IconButton Icon={ShareForward} onClick={onClick} className="pr-0 ignore-activate text-gray-900" />;
+    } else if (historyTop === id) {
+      const onClick = (event: React.MouseEvent) => {
+        event.stopPropagation();
+        historyBack();
+      };
+      return <IconButton Icon={ShareBack} onClick={onClick} className="pr-0 ignore-activate text-gray-900" />;
+    }
+  }, [copyOf, historyTop, id, historyForward, historyBack]);
+
   const checkboxId = "node-menu-" + id;
   return (
     <div className="flex align-baseline text-gray-600 font-medium text-xs" onClick={onActivate}>
       <div className="flex flex-grow justify-start gap-2">
         {codeShowElement}
-
         <TextEditIcon id={id} type={typ} text={text} textEditing={textEditing} />
         {typ === "Code" ? <CodeEditIcon data={data} codeRangeEditingNode={codeRangeEditingNode} /> : null}
+        <IconButton
+          Icon={shared ? EyeOpen : EyeClosed}
+          onClick={toggleShare}
+          className={cls(shared && "text-gray-900", "pr-0 ignore-activate")}
+        />
+        {forwardElement}
       </div>
       {ID}
       <div className="flex flex-grow justify-end gap-2">
@@ -90,13 +131,13 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
         <div className="flex justify-end align-baseline px hover:bg-gray-200 w-[105px]">
           <label
             htmlFor={checkboxId}
-            className="ignore-click text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 "
+            className="ignore-activate text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 "
           >
             {isSelected ? "Deselect Block" : "Select Block"}
           </label>
           <input
             id={checkboxId}
-            className="ignore-click"
+            className="ignore-activate"
             type="checkbox"
             checked={isSelected}
             onChange={toggleSelection}
@@ -109,17 +150,19 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
 
 type Props = {
   Icon: IconType;
-  onClick?: () => void;
+  onClick?: (event: React.MouseEvent) => void;
   children?: string | ReactNode;
   hide?: boolean;
+  className?: string | false;
 };
 
-function IconButton({ Icon, onClick, children, hide }: Props) {
+function IconButton({ Icon, onClick, children, hide, className }: Props) {
   return (
     <div
       className={cls(
-        "ignore-click flex text-xs hover:text-gray-900  hover:bg-gray-200 cursor-auto text-gray-600 bg-white rounded-sm pr-2 gap-1",
-        { hidden: hide }
+        "ignore-click flex text-xs hover:text-gray-900  hover:bg-gray-200 cursor-auto text-gray-600 bg-white rounded-sm pr-2 gap-1 hover:scale-110",
+        hide && "hidden",
+        className
       )}
       onClick={onClick}
     >
@@ -178,7 +221,7 @@ function TextEditIcon({
       <FaTextSlash
         onClick={stopTextEdit}
         size={15}
-        className="text-red hover-scale-110 cursor-auto hover:bg-gray-200"
+        className="text-red hover:scale-110 cursor-auto hover:bg-gray-200"
       />
     );
   } else {
@@ -227,7 +270,7 @@ function CodeEditIcon({
   if (isCodeRangeEditing) {
     return (
       <MdCodeOff
-        className="mr-5 cursor-auto hover:scale-110 hover:bg-gray-200 text-red scale-110"
+        className="cursor-auto hover:scale-110 hover:bg-gray-200 text-red scale-110"
         onClick={onClick}
         size={16}
       />
@@ -235,7 +278,7 @@ function CodeEditIcon({
   } else {
     return (
       <MdCode
-        className="mr-5 cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200 text-gray-500"
+        className="cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200 text-gray-500"
         onClick={onClick}
         size={16}
       />

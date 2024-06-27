@@ -30,11 +30,9 @@ import NodeInspector from "./node-inspector";
 import { useNavKeys } from "./use-nav-keys";
 import { vscode } from "../../utils";
 import Menu from "./tree-flow-menu";
-
 import Debug from "debug";
 
 const log = Debug("vscode-note:tree-flow");
-
 const NODE_TYPES: NodeTypes = {
   Code,
   Scrolly,
@@ -175,10 +173,10 @@ function usePanToActiveNode(ref: React.RefObject<HTMLDivElement>, setKV: TreeNot
     if (hActive > container.height - 120) {
       y = -yActive + 120;
     }
-    if (isGroupNode(activeNode) && !isActiveNodeRenderAsGroup) {
-      // prevent vertical scroll
-      y = getViewport().y;
-    }
+    // if (isGroupNode(activeNode) && !isActiveNodeRenderAsGroup) {
+    //   // prevent vertical scroll
+    //   y = getViewport().y;
+    // }
     setViewport({ x, y, zoom: VIEWPORT.zoom }, { duration: 800 });
     if (nLen === 1) {
       setTimeout(() => setKV("panToActiveMark", 0), 800);

@@ -14,7 +14,7 @@ export default function NodeBox({ id, isActive, isRoot, isSelected, children, cl
   const { activateNode } = useTreeNoteStore();
   const onActivate = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
-      if ((event.target as HTMLDivElement).classList.contains("ignore-click")) {
+      if ((event.target as HTMLDivElement).classList.contains("ignore-activate")) {
         return;
       }
       activateNode(id);

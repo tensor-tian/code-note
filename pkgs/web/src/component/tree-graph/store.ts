@@ -50,7 +50,9 @@ namespace TreeNote {
     codeRangeEditingNode: string;
     showCodeNodes: Set<string>;
     activeNodeId: string;
+    jumpHistory: string[];
     saveMark: number;
+    selectSharedNodeFor?: string;
   }
   export type SetKVFn = <T extends keyof Store>(key: Exclude<T, "nodeMap" | "edges">, val: Store[T]) => void;
 
@@ -82,6 +84,10 @@ namespace TreeNote {
     setGroupTextHeight: (id: string, height: number) => void;
     resetExtents: () => void;
     textEditDone: (id: string, typ: string) => void;
+    toggleNodeShare: (id: string) => void;
+    historyForward: (from: string, to: string) => void;
+    historyBack: () => void;
+    selectShare: (nodeId: string, shareId: string) => void;
   }
   export type State = Store & Actions;
 }
@@ -106,6 +112,7 @@ const initialData: TreeNote.Store = {
   codeRangeEditingNode: "",
   showCodeNodes: new Set(),
   activeNodeId: "", // highlight node, central in viewport, parent for adding node
+  jumpHistory: [],
 
   // renderAsGroupNodes: new Set(),
   saveMark: 0,
@@ -292,7 +299,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
           let x: number, y: number;
           if (suffix === "right") {
             x = srcNode.position.x + srcNode.width! + 10;
-            y = srcNode.position.y + srcNode.height! / 2 - h - 30;
+            y = srcNode.position.y + srcNode.height! / 2 - h - 50;
           } else {
             x = srcNode.position.x + srcNode.width! / 2 + 30;
             y = srcNode.position.y + srcNode.height! + 10;
@@ -303,6 +310,10 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           const n = templateForTextNode(x, y, w, h);
           const nextNodeMap = { ...nodeMap, [n.id]: n };
+          if (suffix === "right") {
+            const n2 = templateForSharedNode(x, y + h + 5, w, h);
+            nextNodeMap[n2.id] = n2;
+          }
           set({ nodeMap: nextNodeMap }, "onConnectStart", false);
         },
         onConnectEnd: async (sourceHandle, position) => {
@@ -312,20 +323,14 @@ export const useTreeNoteStore = create<TreeNote.State>(
           if (!allowAddTextNode(srcNode, suffix)) {
             return;
           }
-          const tmp = nodeMap[TextNodeTemplateID];
+          const tmpText = nodeMap[TextNodeTemplateID];
+          const tmpShared = nodeMap[SharedNodeTemplateID];
 
           let nextNodeMap = { ...nodeMap };
           delete nextNodeMap[TextNodeTemplateID];
+          delete nextNodeMap[SharedNodeTemplateID];
 
-          if (
-            tmp.position.x > position.x ||
-            position.x > tmp.position.x + tmp.width! ||
-            tmp.position.y > position.y ||
-            position.y > tmp.position.y + tmp.height!
-          ) {
-            set({ nodeMap: nextNodeMap }, "onConnectEnd", false);
-            return;
-          } else {
+          if (inNodeBounding(tmpText, position)) {
             // add text node
             let nextEdges = [...edges];
             const idx = edges.findIndex((e) => e.sourceHandle === sourceHandle);
@@ -340,12 +345,55 @@ export const useTreeNoteStore = create<TreeNote.State>(
                 sourceHandle: `${textNode.id}-${targetSuffix}`,
               };
             }
-            const conn = { source, sourceHandle, target: textNode.id, targetHandle: `${textNode.id}-${targetSuffix}` };
+            const conn = {
+              source,
+              sourceHandle,
+              target: textNode.id,
+              targetHandle: `${textNode.id}-${targetSuffix}`,
+            };
             nextEdges = addEdge(newEdgeFromConn(conn, ids[1]), nextEdges);
             let rootIds: string[];
             ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, renderAsGroupNodes));
-            set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, "onConnectEnd", true);
+            set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, "onConnectEnd:Text", true);
+          } else if (inNodeBounding(tmpShared, position)) {
+            set(
+              {
+                selectSharedNodeFor: source,
+                nodeMap: nextNodeMap,
+              },
+              "onConnectEnd:Shared",
+              false
+            );
+          } else {
+            set(
+              {
+                nodeMap: nextNodeMap,
+              },
+              "onConnectEnd",
+              false
+            );
           }
+        },
+        selectShare(nodeId, shareId) {
+          const { nodeMap } = get();
+          const copyOf = !shareId ? undefined : shareId;
+          const node = nodeMap[nodeId];
+          set(
+            {
+              nodeMap: {
+                ...nodeMap,
+                [node.id]: {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    copyOf,
+                  },
+                },
+              },
+            },
+            "selectShare",
+            false
+          );
         },
         onConnect: async (conn) => {
           log("on connect:", conn);
@@ -359,6 +407,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
           let nextNodeMap = { ...nodeMap };
           delete nextNodeMap[TextNodeTemplateID];
+          delete nextNodeMap[SharedNodeTemplateID];
 
           let nextEdges = [...edges];
 
@@ -933,6 +982,68 @@ export const useTreeNoteStore = create<TreeNote.State>(
             set({ textEditing: undefined }, "textEditDone", false);
           }
         },
+        toggleNodeShare(id) {
+          const { nodeMap } = get();
+          const node = nodeMap[id];
+          const shared = !node.data.shared ? true : undefined;
+          set(
+            {
+              nodeMap: {
+                ...nodeMap,
+                [id]: {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    shared,
+                  },
+                },
+              },
+            },
+            "toggleShared",
+            false
+          );
+        },
+        historyBack() {
+          const { jumpHistory, activeNodeId } = get();
+          if (jumpHistory.length === 0) {
+            return;
+          }
+          const nextHistory = [...jumpHistory];
+          let nextActiveNodeId = nextHistory.pop()!;
+          if (nextActiveNodeId === activeNodeId) {
+            if (nextHistory.length > 0) {
+              nextActiveNodeId = nextHistory.pop()!;
+            }
+          }
+          set(
+            {
+              jumpHistory: nextHistory,
+              activeNodeId: nextActiveNodeId,
+            },
+            "historyBack",
+            false
+          );
+          if (nextActiveNodeId !== activeNodeId) {
+            panToActive();
+          }
+        },
+        historyForward(from, to) {
+          const { jumpHistory } = get();
+          if (jumpHistory.length > 0 && jumpHistory[jumpHistory.length - 1] === to) {
+            panToActive();
+            return;
+          }
+          const nextHistory = [...jumpHistory, from, to];
+          set(
+            {
+              jumpHistory: nextHistory,
+              activeNodeId: to,
+            },
+            "historyForward",
+            false
+          );
+          panToActive();
+        },
       };
     }),
     {
@@ -1043,7 +1154,8 @@ export function newNode(
 }
 
 const TextNodeTemplateID = "text-node-template-id";
-const KeepNodeIds = new Set([TextNodeTemplateID]);
+const SharedNodeTemplateID = "shared-node-template-id";
+const KeepNodeIds = new Set([TextNodeTemplateID, SharedNodeTemplateID]);
 const templateForTextNode = (x: number, y: number, width: number, height: number): TemplateNode => ({
   id: TextNodeTemplateID,
   type: "Template",
@@ -1053,6 +1165,19 @@ const templateForTextNode = (x: number, y: number, width: number, height: number
   data: {
     id: TextNodeTemplateID,
     text: "Add Text Node",
+    type: "Template",
+  },
+});
+
+const templateForSharedNode = (x: number, y: number, width: number, height: number): TemplateNode => ({
+  id: SharedNodeTemplateID,
+  type: "Template",
+  position: { x, y },
+  width,
+  height,
+  data: {
+    id: SharedNodeTemplateID,
+    text: "Connect To Shared Node",
     type: "Template",
   },
 });
@@ -1271,4 +1396,13 @@ function createUpdateEdge(oldHandle: string, newId: string) {
       };
     }
   };
+}
+
+function inNodeBounding(node: Node, pos: XYPosition): boolean {
+  return (
+    node.position.x <= pos.x &&
+    node.position.x + node.width! >= pos.x &&
+    node.position.y <= pos.y &&
+    node.position.y + node.height! >= pos.y
+  );
 }
