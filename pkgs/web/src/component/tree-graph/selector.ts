@@ -18,6 +18,7 @@ const selectGroupStepIndexMap = (state: TreeNote.Store) => state.groupStepIndexM
 export const selectTextEditing = (state: TreeNote.Store) => state.textEditing;
 export const selectCodeRangeEditingNode = (state: TreeNote.Store) => state.codeRangeEditingNode;
 export const selectShowCodeNodes = (state: TreeNote.Store) => state.showCodeNodes;
+export const selectHistoryTop = (state: TreeNote.Store) => state.jumpHistory[state.jumpHistory.length - 1];
 
 export const selectNodeInspectorState = (state: TreeNote.Store) => ({
   selectedNodes: state.selectedNodes,
@@ -37,8 +38,19 @@ export const selectBlockState = (id: string) =>
       selectRenderAsGroupNodes,
       selectCodeRangeEditingNode,
       selectTextEditing,
+      selectHistoryTop,
     ],
-    (node, activeNodeId, rootIds, selectedNodes, showCode, renderAsGroupNodes, codeRangeEditingNode, textEditing) => {
+    (
+      node,
+      activeNodeId,
+      rootIds,
+      selectedNodes,
+      showCode,
+      renderAsGroupNodes,
+      codeRangeEditingNode,
+      textEditing,
+      historyTop
+    ) => {
       const width = isGroupNode(node)
         ? +(node.style?.width || node.width || DefaultNodeDimension.W)
         : node?.width || DefaultNodeDimension.W;
@@ -51,6 +63,7 @@ export const selectBlockState = (id: string) =>
         renderAsGroup: renderAsGroupNodes.includes(id),
         codeRangeEditingNode,
         textEditing,
+        historyTop,
       };
     }
   );
@@ -103,6 +116,17 @@ const selectCanSplitGroup = createSelector(
     selectedNodes.length === 1 && isGroupNode(firstSelected) && !renderAsGroupNodes.includes(firstSelected.id)
 );
 
+const selectSharedNodeFor = (state: TreeNote.Store) => state.selectSharedNodeFor;
+export const selectShareNodes = createSelector([selectNodeMap, selectSharedNodeFor], (nodeMap, id) => {
+  if (!id) return { open: false, nodes: [] };
+  return {
+    nodes: Object.values(nodeMap).filter((node) => node.data.shared),
+    open: Boolean(id),
+    source: id,
+    to: nodeMap[id].data.copyOf,
+  };
+});
+
 export const selectMenuState = createSelector(
   [
     selectNoteID,
@@ -114,8 +138,20 @@ export const selectMenuState = createSelector(
     selectCanSplitGroup,
     selectTextEditing,
     selectCodeRangeEditingNode,
+    selectHistoryTop,
   ],
-  (id, text, typ, debug, canGroupNodesToDetail, canGroupNodes, canSplitGroup, textEditing, codeRangeEditingNode) => {
+  (
+    id,
+    text,
+    typ,
+    debug,
+    canGroupNodesToDetail,
+    canGroupNodes,
+    canSplitGroup,
+    textEditing,
+    codeRangeEditingNode,
+    historyTop
+  ) => {
     return {
       id,
       text,
@@ -126,6 +162,7 @@ export const selectMenuState = createSelector(
       canSplitGroup,
       textEditing,
       codeRangeEditingNode,
+      historyTop,
     };
   }
 );

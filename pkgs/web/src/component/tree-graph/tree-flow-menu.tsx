@@ -10,7 +10,7 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import { BsFileEarmarkArrowUp } from "react-icons/bs";
 import { useHover } from "usehooks-ts";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useRef } from "react";
 import cls from "classnames";
 import { FaFileArrowDown, FaFileImport } from "react-icons/fa6";
 import { vscode, isVscode, DEFAULT_BLOCK } from "../../utils";
@@ -20,7 +20,10 @@ import { Ext2Web, Note, Web2Ext } from "types";
 import RightGroup from "../icons/right-group";
 import { FaTextSlash } from "react-icons/fa6";
 import { MdCodeOff } from "react-icons/md";
+import { BiSolidShare as ShareBack } from "react-icons/bi";
 
+const Edge = LetterIcon("E");
+const Node = LetterIcon("N");
 type Props = {
   addBlock: ({ action, data }: Ext2Web.AddCode) => void;
 };
@@ -35,6 +38,7 @@ export default function Menu({ addBlock }: Props) {
     forceLayout,
     resetExtents,
     resetNote,
+    historyBack,
   } = useTreeNoteStore();
   const {
     id,
@@ -46,6 +50,7 @@ export default function Menu({ addBlock }: Props) {
     canSplitGroup,
     textEditing,
     codeRangeEditingNode,
+    historyTop,
   } = useTreeNoteStore(selectMenuState);
 
   const addDetail = useCallback(async () => {
@@ -84,9 +89,6 @@ export default function Menu({ addBlock }: Props) {
     } as Web2Ext.CodeRangeEditStop);
   }, [codeRangeEditingNode]);
 
-  const Edge = useMemo(() => LetterIcon("E"), []);
-  const Node = useMemo(() => LetterIcon("N"), []);
-
   return (
     <Panel className="flex flex-col gap-1 absolute top-1/4 text-lg" position="bottom-right">
       <FileButton title="Open *.cnote File" resetNote={resetNote} disabled={isVscode} />
@@ -115,6 +117,7 @@ export default function Menu({ addBlock }: Props) {
       <RoundButton Icon={TfiLayoutGrid3} title="Force Layout" onClick={forceLayout} />
       <RoundButton Icon={Edge} title="Remove Edge" onClick={deleteEdge} />
       <RoundButton Icon={Node} title="Remove Node" onClick={deleteNode} />
+      <RoundButton Icon={ShareBack} title="History Jump Back" onClick={historyBack} disabled={!historyTop} />
     </Panel>
   );
 }

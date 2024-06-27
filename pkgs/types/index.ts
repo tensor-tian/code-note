@@ -33,6 +33,8 @@ export type Block = CodeBlock | ScrollyCodeBlock | TextBlock | TemplateBlock;
 export interface BaseBlock {
   id: string;
   text: string;
+  shared?: boolean;
+  copyOf?: string;
 }
 
 export type Pos = { line: number; character: number };
