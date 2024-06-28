@@ -132,7 +132,7 @@ class TreeLayout {
     const top = this.top(n);
     const parent = n.parentId ? this.nodeMap[n.parentId] : undefined;
     if (!left && !top && !parent) return n;
-    return this.getRoot(left, visited) || this.getRoot(top, visited);
+    return this.getRoot(left, visited) || this.getRoot(top, visited) || this.getRoot(parent, visited);
   }
 
   private getRoots() {
