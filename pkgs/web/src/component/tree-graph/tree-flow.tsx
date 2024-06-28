@@ -109,6 +109,7 @@ function TreeFlow() {
           y: event.clientY,
         });
         _onConnectEnd(sourceHandle, pos);
+        setSourceHandle("");
       }
     },
     [_onConnectEnd, rfInstance, sourceHandle]

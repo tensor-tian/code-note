@@ -318,9 +318,9 @@ export const useTreeNoteStore = create<TreeNote.State>(
         },
         onConnectEnd: async (sourceHandle, position) => {
           const { nodeMap, edges, renderAsGroupNodes } = get();
-          const [source, suffix] = sourceHandle.split("-");
+          const [source, sourceSuffix] = sourceHandle.split("-");
           const srcNode = nodeMap[source];
-          if (!allowAddTextNode(srcNode, suffix)) {
+          if (!allowAddTextNode(srcNode, sourceSuffix)) {
             return;
           }
           const tmpText = nodeMap[TextNodeTemplateID];
@@ -333,25 +333,19 @@ export const useTreeNoteStore = create<TreeNote.State>(
           if (inNodeBounding(tmpText, position)) {
             // add text node
             let nextEdges = [...edges];
-            const idx = edges.findIndex((e) => e.sourceHandle === sourceHandle);
             const ids = await iDGenerator.requestIDs(2);
             const textNode = newTextNode(ids[0]);
+            console.log("source handel:", sourceHandle);
             nextNodeMap[textNode.id] = textNode;
-            const targetSuffix = suffix === "right" ? "left" : "top";
-            if (idx !== -1) {
-              nextEdges[idx] = {
-                ...nextEdges[idx],
-                source: textNode.id,
-                sourceHandle: `${textNode.id}-${targetSuffix}`,
-              };
-            }
+            nextEdges = updateEdges(nextEdges, [sourceHandle, textNode.id]);
             const conn = {
               source,
               sourceHandle,
               target: textNode.id,
-              targetHandle: `${textNode.id}-${targetSuffix}`,
+              targetHandle: `${textNode.id}-${sourceSuffix === "right" ? "left" : "top"}`,
             };
-            nextEdges = addEdge(newEdgeFromConn(conn, ids[1]), nextEdges);
+            // nextEdges = (newEdgeFromConn(conn, ids[1]), nextEdges);
+            nextEdges.push(newEdgeFromConn(conn, ids[1]));
             let rootIds: string[];
             ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, renderAsGroupNodes));
             set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, "onConnectEnd:Text", true);
@@ -392,7 +386,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
               },
             },
             "selectShare",
-            false
+            true
           );
         },
         onConnect: async (conn) => {
@@ -1000,7 +994,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
               },
             },
             "toggleShared",
-            false
+            true
           );
         },
         historyBack() {
