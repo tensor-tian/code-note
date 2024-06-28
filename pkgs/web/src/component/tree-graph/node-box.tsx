@@ -14,7 +14,15 @@ export default function NodeBox({ id, isActive, isRoot, isSelected, children, cl
   const { activateNode } = useTreeNoteStore();
   const onActivate = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
-      if ((event.target as HTMLDivElement).classList.contains("ignore-activate")) {
+      let ignore = false;
+      const boxElm = event.currentTarget;
+      for (let elm = event.target as HTMLElement; elm !== boxElm; elm = elm.parentElement as HTMLElement) {
+        if (elm.classList.contains("ignore-activate")) {
+          ignore = true;
+          break;
+        }
+      }
+      if (ignore) {
         return;
       }
       activateNode(id);
@@ -24,6 +32,7 @@ export default function NodeBox({ id, isActive, isRoot, isSelected, children, cl
   return (
     <div
       className={cx(
+        "node-box",
         "border bg-white " + className,
         isActive ? "border-gray-600 shadow-lg shadow-gray-900 nowheel" : "border-gray-300",
         isRoot ? "bg-indigo-100" : "bg-white",

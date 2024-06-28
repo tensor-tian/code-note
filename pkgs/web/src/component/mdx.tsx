@@ -2,7 +2,7 @@ import "@code-hike-local/mdx/dist/index.css";
 
 import * as runtime from "react/jsx-runtime";
 
-import type { ErrorInfo, FC } from "react";
+import type { CSSProperties, ErrorInfo, FC } from "react";
 import { compile, run } from "@mdx-js/mdx";
 import { useEffect, useState } from "react";
 
@@ -107,6 +107,11 @@ const InnerPreview: FC<{ input: string; width: number; id: string }> = ({ input,
   // trigger rerender when width changed
 
   const { Component, error, loading } = useInput(input, width, id);
+  let style: CSSProperties = {};
+  if (id.startsWith("scrolly-")) {
+    style.overflow = "auto";
+    style.height = 800;
+  }
   return (
     <>
       {error ? (
@@ -119,6 +124,8 @@ const InnerPreview: FC<{ input: string; width: number; id: string }> = ({ input,
         className={cls("preview-container", {
           "with-error": error,
         })}
+        style={style}
+        id={id}
       >
         {/* <div style={{ opacity: loading ? 1 : 0 }} className="loading-border" /> */}
         {Component ? <Component components={{ CH }} /> : null}
@@ -131,6 +138,7 @@ const logError = (error: Error, info: ErrorInfo) => {
   console.log("error boundary:", error, info);
 };
 
+// trigger rerender on width changes
 const MDX: FC<{ mdx: string; width: number; id: string }> = ({ mdx, width, id }) => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback} onError={logError}>

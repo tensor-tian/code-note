@@ -19,12 +19,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
   const { isSelected, isActive, isRoot, width, renderAsGroup } = useTreeNoteStore(selectBlockState(id));
 
   const { mdx, copyMdx } = useMemo(() => {
-    if (!renderAsGroup) return { mdx: "", copyMdx: () => {} };
-    if (!codes) {
-      return { mdx: "", copyMdx: () => {} };
-    }
-    const mdx = groupCodesMDX(id, codes);
-
+    let _mdx = text;
     const copyMdx = () => {
       navigator.clipboard.writeText(mdx);
       vscode.postMessage({
@@ -32,8 +27,13 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
         data: "MDX code is copied.",
       } as Web2Ext.ShowMsg);
     };
-    return { mdx, copyMdx };
-  }, [codes, id, renderAsGroup]);
+    if (!renderAsGroup) return { mdx: _mdx, copyMdx };
+    if (!codes) {
+      return { mdx: "", copyMdx: () => {} };
+    }
+    _mdx += "\n\n" + groupCodesMDX(id, codes);
+    return { mdx: _mdx, copyMdx };
+  }, [codes, id, renderAsGroup, text]);
   const textRef = useRef<HTMLDivElement>(null);
   const { height } = useResizeObserver({
     ref: textRef,
@@ -44,25 +44,24 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
       setGroupTextHeight(id, height);
     }
   }, [height, id, setGroupTextHeight]);
-  const textContent = useMemo(() => {
-    return (
-      <div ref={textRef}>
-        <MDX mdx={text} width={width} id={"scrolly-text-" + id} />
-      </div>
-    );
-  }, [id, text, width]);
+  const stickerWidth = Math.max((3 * width) / 5, 420);
+  const contentWidth = width - stickerWidth;
+  const style = {
+    width,
+    "--ch-scrollycoding-sticker-width": stickerWidth + "px",
+    "--ch-scrollycoding-content-width": contentWidth + "px",
+  } as CSSProperties;
   return (
     <NodeBox
       id={id}
       isSelected={isSelected}
       isActive={isActive}
       isRoot={isRoot}
-      className="w-full h-full px-2 py-2 bg-white bg-opacity-0 "
-      style={{ width, "--ch-scrollycoding-sticker-width": Math.max((3 * width) / 5, 420) + "px" } as CSSProperties}
+      className="px-2 py-2 bg-white bg-opacity-0 "
+      style={style}
     >
       <NodeMenu data={data} copyMdx={copyMdx} />
-      {textContent}
-      {mdx.length > 0 && <MDX mdx={mdx} width={width} id={"scrolly-code-" + id} />}
+      {mdx.length > 0 && <MDX mdx={mdx} width={width} id={"scrolly-" + id} />}
       <NodeHandles id={id} />
     </NodeBox>
   );
