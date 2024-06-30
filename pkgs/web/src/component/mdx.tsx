@@ -17,7 +17,7 @@ import "katex/dist/katex.min.css";
 
 import cls from "classnames";
 import { useTreeNoteStore } from "./tree-graph/store";
-import { selectLang, selectLangClass } from "./tree-graph/selector";
+import { selectLangClass } from "./tree-graph/selector";
 
 async function compileAndRun(input: string) {
   try {

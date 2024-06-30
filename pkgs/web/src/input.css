@@ -10,7 +10,10 @@ body,
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans,
+    Helvetica Neue, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .react-flow__panel.react-flow__attribution {
@@ -167,32 +170,35 @@ strike:after:hover {
 }
 
 .preview-container h1 {
-  @apply text-5xl font-extrabold;
+  @apply text-3xl font-extrabold;
+  margin-block-start: 0.2em;
+  margin-block-end: 0.2em;
+  unicode-bidi: isolate;
 }
 .preview-container h2 {
-  @apply text-4xl font-bold;
+  @apply text-2xl font-bold;
+  font-size: 1.5em;
+  margin-block-start: 0.4em;
+  margin-block-end: 0.4em;
+  unicode-bidi: isolate;
 }
 
 .preview-container h3 {
-  @apply text-3xl font-bold;
+  @apply text-xl font-bold;
+  margin-block-start: 0.6em;
+  margin-block-end: 0.6em;
+  unicode-bidi: isolate;
 }
 
 .preview-container h4 {
-  @apply text-2xl font-bold;
-}
-
-.preview-container h5 {
-  @apply text-xl font-bold;
-}
-
-.preview-container h6 {
   @apply text-lg font-bold;
+  margin-block-start: 0.8em;
+  margin-block-end: 0.8em;
+  unicode-bidi: isolate;
 }
 
 .preview-container {
   overflow-wrap: break-word;
-  /* overflow: auto;
-  max-height: 800px; */
 }
 
 .preview-container p,
