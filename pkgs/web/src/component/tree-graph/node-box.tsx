@@ -33,7 +33,8 @@ export default function NodeBox({ id, isActive, isRoot, isSelected, children, cl
     <div
       className={cx(
         "node-box",
-        "border bg-white " + className,
+        "border bg-white",
+        className,
         isActive ? "border-gray-600 shadow-lg shadow-gray-900 nowheel" : "border-gray-300",
         isRoot ? "bg-indigo-100" : "bg-white",
         isSelected ? "!border-blue-600 !shadow-blue-600" : "bg-white"

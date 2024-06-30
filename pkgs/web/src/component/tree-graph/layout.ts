@@ -39,43 +39,46 @@ type NodeLayout = {
    * height of sub tree
    */
   treeH: number;
-  /** width of sub tree */
-  treeW: number; //
+  // /** width of sub tree */
+  // treeW: number; //
 };
 
 class TreeLayout {
   edgeMap = new Map<string, Edge>();
-  layoutMap = new Map<string, NodeLayout>();
+  _layoutMap = new Map<string, NodeLayout>();
 
   constructor(private nodeMap: Record<string, Node>, edges: Edge[], private renderAsGroupNodes: Set<string>) {
     edges.forEach((e) => {
       this.edgeMap.set(e.sourceHandle!, e).set(e.targetHandle!, e);
     });
   }
+  private layoutNode(id: string): NodeLayout {
+    return this._layoutMap.get(id)!;
+  }
 
   private right = (n: Node | undefined) => {
     if (!n) return;
     const edge = this.edgeMap.get(n.id + "-right");
     if (!edge) return;
-    return this.nodeMap[edge.target] as CodeNode;
+    return this.nodeMap[edge.target] as Node;
   };
   private bottom = (n: Node | undefined) => {
     if (!n) return;
     const edge = this.edgeMap.get(n.id + "-bottom");
     if (!edge) return;
-    return this.nodeMap[edge.target] as CodeNode;
+    return this.nodeMap[edge.target] as Node;
   };
   private left = (n: Node | undefined) => {
     if (!n) return;
     const edge = this.edgeMap.get(n.id + "-left");
     if (!edge?.targetHandle?.endsWith("left")) return;
-    return this.nodeMap[edge.source] as CodeNode;
+    return this.nodeMap[edge.source] as Node;
   };
   private top = (n: Node | undefined) => {
     if (!n) return;
     const edge = this.edgeMap.get(n.id + "-top");
     if (!edge) return;
-    return this.nodeMap[edge.source] as CodeNode;
+    return this.nodeMap[edge.source] as Node;
   };
 
   private topRight = (n: Node): Node | undefined => {
@@ -84,54 +87,55 @@ class TreeLayout {
     if (!topEdge) return;
     const rightEdge = this.edgeMap.get(topEdge.source + "-right");
     if (!rightEdge) return;
-    return this.nodeMap[rightEdge.target] as CodeNode;
+    return this.nodeMap[rightEdge.target] as Node;
+  };
+
+  private parent = (n: Node): GroupNode | undefined => {
+    if (!n) return;
+    if (!n.parentId) return;
+    return this.nodeMap[n.parentId] as GroupNode;
   };
 
   private sizeOf = (n: Node, relation: (x: Node) => Node | undefined): NodeLayout | undefined => {
     const x = relation(n);
     if (!x) return;
-    return this.layoutMap.get(x.id);
+    return this.layoutNode(x.id);
   };
 
   private visit(node: Node | undefined, visitor: (n: Node) => void, order: VisitOrder) {
     if (!node) return;
-    if (order === VisitOrder.PreOrder) {
-      visitor(node);
-      if (isGroupNode(node)) {
-        const { chain } = node.data;
-        const renderAsGroup = this.renderAsGroupNodes.has(node.id);
-        if (!renderAsGroup) {
-          const firstChild = this.nodeMap[chain[0]];
-          this.visit(firstChild, visitor, order);
-        }
+    const children = [this.right(node), this.bottom(node)];
+    if (isGroupNode(node)) {
+      const { chain } = node.data;
+      const renderAsGroup = this.renderAsGroupNodes.has(node.id);
+      if (!renderAsGroup) {
+        children.push(this.nodeMap[chain[0]]);
       }
     }
-    this.visit(this.right(node), visitor, order);
-    this.visit(this.bottom(node), visitor, order);
+
+    if (order === VisitOrder.PreOrder) {
+      visitor(node);
+    }
+    for (const child of children) {
+      this.visit(child, visitor, order);
+    }
     if (order === VisitOrder.PostOrder) {
-      if (isGroupNode(node)) {
-        const { chain } = node.data;
-        const renderAsGroup = this.renderAsGroupNodes.has(node.id);
-        if (!renderAsGroup) {
-          const child = this.nodeMap[chain[0]];
-          this.visit(child, visitor, order);
-        }
-      }
       visitor(node);
     }
   }
 
   private getRoot(n: Node | undefined, visited: Set<string>): Node | undefined {
     if (!n) return;
-    // if (n.parentId) return;
     if (visited.has(n.id)) return;
     if (isTemplateNote(n)) return;
 
     visited.add(n.id);
     const left = this.left(n);
     const top = this.top(n);
-    const parent = n.parentId ? this.nodeMap[n.parentId] : undefined;
-    if (!left && !top && !parent) return n;
+    const parent = this.parent(n);
+    if (!left && !top && !parent) {
+      return n; // root is found
+    }
     return this.getRoot(left, visited) || this.getRoot(top, visited) || this.getRoot(parent, visited);
   }
 
@@ -139,7 +143,7 @@ class TreeLayout {
     const visited = new Set<string>();
     const roots = new Array<Node>();
     for (const n of Object.values(this.nodeMap)) {
-      const root = this.getRoot(n as CodeNode, visited);
+      const root = this.getRoot(n, visited);
       if (root) roots.push(root);
     }
     return roots;
@@ -147,27 +151,31 @@ class TreeLayout {
 
   /** convert the pos of group children from absolute to relative */
   private toRelativePos = (node: Node) => {
-    if (node.parentId) {
-      const parent = this.nodeMap[node.parentId]! as GroupNode;
-      const psz = this.layoutMap.get(parent.id)!;
-      const sz = this.layoutMap.get(node.id)!;
-      sz.x -= psz.x;
-      sz.y -= psz.y;
-    }
+    const parent = this.parent(node);
+    if (!parent) return;
+    const psz = this.layoutNode(parent.id);
+    const sz = this.layoutNode(node.id);
+    sz.x -= psz.x;
+    sz.y -= psz.y;
   };
+
   /** calc size of sub tree */
   private calcTreeSize = (n: Node) => {
-    const sz = this.layoutMap.get(n.id)!;
+    if (n.id === "6m") {
+      console.log("6m", n);
+    }
+    const sz = this.layoutNode(n.id);
     const renderAsGroup = this.renderAsGroupNodes.has(n.id);
     if (isGroupNode(n) && !renderAsGroup) {
       const { chain, textHeight } = n.data;
       sz.h = GroupPadding.Y + (textHeight || 0);
       sz.w = 0;
+      sz.treeH = sz.h;
       for (let i = 0; i < chain.length; i++) {
-        const _id = chain[i];
-        const csz = this.layoutMap.get(_id)!;
+        const csz = this.layoutNode(chain[i]);
         if (i === 0) {
           sz.h += csz.treeH;
+          sz.treeH += csz.treeH;
         } else if (i === chain.length - 1) {
           sz.h += csz.h - csz.treeH;
         }
@@ -175,36 +183,29 @@ class TreeLayout {
       }
       sz.h += GroupPadding.Y;
       sz.wCol = sz.w;
-    }
-    sz.treeH = sz.h;
-    const rsz = this.sizeOf(n, this.right); // TODO, active right node id
-    if (rsz && rsz.treeH > sz.treeH) {
-      sz.treeH = rsz.treeH;
+    } else {
+      const rsz = this.sizeOf(n, this.right);
+      sz.treeH = sz.h;
+      if (rsz) {
+        sz.treeH = Math.max(sz.treeH, rsz.treeH);
+      }
     }
     const bsz = this.sizeOf(n, this.bottom);
     if (bsz) {
       sz.treeH += bsz.treeH + DefaultNodeDimension.Y;
     }
-    if (bsz && bsz.wCol > sz.wCol) {
-      sz.wCol = bsz.wCol;
-    }
-
-    sz.treeW = sz.wCol;
-    if (rsz) {
-      sz.treeW += rsz.treeW + DefaultNodeDimension.X;
-    }
-    if (bsz && bsz.treeW > sz.treeW) {
-      sz.treeW = bsz.treeW;
+    if (bsz) {
+      sz.wCol = Math.max(sz.wCol, bsz.wCol);
     }
   };
 
   /** calc pos of node */
   private calcPosition = (n: Node) => {
-    const sz = this.layoutMap.get(n.id)!;
+    const sz = this.layoutNode(n.id);
 
     if (n.parentId) {
       // children of group node
-      const psz = this.layoutMap.get(n.parentId)!;
+      const psz = this.layoutNode(n.parentId);
 
       sz.x = psz.x + GroupPadding.X;
       const top = this.sizeOf(n, this.top);
@@ -226,19 +227,34 @@ class TreeLayout {
     const top = this.sizeOf(n, this.top);
     const left = this.sizeOf(n, this.left);
     const topRight = this.sizeOf(n, this.topRight);
-    if (top && top.wCol > sz.wCol) {
-      sz.wCol = top.wCol;
+    if (top) {
+      sz.wCol = Math.max(sz.wCol, top.wCol);
     }
-    sz.x = top?.x || -1;
-    if (sz.x !== -1) {
+    if (typeof top?.x === "number") {
+      sz.x = top.x;
       const topNode = this.top(n);
       if (isGroupNode(topNode)) {
         sz.x += 10;
       }
     } else {
-      sz.x = (left ? left!.x + left!.wCol : 0) + DefaultNodeDimension.X;
+      sz.x = 0;
+      if (left) {
+        sz.x = left.x + left.wCol + DefaultNodeDimension.X;
+      }
     }
-    sz.y = left?.y || (top ? top!.y + Math.max(topRight?.treeH || 0, top.h) : 50) + DefaultNodeDimension.Y;
+    if (left) {
+      sz.y = left.y;
+    } else {
+      if (top) {
+        let h = top.h;
+        if (topRight) {
+          h = Math.max(h, topRight.treeH);
+        }
+        sz.y = top.y + h + DefaultNodeDimension.Y;
+      } else {
+        sz.y = 50 + DefaultNodeDimension.Y;
+      }
+    }
     // group node
     if (isGroupNode(n)) {
       sz.x -= GroupPadding.X;
@@ -273,13 +289,12 @@ class TreeLayout {
         if (n.style?.height) h = +n.style.height;
         groups.push(n);
       }
-      this.layoutMap.set(n.id, {
+      this._layoutMap.set(n.id, {
         ...n.position,
         w,
         h,
         wCol: w,
         treeH: 0,
-        treeW: 0,
       });
     }
 
@@ -290,7 +305,7 @@ class TreeLayout {
 
     // update group if changed
     const groupMap = groups.reduce((acc, n) => {
-      const sz = this.layoutMap.get(n.id)!;
+      const sz = this.layoutNode(n.id)!;
       if (sz.x !== n.position.x || sz.y !== n.position.y || sz.w !== n.style?.width || sz.h !== n.style.height) {
         const renderAsGroup = this.renderAsGroupNodes.has(n.id);
         const style = renderAsGroup ? { width: sz.w } : { width: sz.w, height: sz.h };
@@ -308,7 +323,7 @@ class TreeLayout {
 
     // update code if changed
     const codeMap = codes.reduce((acc, n) => {
-      const sz = this.layoutMap.get(n.id)!;
+      const sz = this.layoutNode(n.id)!;
       if (sz.x !== n.position.x || sz.y !== n.position.y || sz.w !== n.width || sz.h !== n.height) {
         acc[n.id] = {
           ...n,

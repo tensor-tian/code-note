@@ -205,11 +205,11 @@ strike:after:hover {
 }
 
 .preview-container ul {
-  @apply max-w-md space-y-1 list-disc list-inside dark:text-gray-400;
+  @apply space-y-1 list-disc list-inside dark:text-gray-400;
 }
 
 .preview-container ol {
-  @apply max-w-md space-y-1  list-decimal list-inside dark:text-gray-400;
+  @apply space-y-1  list-decimal list-inside dark:text-gray-400;
 }
 
 .preview-container li > p {
@@ -233,4 +233,11 @@ strike:after:hover {
 .ch-codeblock,
 .ch-codegroup {
   margin-top: 0.25rem !important;
+}
+
+.only-show-lang-en .lang-zh {
+  display: none;
+}
+.only-show-lang-zh .lang-en {
+  display: none;
 }
