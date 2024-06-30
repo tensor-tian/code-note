@@ -4,6 +4,7 @@
 
 const path = require("path");
 const { webpack, DefinePlugin } = require("webpack");
+const CopyPlugin = require("copy-webpack-plugin");
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -48,6 +49,9 @@ const extensionConfig = {
   plugins: [
     new DefinePlugin({
       LOCALSTORAGE_DEBUG: JSON.stringify("vscode-note:*"),
+    }),
+    new CopyPlugin({
+      patterns: [{ from: "snippet", to: "dist/snippet" }],
     }),
   ],
 };

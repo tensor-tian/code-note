@@ -2,7 +2,7 @@ import "@code-hike-local/mdx/dist/index.css";
 
 import * as runtime from "react/jsx-runtime";
 
-import type { CSSProperties, ErrorInfo, FC } from "react";
+import type { CSSProperties, ErrorInfo, FC, PropsWithChildren } from "react";
 import { compile, run } from "@mdx-js/mdx";
 import { useEffect, useState } from "react";
 
@@ -16,6 +16,8 @@ import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
 
 import cls from "classnames";
+import { useTreeNoteStore } from "./tree-graph/store";
+import { selectLang, selectLangClass } from "./tree-graph/selector";
 
 async function compileAndRun(input: string) {
   try {
@@ -106,6 +108,7 @@ function ErrorFallback({ error }: { error: string }) {
 const InnerPreview: FC<{ input: string; width: number; id: string }> = ({ input, width, id }) => {
   // trigger rerender when width changed
 
+  const langClass = useTreeNoteStore(selectLangClass);
   const { Component, error, loading } = useInput(input, width, id);
   let style: CSSProperties = {};
   if (id.startsWith("scrolly-")) {
@@ -121,14 +124,18 @@ const InnerPreview: FC<{ input: string; width: number; id: string }> = ({ input,
         </div>
       ) : null}
       <div
-        className={cls("preview-container", {
-          "with-error": error,
-        })}
+        className={cls(
+          "preview-container",
+          {
+            "with-error": error,
+          },
+          langClass
+        )}
         style={style}
         id={id}
       >
         {/* <div style={{ opacity: loading ? 1 : 0 }} className="loading-border" /> */}
-        {Component ? <Component components={{ CH }} /> : null}
+        {Component ? <Component components={{ CH, LangZh, LangEn }} /> : null}
       </div>
     </>
   );
@@ -146,5 +153,12 @@ const MDX: FC<{ mdx: string; width: number; id: string }> = ({ mdx, width, id })
     </ErrorBoundary>
   );
 };
+
+function LangZh({ children }: PropsWithChildren<{}>) {
+  return <div className="lang-zh">{children}</div>;
+}
+function LangEn({ children }: PropsWithChildren<{}>) {
+  return <div className="lang-en">{children}</div>;
+}
 
 export default MDX;

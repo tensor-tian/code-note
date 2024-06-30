@@ -1,0 +1,22 @@
+{
+  "English Text Container": {
+    "prefix": "en",
+    "body": ["<LangEn>", "\t$1", "</LangEn>"],
+    "description": "An text container of english language"
+  },
+  "Chinese Text Container": {
+    "prefix": "zh",
+    "body": ["<LangZh>", "\t$1", "</LangZh>"],
+    "description": "An text container of chinese language"
+  },
+  "Heading 4": {
+    "prefix": "h4",
+    "body": ["#### $1"],
+    "description": "markdown heading 4"
+  },
+  "Heading 3": {
+    "prefix": "h3",
+    "body": ["### $1"],
+    "description": "markdown heading 3"
+  }
+}

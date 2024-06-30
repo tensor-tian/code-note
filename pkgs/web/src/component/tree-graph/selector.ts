@@ -8,6 +8,7 @@ const selectNodeMap = (state: TreeNote.Store) => state.nodeMap;
 const selectAllEdges = (state: TreeNote.Store) => state.edges;
 const selectHiddenNodes = (state: TreeNote.Store) => state.hiddenNodes;
 const selectHiddenEdges = (state: TreeNote.Store) => state.hiddenEdges;
+export const selectLang = (state: TreeNote.Store) => state.lang;
 
 const selectSelectedNodes = (state: TreeNote.Store) => state.selectedNodes;
 export const selectActiveEdgeId = (state: TreeNote.Store) => state.activeEdgeId;
@@ -72,11 +73,16 @@ const selectChain = createSelector([selectAllEdges, selectSelectedNodes, selectN
   return getNextChain(selections, edges);
 });
 
+export const selectLangClass = createSelector([selectLang], (lang) => {
+  return `only-show-lang-${lang}`;
+});
+
 export const selectTitleState = (state: TreeNote.Store) => ({
   id: state.id,
   text: state.text,
   debug: state.debug,
   nodeIds: Object.keys(state.nodeMap).sort(),
+  lang: state.lang,
 });
 
 const selectNoteID = (state: TreeNote.Store) => state.id;
@@ -139,6 +145,7 @@ export const selectMenuState = createSelector(
     selectTextEditing,
     selectCodeRangeEditingNode,
     selectHistoryTop,
+    selectLang,
   ],
   (
     id,
@@ -150,7 +157,8 @@ export const selectMenuState = createSelector(
     canSplitGroup,
     textEditing,
     codeRangeEditingNode,
-    historyTop
+    historyTop,
+    lang
   ) => {
     return {
       id,
@@ -163,6 +171,7 @@ export const selectMenuState = createSelector(
       textEditing,
       codeRangeEditingNode,
       historyTop,
+      lang,
     };
   }
 );

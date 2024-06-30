@@ -10,7 +10,7 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import { BsFileEarmarkArrowUp } from "react-icons/bs";
 import { useHover } from "usehooks-ts";
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import cls from "classnames";
 import { FaFileArrowDown, FaFileImport } from "react-icons/fa6";
 import { vscode, isVscode, DEFAULT_BLOCK } from "../../utils";
@@ -21,6 +21,8 @@ import RightGroup from "../icons/right-group";
 import { FaTextSlash } from "react-icons/fa6";
 import { MdCodeOff } from "react-icons/md";
 import { BiSolidShare as ShareBack } from "react-icons/bi";
+import translate, { TitleKey } from "../../langs";
+import translateToLang from "../../langs";
 
 const Edge = LetterIcon("E");
 const Node = LetterIcon("N");
@@ -51,6 +53,7 @@ export default function Menu({ addBlock }: Props) {
     textEditing,
     codeRangeEditingNode,
     historyTop,
+    lang,
   } = useTreeNoteStore(selectMenuState);
 
   const addDetail = useCallback(async () => {
@@ -89,35 +92,49 @@ export default function Menu({ addBlock }: Props) {
     } as Web2Ext.CodeRangeEditStop);
   }, [codeRangeEditingNode]);
 
+  const translate = useMemo(() => {
+    return translateToLang(lang);
+  }, [lang]);
+
   return (
     <Panel className="flex flex-col gap-1 absolute top-1/4 text-lg" position="bottom-right">
-      <FileButton title="Open *.cnote File" resetNote={resetNote} disabled={isVscode} />
+      <FileButton title={translate("openFile")} resetNote={resetNote} disabled={isVscode} />
       <RoundButton
         Icon={textEditing ? FaTextSlash : BiText}
-        title="Edit Note Title"
+        title={translate("editNoteTitle")}
         onClick={textEditing ? stopTextEdit : startTextEdit}
       />
       <RoundButton
         Icon={MdCodeOff}
-        title="Stop Code Range Editing"
+        title={translate("stopCodeRangeEditing")}
         onClick={stopCodeRageEdit}
         disabled={codeRangeEditingNode === ""}
       />
-      <RoundButton Icon={VscDebugConsole} title="Toggle Debug" onClick={toggleDebug} />
-      <RoundButton Icon={FaFileArrowDown} title="Add Next Block" disabled={isVscode} onClick={addNext} />
-      <RoundButton Icon={FaFileImport} title="Add Detail Block" disabled={isVscode} onClick={addDetail} />
-      <RoundButton Icon={AiOutlineGroup} title="Group Codes" disabled={!canGroupNodes} onClick={groupNodes} />
-      <RoundButton Icon={MdOutlineSplitscreen} title="Split Group" disabled={!canSplitGroup} onClick={splitGroup} />
+      <RoundButton Icon={VscDebugConsole} title={translate("toggleDebug")} onClick={toggleDebug} />
+      <RoundButton Icon={FaFileArrowDown} title={translate("addNextBlock")} disabled={isVscode} onClick={addNext} />
+      <RoundButton Icon={FaFileImport} title={translate("addDetailBlock")} disabled={isVscode} onClick={addDetail} />
+      <RoundButton
+        Icon={AiOutlineGroup}
+        title={translate("groupNodes")}
+        disabled={!canGroupNodes}
+        onClick={groupNodes}
+      />
+      <RoundButton
+        Icon={MdOutlineSplitscreen}
+        title={translate("splitGroup")}
+        disabled={!canSplitGroup}
+        onClick={splitGroup}
+      />
       <RoundButton
         Icon={RightGroup}
-        title="Extract Codes To Detail Group"
+        title={translate("extractToDetailGroup")}
         disabled={!canGroupNodesToDetail}
         onClick={groupNodesToDetail}
       />
-      <RoundButton Icon={TfiLayoutGrid3} title="Force Layout" onClick={forceLayout} />
-      <RoundButton Icon={Edge} title="Remove Edge" onClick={deleteEdge} />
-      <RoundButton Icon={Node} title="Remove Node" onClick={deleteNode} />
-      <RoundButton Icon={ShareBack} title="History Jump Back" onClick={historyBack} disabled={!historyTop} />
+      <RoundButton Icon={TfiLayoutGrid3} title={translate("forceLayout")} onClick={forceLayout} />
+      <RoundButton Icon={Edge} title={translate("removeEdge")} onClick={deleteEdge} />
+      <RoundButton Icon={Node} title={translate("removeNode")} onClick={deleteNode} />
+      <RoundButton Icon={ShareBack} title={translate("historyBack")} onClick={historyBack} disabled={!historyTop} />
     </Panel>
   );
 }

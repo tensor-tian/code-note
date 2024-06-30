@@ -1,5 +1,5 @@
 import { getHidden, hasCycle, isCodeNode, isGroupNode, isTextNode, DefaultNodeDimension } from "./layout";
-import {
+import type {
   CodeBlock,
   Edge,
   Ext2Web,
@@ -9,8 +9,8 @@ import {
   TemplateNode,
   TextNode,
   TextNodeType,
-  VscodeRange,
   Web2Ext,
+  Lang,
 } from "types";
 import {
   EdgeChange,
@@ -53,6 +53,7 @@ namespace TreeNote {
     jumpHistory: string[];
     saveMark: number;
     selectSharedNodeFor?: string;
+    lang: Lang;
   }
   export type SetKVFn = <T extends keyof Store>(key: Exclude<T, "nodeMap" | "edges">, val: Store[T]) => void;
 
@@ -97,7 +98,10 @@ const initialData: TreeNote.Store = {
   type: "TreeNote",
   pkgPath: "/pkg/path",
   pkgName: "decorator-sample",
-  text: "## loading...",
+  text: multiLangText({
+    en: "## Loading...",
+    zh: "## 加载中...",
+  }),
   nodeMap: {},
   edges: [],
   activeEdgeId: "", // highlight edge on hover
@@ -118,6 +122,7 @@ const initialData: TreeNote.Store = {
   saveMark: 0,
   renderAsGroupNodes: [],
   groupStepIndexMap: {},
+  lang: "en",
 };
 
 export type { TreeNote };
@@ -169,25 +174,20 @@ export const useTreeNoteStore = create<TreeNote.State>(
           );
           for (const [id, n] of Object.entries(note.nodeMap)) {
             // migrate old version ranges
-            if (isCodeNode(n)) {
-              // @ts-ignore
-              const ranges = n.data.ranges as VscodeRange[][] | string;
-              if (typeof ranges === "string") break;
-              if (ranges[0][0] && !Array.isArray(ranges[0][0])) {
-                n.data.ranges = JSON.stringify(
-                  ranges.map((kind) =>
-                    kind.map((range) => {
-                      const { start, end } = range as VscodeRange;
-                      return [
-                        [start.line, start.character],
-                        [end.line, end.character],
-                      ];
-                    })
-                  )
-                );
-                note.nodeMap[id] = n;
-              }
+            const text = n.data.text;
+            if (!text.includes("<LangEn>")) {
+              n.data.text = multiLangText({
+                en: text,
+                zh: text,
+              });
             }
+            note.nodeMap[id] = n;
+          }
+          if (!note.text.includes("<LangEn>")) {
+            note.text = multiLangText({
+              en: note.text,
+              zh: note.text,
+            });
           }
           set({ ...note, hiddenEdges, hiddenNodes }, "resetNote:1", false);
           const { activeNodeId, nodeMap, edges } = get();
@@ -1158,7 +1158,10 @@ const templateForTextNode = (x: number, y: number, width: number, height: number
   height,
   data: {
     id: TextNodeTemplateID,
-    text: "Add Text Node",
+    text: multiLangText({
+      en: "Add Text Node",
+      zh: "新增 Text 节点",
+    }),
     type: "Template",
   },
 });
@@ -1171,7 +1174,10 @@ const templateForSharedNode = (x: number, y: number, width: number, height: numb
   height,
   data: {
     id: SharedNodeTemplateID,
-    text: "Connect To Shared Node",
+    text: multiLangText({
+      en: "Connect To Shared Node",
+      zh: "连接到开放的节点",
+    }),
     type: "Template",
   },
 });
@@ -1185,7 +1191,10 @@ export function newTextNode(id: string): TextNode {
     data: {
       id,
       type: "Text",
-      text: "MDX text...",
+      text: multiLangText({
+        en: "MDX text...",
+        zh: "MDX 内容...",
+      }),
     },
   };
 }
@@ -1249,7 +1258,10 @@ function newScrolly(id: string, chain: string[]): GroupNode {
     data: {
       id,
       type: "Scrolly",
-      text: "MDX text...",
+      text: multiLangText({
+        en: "MDX text...",
+        zh: "MDX 内容...",
+      }),
       chain,
       groupModeWidth: DefaultNodeDimension.WGroup,
     },
@@ -1399,4 +1411,18 @@ function inNodeBounding(node: Node, pos: XYPosition): boolean {
     node.position.y <= pos.y &&
     node.position.y + node.height! >= pos.y
   );
+}
+
+function multiLangText({ en, zh }: { en: string; zh: string }): string {
+  return `<LangEn>
+
+${en}
+
+</LangEn>
+  
+<LangZh>
+
+${zh}
+
+</LangZh>`;
 }

@@ -19,6 +19,8 @@ export type GroupNode = RFNode<ScrollyCodeBlock>;
 export type TextNode = RFNode<TextBlock>;
 export type TemplateNode = RFNode<TemplateBlock>;
 
+export type Lang = "zh" | "en";
+
 export interface Package {
   name: string; // 包名
   workDir: string; // 本地代码位置

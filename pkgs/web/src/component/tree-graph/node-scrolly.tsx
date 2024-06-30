@@ -57,7 +57,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
       isSelected={isSelected}
       isActive={isActive}
       isRoot={isRoot}
-      className="px-2 py-2 bg-white bg-opacity-0 "
+      className="h-full w-full px-2 py-2 bg-white bg-opacity-0 "
       style={style}
     >
       <NodeMenu data={data} copyMdx={copyMdx} />
