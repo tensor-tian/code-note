@@ -23,6 +23,7 @@ import { MdCodeOff } from "react-icons/md";
 import { BiSolidShare as ShareBack } from "react-icons/bi";
 import translate, { TitleKey } from "../../langs";
 import translateToLang from "../../langs";
+import { MdOutlineFormatListBulleted as SharedList } from "react-icons/md";
 
 const Edge = LetterIcon("E");
 const Node = LetterIcon("N");
@@ -41,6 +42,7 @@ export default function Menu({ addBlock }: Props) {
     resetExtents,
     resetNote,
     historyBack,
+    openSharedList,
   } = useTreeNoteStore();
   const {
     id,
@@ -54,6 +56,7 @@ export default function Menu({ addBlock }: Props) {
     codeRangeEditingNode,
     historyTop,
     lang,
+    canOpenSharedList,
   } = useTreeNoteStore(selectMenuState);
 
   const addDetail = useCallback(async () => {
@@ -135,6 +138,12 @@ export default function Menu({ addBlock }: Props) {
       <RoundButton Icon={Edge} title={translate("removeEdge")} onClick={deleteEdge} />
       <RoundButton Icon={Node} title={translate("removeNode")} onClick={deleteNode} />
       <RoundButton Icon={ShareBack} title={translate("historyBack")} onClick={historyBack} disabled={!historyTop} />
+      <RoundButton
+        Icon={SharedList}
+        title={translate("sharedList")}
+        onClick={openSharedList}
+        disabled={!canOpenSharedList}
+      />
     </Panel>
   );
 }

@@ -35,8 +35,6 @@ export type Block = CodeBlock | ScrollyCodeBlock | TextBlock | TemplateBlock;
 export interface BaseBlock {
   id: string;
   text: string;
-  shared?: boolean;
-  copyOf?: string;
 }
 
 export type Pos = { line: number; character: number };
@@ -81,6 +79,7 @@ export interface Note {
   // `renderAsGroupNodes` and `groupStepIndexes` affect edges
   renderAsGroupNodes: string[];
   groupStepIndexMap: Record<string, number>;
+  sharedList: string[];
 }
 
 export type TextNodeType = Note["type"] | Block["type"];
@@ -189,6 +188,16 @@ namespace Web2Ext {
     };
   };
 
+  export type InsertTextContent = {
+    action: "web2ext-insert-text-content";
+    data: {
+      prefix: string;
+      suffix: string;
+      id: string;
+      type: Note["type"] | Block["type"];
+    };
+  };
+
   export type Message =
     | SaveNote
     | ShowMsg
@@ -197,7 +206,8 @@ namespace Web2Ext {
     | TextEditStop
     | CodeRangeEditStart
     | CodeRangeEditStop
-    | RequestForIDs;
+    | RequestForIDs
+    | InsertTextContent;
 }
 
 export type { Ext2Web, Web2Ext };

@@ -229,6 +229,12 @@ strike:after:hover {
 .preview-container li > ol {
   @apply ps-5;
 }
+
+.preview-container code {
+  font-size: 0.9rem;
+  background: none;
+}
+
 .ch-scrollycoding-step-content {
   @apply px-2;
 }
@@ -246,4 +252,9 @@ strike:after:hover {
 }
 .only-show-lang-zh .lang-en {
   display: none;
+}
+
+.reference code {
+  @apply !py-0;
+  font-size: 12px !important;
 }

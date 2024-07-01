@@ -52,6 +52,10 @@ const langMap = {
     zh: "返回引用节点",
     en: "History Jump Back",
   },
+  sharedList: {
+    zh: "待引用节点列表",
+    en: "Open Shared List",
+  },
 };
 
 export type TitleKey = keyof typeof langMap;

@@ -86,10 +86,10 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   filePath: "src/dispose.ts",
   pkgName: "custom-editor-sample",
   pkgPath: "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
-  text: `##### \`disposeAll\` dispose by hand 5 
-  
-  Emphasis, aka italics, with *asterisks* or _underscores_.
+  text: `#### \`disposeAll\` dispose by hand 5 
+  some text <Reference to="255s">_\`test\`_</Reference> Emphasis, aka italics, with *asterisks* or _underscores_.
 
+  const a = 1 \`const a = 1\` _\`const b = 2\`_
 `,
   ranges: "[[], [], [], []]",
   id: "",

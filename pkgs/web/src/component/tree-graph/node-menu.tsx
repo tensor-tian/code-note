@@ -14,7 +14,6 @@ import { Block, CodeBlock, Web2Ext } from "types";
 import { vscode, vscodeMessage } from "../../utils";
 import { MdCodeOff, MdCode } from "react-icons/md";
 import { BsFillEyeFill as EyeOpen, BsEyeSlash as EyeClosed } from "react-icons/bs";
-import { IoMdShareAlt as ShareForward } from "react-icons/io";
 import { BiSolidShare as ShareBack } from "react-icons/bi";
 
 export type NodeMenuProps = {
@@ -23,25 +22,12 @@ export type NodeMenuProps = {
 };
 
 export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
-  const { id, text, type: typ, copyOf, shared } = data;
-  const {
-    adjustNodeWidth,
-    activateNode,
-    toggleCodeShow,
-    toggleNodeSelection,
-    toggleNodeShare,
-    historyForward,
-    historyBack,
-  } = useTreeNoteStore();
-  const { isSelected, renderAsGroup, codeRangeEditingNode, textEditing, showCode, historyTop } = useTreeNoteStore(
-    selectBlockState(id)
-  );
+  const { id, text, type: typ } = data;
+  const { adjustNodeWidth, activateNode, toggleCodeShow, toggleNodeSelection, toggleNodeShare, historyBack } =
+    useTreeNoteStore();
+  const { isSelected, renderAsGroup, codeRangeEditingNode, textEditing, showCode, historyTop, shared } =
+    useTreeNoteStore(selectBlockState(id));
 
-  const debug = useTreeNoteStore(selectDebug);
-  const ID = useMemo(() => {
-    if (!debug) return;
-    return <pre className=" text-xs border-none rounded-sm px-3 bg-gray-300">{id}</pre>;
-  }, [id, debug]);
   const onActivate = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
       event.stopPropagation();
@@ -88,21 +74,24 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
     [toggleNodeShare, id]
   );
 
-  const forwardElement = useMemo(() => {
-    if (copyOf) {
-      const onClick = (event: React.MouseEvent) => {
-        event.stopPropagation();
-        historyForward(id, copyOf);
-      };
-      return <IconButton Icon={ShareForward} onClick={onClick} className="pr-0 ignore-activate text-gray-900" />;
-    } else if (historyTop === id) {
-      const onClick = (event: React.MouseEvent) => {
-        event.stopPropagation();
-        historyBack();
-      };
-      return <IconButton Icon={ShareBack} onClick={onClick} className="pr-0 ignore-activate text-gray-900" />;
+  const showHistoryBack = historyTop === id;
+  const historyBackElement = useMemo(() => {
+    console.log("show history back:", showHistoryBack);
+    if (!showHistoryBack) {
+      return null;
     }
-  }, [copyOf, historyTop, id, historyForward, historyBack]);
+    const onClick = (event: React.MouseEvent) => {
+      event.stopPropagation();
+      historyBack();
+    };
+    return (
+      <IconButton
+        Icon={ShareBack}
+        onClick={onClick}
+        className={cls("ignore-activate pr-0  text-gray-500  hover:text-gray-900 hover:scale-110 hover:bg-gray-200")}
+      />
+    );
+  }, [showHistoryBack, historyBack]);
 
   const checkboxId = "node-menu-" + id;
   return (
@@ -116,22 +105,24 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
           onClick={toggleShare}
           className={cls(shared && "text-gray-900", "pr-0 ignore-activate")}
         />
-        {forwardElement}
+        {historyBackElement}
       </div>
-      {ID}
+      <pre className=" text-xs border-none rounded-sm px-1 bg-gray-100 text-gray-900 absolute left-1/2 -translate-x-1/2">
+        {id}
+      </pre>
       <div className="flex flex-grow justify-end gap-2">
         {typ === "Scrolly" ? <GroupRenderIcon id={id} renderAsGroup={renderAsGroup} /> : null}
         <IconButton Icon={TbViewportWide} onClick={widen} hide={hideWidthButtons} />
         <IconButton Icon={TbViewportNarrow} onClick={narrow} hide={hideWidthButtons} />
         <BiCopy
-          className="cursor-auto text-gray-500 hover:text-gray-900 hover:scale-110 hover:bg-gray-200"
+          className="cursor-pointer text-gray-500 hover:text-gray-900 hover:scale-110 hover:bg-gray-200"
           onClick={copyMdx}
           size={16}
         />
-        <div className="flex justify-end align-baseline px hover:bg-gray-200 w-[105px]">
+        <div className="flex justify-end align-baseline px hover:bg-gray-200 w-[110px]">
           <label
             htmlFor={checkboxId}
-            className="ignore-activate text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 "
+            className="ignore-activate text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 cursor-pointer "
           >
             {isSelected ? "Deselect Block" : "Select Block"}
           </label>
@@ -160,7 +151,7 @@ function IconButton({ Icon, onClick, children, hide, className }: Props) {
   return (
     <div
       className={cls(
-        "ignore-click flex text-xs hover:text-gray-900  hover:bg-gray-200 cursor-auto text-gray-600 bg-white rounded-sm pr-2 gap-1 hover:scale-110",
+        "ignore-activate flex text-xs hover:text-gray-900  hover:bg-gray-200 cursor-pointer text-gray-600 bg-white rounded-sm pr-2 gap-1 hover:scale-110",
         hide && "hidden",
         className
       )}
@@ -221,7 +212,7 @@ function TextEditIcon({
       <FaTextSlash
         onClick={stopTextEdit}
         size={15}
-        className="text-red hover:scale-110 cursor-auto hover:bg-gray-200"
+        className="text-red hover:scale-110 cursor-pointer hover:bg-gray-200"
       />
     );
   } else {
@@ -229,7 +220,7 @@ function TextEditIcon({
       <BiText
         onClick={startTextEdit}
         size={15}
-        className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-auto hover:bg-gray-200"
+        className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-pointer hover:bg-gray-200"
       />
     );
   }
@@ -270,7 +261,7 @@ function CodeEditIcon({
   if (isCodeRangeEditing) {
     return (
       <MdCodeOff
-        className="cursor-auto hover:scale-110 hover:bg-gray-200 text-red scale-110"
+        className="cursor-pointer hover:scale-110 hover:bg-gray-200 text-red scale-110"
         onClick={onClick}
         size={16}
       />
@@ -278,7 +269,7 @@ function CodeEditIcon({
   } else {
     return (
       <MdCode
-        className="cursor-auto hover:text-gray-900 hover:scale-110 hover:bg-gray-200 text-gray-500"
+        className="cursor-pointer hover:text-gray-900 hover:scale-110 hover:bg-gray-200 text-gray-500"
         onClick={onClick}
         size={16}
       />
