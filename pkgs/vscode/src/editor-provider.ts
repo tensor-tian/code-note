@@ -171,18 +171,22 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         console.log("web to ext:", message);
       }
       switch (message.action) {
-        case "web2ext-show-info":
+        case "web2ext-show-info": {
           vscode.window.showInformationMessage(message.data);
           break;
-        case "web2ext-show-warn":
+        }
+        case "web2ext-show-warn": {
           vscode.window.showWarningMessage(message.data);
           break;
-        case "web2ext-show-error":
+        }
+        case "web2ext-show-error": {
           vscode.window.showErrorMessage(message.data);
           break;
-        case "web2ext-save-note":
+        }
+        case "web2ext-save-note": {
           this.saveTextDocument(document, message.data);
           break;
+        }
         case "web2ext-ask-init-tree-note": {
           let note: Note | undefined;
           const getNote = async () => {
@@ -207,7 +211,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
           });
           break;
         }
-        case "web2ext-text-edit-start":
+        case "web2ext-text-edit-start": {
           try {
             const done = await this.startTextEdit(message.data, webviewKey);
             if (done) {
@@ -221,14 +225,16 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
             console.error("start text editor failed:", err);
           }
           break;
-        case "web2ext-text-edit-stop":
+        }
+        case "web2ext-text-edit-stop": {
           await this.stopTextEdit(message.data);
           webviewPanel.webview.postMessage({
             action: "ext2web-text-edit-done",
             data: message.data,
           } as Ext2Web.TextEditDone);
           break;
-        case "web2ext-code-range-edit-start":
+        }
+        case "web2ext-code-range-edit-start": {
           const getWebviewPanel = () => this.getWebviewPanel(webviewKey);
           await this.highlight.startCodeRangeEdit(
             message.data,
@@ -239,10 +245,12 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
             data: { id: message.data.id },
           } as Ext2Web.CodeRangeEditReady);
           break;
-        case "web2ext-code-range-edit-stop":
+        }
+        case "web2ext-code-range-edit-stop": {
           this.highlight.stopCodeRangeEdit(message.data.id);
           break;
-        case "web2ext-request-for-ids":
+        }
+        case "web2ext-request-for-ids": {
           const { n, key } = message.data;
           const ids: string[] = [];
           for (let i = 0; i < n; i++) {
@@ -253,6 +261,11 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
             data: { ids, key },
           } as Ext2Web.Message);
           break;
+        }
+        case "web2ext-insert-text-content": {
+          this.insertTextContent(message.data);
+          break;
+        }
       }
     };
   private sendCachedTextChangeMsg(
@@ -318,6 +331,40 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       console.error("apply edit error:", err);
     });
   }
+
+  private async insertTextContent({
+    prefix,
+    suffix,
+    id,
+    type: typ,
+  }: Web2Ext.InsertTextContent["data"]) {
+    const uri = this.store.vDocUri(typ, id);
+    const editor = vscode.window.visibleTextEditors.find(
+      (editor) => editor.document.uri.toString() === uri.toString()
+    );
+    if (!editor) {
+      vscode.window.showErrorMessage("The MDX text editor is not open.");
+      return;
+    }
+
+    await vscode.window.showTextDocument(editor.document, {
+      preserveFocus: true,
+      preview: false,
+      viewColumn: editor.viewColumn,
+    });
+    const text = editor.document.getText(editor.selection);
+    const edit = new vscode.WorkspaceEdit();
+    edit.replace(editor.document.uri, editor.selection, prefix + text + suffix);
+    await vscode.workspace.applyEdit(edit).then(
+      () => {},
+      (err) => {
+        console.error("apply edit error:", err);
+      }
+    );
+    const end = editor.selection.end;
+    const pos = new vscode.Position(end.line, end.character + prefix.length);
+    editor.selection = new vscode.Selection(pos, pos);
+  }
   /**
    *   virtual document
    */
@@ -329,9 +376,9 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
     const uri = await this.store.writeVDoc(typ, id, content);
     this.vDocToNoteFileMap.set(uri.path, webviewKey);
     const doc = await vscode.workspace.openTextDocument(uri);
-    const webviewPanel = this.getWebviewPanel(webviewKey);
-    const activeColumn = webviewPanel?.viewColumn || 3;
-    console.log("active column:", activeColumn, vscode.window.activeTextEditor);
+    // const webviewPanel = this.getWebviewPanel(webviewKey);
+    // const activeColumn = webviewPanel?.viewColumn || 3;
+    // console.log("active column:", activeColumn, vscode.window.activeTextEditor);
     await vscode.commands.executeCommand("workbench.action.splitEditorDown");
     await vscode.window.showTextDocument(doc, {
       viewColumn: vscode.ViewColumn.Active,

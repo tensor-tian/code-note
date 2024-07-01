@@ -40,6 +40,7 @@ export const selectBlockState = (id: string) =>
       selectCodeRangeEditingNode,
       selectTextEditing,
       selectHistoryTop,
+      selectSharedList,
     ],
     (
       node,
@@ -50,7 +51,8 @@ export const selectBlockState = (id: string) =>
       renderAsGroupNodes,
       codeRangeEditingNode,
       textEditing,
-      historyTop
+      historyTop,
+      sharedList
     ) => {
       const width = isGroupNode(node)
         ? +(node.style?.width || node.width || DefaultNodeDimension.W)
@@ -65,6 +67,7 @@ export const selectBlockState = (id: string) =>
         codeRangeEditingNode,
         textEditing,
         historyTop,
+        shared: sharedList.includes(id),
       };
     }
   );
@@ -122,16 +125,18 @@ const selectCanSplitGroup = createSelector(
     selectedNodes.length === 1 && isGroupNode(firstSelected) && !renderAsGroupNodes.includes(firstSelected.id)
 );
 
-const selectSharedNodeFor = (state: TreeNote.Store) => state.selectSharedNodeFor;
-export const selectShareNodes = createSelector([selectNodeMap, selectSharedNodeFor], (nodeMap, id) => {
-  if (!id) return { open: false, nodes: [] };
-  return {
-    nodes: Object.values(nodeMap).filter((node) => node.data.shared),
-    open: Boolean(id),
-    source: id,
-    to: nodeMap[id].data.copyOf,
-  };
-});
+const selectSharedListOpen = (state: TreeNote.Store) => state.sharedListOpen;
+const selectSharedList = (state: TreeNote.Store) => state.sharedList;
+export const selectShareNodes = createSelector(
+  [selectNodeMap, selectSharedList, selectSharedListOpen, selectTextEditing],
+  (nodeMap, list, open, textEditing) => {
+    return {
+      nodes: list.map((id) => nodeMap[id]),
+      open,
+      textEditing,
+    };
+  }
+);
 
 export const selectMenuState = createSelector(
   [
@@ -146,6 +151,7 @@ export const selectMenuState = createSelector(
     selectCodeRangeEditingNode,
     selectHistoryTop,
     selectLang,
+    selectSharedList,
   ],
   (
     id,
@@ -158,7 +164,8 @@ export const selectMenuState = createSelector(
     textEditing,
     codeRangeEditingNode,
     historyTop,
-    lang
+    lang,
+    sharedList
   ) => {
     return {
       id,
@@ -172,6 +179,7 @@ export const selectMenuState = createSelector(
       codeRangeEditingNode,
       historyTop,
       lang,
+      canOpenSharedList: sharedList.length > 0,
     };
   }
 );

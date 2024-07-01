@@ -222,5 +222,6 @@ export async function initCodeNote(title: string): Promise<Note | undefined> {
     edges: [],
     renderAsGroupNodes: [],
     groupStepIndexMap: {},
+    sharedList: [],
   };
 }

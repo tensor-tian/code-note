@@ -10,25 +10,48 @@ import { selectShareNodes } from "./tree-graph/selector";
 import Divider from "@mui/material/Divider";
 import { MdOutlineClose } from "react-icons/md";
 import IconButton from "@mui/material/IconButton";
+import { IoMdShareAlt as ShareForward } from "react-icons/io";
+import { Web2Ext } from "types";
+import { vscode } from "../utils";
 
 function Graph() {
   const [graphType, setGraphType] = useState<string>("TreeNote");
   useHideUnimportantErrors();
-  const { setKV, selectShare } = useTreeNoteStore();
-  const { nodes: sharedNodes, open, source, to } = useTreeNoteStore(selectShareNodes);
+  const { setKV } = useTreeNoteStore();
+  const { nodes: sharedNodes, open, textEditing } = useTreeNoteStore(selectShareNodes);
   const onModalClose = useCallback(() => {
-    setKV("selectSharedNodeFor", undefined);
+    setKV("sharedListOpen", false);
   }, [setKV]);
 
-  const onSelect = useCallback(
-    (event: ReactMouseEvent<HTMLDivElement>) => {
-      const elm = event.currentTarget as HTMLDivElement;
-      const to = elm.getAttribute("data-id");
-      if (source && typeof to === "string") {
-        selectShare(source, to);
+  const insertReference = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      let elm = (event.currentTarget || event.target) as HTMLElement;
+      let to: string | null | undefined;
+      while (elm.parentElement) {
+        elm = elm.parentElement;
+        to = elm.getAttribute("data-shared-node-id");
+        if (typeof to === "string") {
+          break;
+        }
+      }
+      console.log("click insert reference btn:", to);
+      const prefix = `<Reference to="${to}">`;
+      const suffix = "</Reference>";
+      navigator.clipboard.writeText(prefix + to + suffix);
+      if (textEditing?.id) {
+        vscode.postMessage({
+          action: "web2ext-insert-text-content",
+          data: { prefix, suffix, ...textEditing },
+        } as Web2Ext.InsertTextContent);
+        setKV("sharedListOpen", false);
+      } else {
+        vscode.postMessage({
+          action: "web2ext-show-warn",
+          data: "No MDX text editor is open.",
+        } as Web2Ext.Message);
       }
     },
-    [selectShare, source]
+    [setKV, textEditing]
   );
   return graphType === "TreeNote" ? (
     <div>
@@ -45,37 +68,25 @@ function Graph() {
               <MdOutlineClose />
             </IconButton>
           </div>
-          <div className="share-list max-h-[80vh] overflow-y-auto mx-3">
-            <div
-              className={cls(
-                "preview-container hover:bg-gray-300 my-4 p-2 transition-all duration-300",
-                to === "" && "!bg-green-300"
-              )}
-              data-id=""
-              onClick={onSelect}
-            >
-              <h4>Unlink to Shared Node</h4>
-            </div>
-            <Divider />
-
-            {sharedNodes.map((node, i) => (
-              <>
-                <Divider />
-                <Box
-                  key={node.id}
-                  id={"shared-item-" + node.id}
-                  className={cls(
-                    "my-4 p-2  hover:bg-gray-300 transition-all duration-300 ",
-                    to === node.id && "!bg-green-300"
-                  )}
-                  data-id={node.id}
-                  onClick={onSelect}
+          {sharedNodes.map((node, i) => (
+            <div key={node.id}>
+              <Divider />
+              <Box
+                id={"shared-item-" + node.id}
+                className={cls("my-4 p-2  hover:bg-gray-300 transition-all duration-300 relative")}
+                data-shared-node-id={node.id}
+              >
+                <IconButton
+                  arial-label="Insert Reference"
+                  onClick={insertReference}
+                  className="absolute top-2 right-2 cursor-pointer"
                 >
-                  <MDX mdx={node.data.text} width={500} id={"shared-" + node.id} />
-                </Box>
-              </>
-            ))}
-          </div>
+                  <ShareForward />
+                </IconButton>
+                <MDX mdx={node.data.text} width={500} id={"shared-" + node.id} />
+              </Box>
+            </div>
+          ))}
         </div>
       </Modal>
     </div>

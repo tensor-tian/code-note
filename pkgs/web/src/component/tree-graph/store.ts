@@ -52,7 +52,7 @@ namespace TreeNote {
     activeNodeId: string;
     jumpHistory: string[];
     saveMark: number;
-    selectSharedNodeFor?: string;
+    sharedListOpen: boolean;
     lang: Lang;
   }
   export type SetKVFn = <T extends keyof Store>(key: Exclude<T, "nodeMap" | "edges">, val: Store[T]) => void;
@@ -88,7 +88,7 @@ namespace TreeNote {
     toggleNodeShare: (id: string) => void;
     historyForward: (from: string, to: string) => void;
     historyBack: () => void;
-    selectShare: (nodeId: string, shareId: string) => void;
+    openSharedList: () => void;
   }
   export type State = Store & Actions;
 }
@@ -123,6 +123,8 @@ const initialData: TreeNote.Store = {
   renderAsGroupNodes: [],
   groupStepIndexMap: {},
   lang: "en",
+  sharedList: [],
+  sharedListOpen: false,
 };
 
 export type { TreeNote };
@@ -310,10 +312,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
           const n = templateForTextNode(x, y, w, h);
           const nextNodeMap = { ...nodeMap, [n.id]: n };
-          if (suffix === "right") {
-            const n2 = templateForSharedNode(x, y + h + 5, w, h);
-            nextNodeMap[n2.id] = n2;
-          }
           set({ nodeMap: nextNodeMap }, "onConnectStart", false);
         },
         onConnectEnd: async (sourceHandle, position) => {
@@ -324,11 +322,9 @@ export const useTreeNoteStore = create<TreeNote.State>(
             return;
           }
           const tmpText = nodeMap[TextNodeTemplateID];
-          const tmpShared = nodeMap[SharedNodeTemplateID];
 
           let nextNodeMap = { ...nodeMap };
           delete nextNodeMap[TextNodeTemplateID];
-          delete nextNodeMap[SharedNodeTemplateID];
 
           if (inNodeBounding(tmpText, position)) {
             // add text node
@@ -349,15 +345,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
             let rootIds: string[];
             ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, renderAsGroupNodes));
             set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, "onConnectEnd:Text", true);
-          } else if (inNodeBounding(tmpShared, position)) {
-            set(
-              {
-                selectSharedNodeFor: source,
-                nodeMap: nextNodeMap,
-              },
-              "onConnectEnd:Shared",
-              false
-            );
           } else {
             set(
               {
@@ -367,27 +354,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
               false
             );
           }
-        },
-        selectShare(nodeId, shareId) {
-          const { nodeMap } = get();
-          const copyOf = !shareId ? undefined : shareId;
-          const node = nodeMap[nodeId];
-          set(
-            {
-              nodeMap: {
-                ...nodeMap,
-                [node.id]: {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    copyOf,
-                  },
-                },
-              },
-            },
-            "selectShare",
-            true
-          );
         },
         onConnect: async (conn) => {
           log("on connect:", conn);
@@ -401,8 +367,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
 
           let nextNodeMap = { ...nodeMap };
           delete nextNodeMap[TextNodeTemplateID];
-          delete nextNodeMap[SharedNodeTemplateID];
-
           let nextEdges = [...edges];
 
           const inEdge = edges.find((e) => e.target === target);
@@ -977,24 +941,19 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
         },
         toggleNodeShare(id) {
-          const { nodeMap } = get();
-          const node = nodeMap[id];
-          const shared = !node.data.shared ? true : undefined;
+          const { sharedList } = get();
+          let nextSharedList: string[];
+          if (sharedList.includes(id)) {
+            nextSharedList = sharedList.filter((_id) => _id !== id);
+          } else {
+            nextSharedList = [...sharedList, id];
+          }
           set(
             {
-              nodeMap: {
-                ...nodeMap,
-                [id]: {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    shared,
-                  },
-                },
-              },
+              sharedList: nextSharedList,
             },
-            "toggleShared",
-            true
+            "toggleNodeShare",
+            false
           );
         },
         historyBack() {
@@ -1022,8 +981,11 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
         },
         historyForward(from, to) {
-          const { jumpHistory } = get();
+          const { jumpHistory, activeNodeId } = get();
           if (jumpHistory.length > 0 && jumpHistory[jumpHistory.length - 1] === to) {
+            if (activeNodeId !== to) {
+              set({ activeNodeId: to }, "historyForward", false);
+            }
             panToActive();
             return;
           }
@@ -1037,6 +999,12 @@ export const useTreeNoteStore = create<TreeNote.State>(
             false
           );
           panToActive();
+        },
+        openSharedList() {
+          const { sharedList, sharedListOpen } = get();
+          if (sharedList.length > 0 && !sharedListOpen) {
+            set({ sharedListOpen: true }, "openSharedList", false);
+          }
         },
       };
     }),
@@ -1078,6 +1046,7 @@ function buildPartialize() {
         edges: state.edges,
         renderAsGroupNodes: state.renderAsGroupNodes,
         groupStepIndexMap: state.groupStepIndexMap,
+        sharedList: state.sharedList,
       };
       return note;
     }
@@ -1121,6 +1090,10 @@ export function newNode(
   activeNode: Node | undefined,
   parent: GroupNode | undefined
 ) {
+  block.text = multiLangText({
+    zh: block.text,
+    en: block.text,
+  });
   let x = 0;
   let y = 0;
   if (activeNode) {
@@ -1148,8 +1121,7 @@ export function newNode(
 }
 
 const TextNodeTemplateID = "text-node-template-id";
-const SharedNodeTemplateID = "shared-node-template-id";
-const KeepNodeIds = new Set([TextNodeTemplateID, SharedNodeTemplateID]);
+const KeepNodeIds = new Set([TextNodeTemplateID]);
 const templateForTextNode = (x: number, y: number, width: number, height: number): TemplateNode => ({
   id: TextNodeTemplateID,
   type: "Template",
@@ -1161,22 +1133,6 @@ const templateForTextNode = (x: number, y: number, width: number, height: number
     text: multiLangText({
       en: "Add Text Node",
       zh: "新增 Text 节点",
-    }),
-    type: "Template",
-  },
-});
-
-const templateForSharedNode = (x: number, y: number, width: number, height: number): TemplateNode => ({
-  id: SharedNodeTemplateID,
-  type: "Template",
-  position: { x, y },
-  width,
-  height,
-  data: {
-    id: SharedNodeTemplateID,
-    text: multiLangText({
-      en: "Connect To Shared Node",
-      zh: "连接到开放的节点",
     }),
     type: "Template",
   },

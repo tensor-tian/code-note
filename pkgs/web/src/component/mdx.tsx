@@ -4,7 +4,7 @@ import * as runtime from "react/jsx-runtime";
 
 import type { CSSProperties, ErrorInfo, FC, PropsWithChildren } from "react";
 import { compile, run } from "@mdx-js/mdx";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { CH } from "@code-hike-local/mdx/components";
 import { ErrorBoundary } from "react-error-boundary";
@@ -14,10 +14,11 @@ import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
-
+import { IoMdShareAlt as ShareForward } from "react-icons/io";
 import cls from "classnames";
 import { useTreeNoteStore } from "./tree-graph/store";
-import { selectLang, selectLangClass } from "./tree-graph/selector";
+import { selectLangClass } from "./tree-graph/selector";
+import { useNodeId } from "reactflow";
 
 async function compileAndRun(input: string) {
   try {
@@ -135,7 +136,7 @@ const InnerPreview: FC<{ input: string; width: number; id: string }> = ({ input,
         id={id}
       >
         {/* <div style={{ opacity: loading ? 1 : 0 }} className="loading-border" /> */}
-        {Component ? <Component components={{ CH, LangZh, LangEn }} /> : null}
+        {Component ? <Component components={{ CH, LangZh, LangEn, Reference }} /> : null}
       </div>
     </>
   );
@@ -159,6 +160,32 @@ function LangZh({ children }: PropsWithChildren<{}>) {
 }
 function LangEn({ children }: PropsWithChildren<{}>) {
   return <div className="lang-en">{children}</div>;
+}
+
+type ReferenceProps = {
+  to: string;
+};
+function Reference({ to, children }: PropsWithChildren<ReferenceProps>) {
+  const { historyForward } = useTreeNoteStore();
+  const id = useNodeId();
+  const onClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+      // console.log("reference to", "id:", id, "to:", to);
+      if (id) {
+        historyForward(id, to);
+      }
+    },
+    [historyForward, id, to]
+  );
+  return (
+    <span className="reference ignore-activate text-xs cursor-pointer  bg-blue-100 p-1 rounded-sm " onClick={onClick}>
+      <span className="mr-0.5">some {children}</span>
+      <sup>
+        <ShareForward className="inline" />
+      </sup>
+    </span>
+  );
 }
 
 export default MDX;
