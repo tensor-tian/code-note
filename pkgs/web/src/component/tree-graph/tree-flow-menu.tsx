@@ -25,7 +25,6 @@ import translateToLang from "../../langs";
 import { MdOutlineFormatListBulleted as SharedList } from "react-icons/md";
 import { ReactComponent as AddCodeIcon } from "../icons/+C.svg";
 import { ReactComponent as AddTextIcon } from "../icons/+T.svg";
-import { Tooltip as TooltipTippy } from "react-tippy";
 import {
   FaLongArrowAltLeft as IconLeft,
   FaLongArrowAltUp as IconTop,
@@ -33,6 +32,8 @@ import {
   FaLongArrowAltDown as IconBottom,
 } from "react-icons/fa";
 import "react-tippy/dist/tippy.css";
+import Popper from "@mui/material/Popper";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
 
 const Edge = LetterIcon("E");
 const Node = LetterIcon("N");
@@ -287,8 +288,10 @@ type AddNodeButtonProps = {
 
 function AddNodeButton({ addNodeInDirection, Icon }: AddNodeButtonProps) {
   const [open, setOpen] = useState(false);
-  const openMenu = useCallback(() => {
-    setOpen(true);
+  const [anchor, setAnchor] = useState<null | HTMLElement>(null);
+  const openMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setAnchor(event.currentTarget as HTMLElement);
+    setOpen((prev) => !prev);
   }, []);
   const closeMenu = useCallback(() => {
     setOpen(false);
@@ -298,33 +301,31 @@ function AddNodeButton({ addNodeInDirection, Icon }: AddNodeButtonProps) {
       const elm = event.currentTarget;
       const dir = elm.getAttribute("data-direction") as DirectionType;
       addNodeInDirection(dir);
+      setOpen(false);
     },
     [addNodeInDirection]
   );
+
   return (
-    // @ts-ignore
-    <TooltipTippy
-      trigger="click"
-      interactive
-      position="left"
-      open={open}
-      arrow
-      onRequestClose={closeMenu}
-      html={
-        <div className="flex bg-white  p-1">
-          {Directions.map((dir, i) => (
-            <RoundButton key={dir} arial-label={dir} onClick={onClickMenu} Icon={Icons[dir]} data-direction={dir} />
-          ))}
-        </div>
-      }
-    >
+    <>
       <RoundButton onClick={openMenu} Icon={Icon} />
-    </TooltipTippy>
+      {open && (
+        <ClickAwayListener onClickAway={closeMenu}>
+          <Popper sx={{ zIndex: 10 }} open={open} anchorEl={anchor} placement="left">
+            <div className="flex bg-white  p-1">
+              {Directions.map((dir, i) => (
+                <RoundButton key={dir} arial-label={dir} Icon={Icons[dir]} data-direction={dir} onClick={onClickMenu} />
+              ))}
+            </div>
+          </Popper>
+        </ClickAwayListener>
+      )}
+    </>
   );
 }
 
 type RoundButtonProps = {
-  onClick: (event: React.MouseEvent<HTMLElement>) => void;
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
   Icon: IconType | React.FunctionComponent;
   disabled?: boolean;
   "arial-label"?: string;
