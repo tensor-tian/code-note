@@ -55,12 +55,20 @@
         "title": "Code Note: Remove Highlight"
       },
       {
-        "command": "vscode-note.add-detail",
-        "title": "Code Note: Add Detail Note"
+        "command": "vscode-note.add-node-left",
+        "title": "Code Note: Add Left Node"
       },
       {
-        "command": "vscode-note.add-next",
-        "title": "Code Note: Add Next Note"
+        "command": "vscode-note.add-node-up",
+        "title": "Code Note: Add Up Node"
+      },
+      {
+        "command": "vscode-note.add-node-right",
+        "title": "Code Note: Add Right Node"
+      },
+      {
+        "command": "vscode-note.add-node-down",
+        "title": "Code Note: Add Down Node"
       }
     ],
     "menus": {
@@ -74,16 +82,24 @@
           "group": "code-note@2"
         },
         {
-          "command": "vscode-note.add-detail",
+          "command": "vscode-note.add-node-left",
           "group": "code-note@3"
         },
         {
-          "command": "vscode-note.add-next",
+          "command": "vscode-note.add-node-up",
           "group": "code-note@4"
         },
         {
-          "command": "vscode-note.remove-all",
+          "command": "vscode-note.add-node-right",
           "group": "code-note@5"
+        },
+        {
+          "command": "vscode-note.add-node-down",
+          "group": "code-note@6"
+        },
+        {
+          "command": "vscode-note.remove-all",
+          "group": "code-note@7"
         }
       ]
     },

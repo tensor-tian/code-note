@@ -5,8 +5,6 @@ import { Ext2Web } from "types";
 import { Highlight } from "./highlight";
 import { Store } from "./store";
 
-// import { ReactPanel } from "./webview";
-
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "vscode-note" is now active!');
 
@@ -38,13 +36,23 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("vscode-note.remove-all", () => {
       highlight.removeAll();
     }),
-    vscode.commands.registerCommand("vscode-note.add-detail", () => {
-      addBlock(editorProvider, highlight, "ext2web-add-detail", store).catch(
+    vscode.commands.registerCommand("vscode-note.add-node-left", () => {
+      addBlock(editorProvider, highlight, "ext2web-add-left", store).catch(
         console.error
       );
     }),
-    vscode.commands.registerCommand("vscode-note.add-next", () => {
-      addBlock(editorProvider, highlight, "ext2web-add-next", store).catch(
+    vscode.commands.registerCommand("vscode-note.add-up", () => {
+      addBlock(editorProvider, highlight, "ext2web-add-top", store).catch(
+        console.error
+      );
+    }),
+    vscode.commands.registerCommand("vscode-note.add-right", () => {
+      addBlock(editorProvider, highlight, "ext2web-add-right", store).catch(
+        console.error
+      );
+    }),
+    vscode.commands.registerCommand("vscode-note.add-down", () => {
+      addBlock(editorProvider, highlight, "ext2web-add-bottom", store).catch(
         console.error
       );
     })
@@ -56,7 +64,7 @@ export function deactivate() {}
 async function addBlock(
   provider: CodeNoteEditorProvider,
   highlight: Highlight,
-  action: Ext2Web.AddCode["action"],
+  action: Ext2Web.AddNode["action"],
   store: Store
 ) {
   const files = store.getOpenedNoteFiles();
@@ -77,7 +85,7 @@ async function addBlock(
 async function submitNote(
   highlight: Highlight,
   webview: vscode.Webview,
-  action: Ext2Web.AddCode["action"]
+  action: Ext2Web.AddNode["action"]
 ) {
   const block = await highlight.createBlock();
   if (!block) return;
@@ -97,7 +105,7 @@ async function submitNote(
     return;
   }
 
-  const msg: Ext2Web.AddCode = {
+  const msg: Ext2Web.AddNode = {
     action,
     data: {
       id: block.id,

@@ -20,6 +20,7 @@ export const selectTextEditing = (state: TreeNote.Store) => state.textEditing;
 export const selectCodeRangeEditingNode = (state: TreeNote.Store) => state.codeRangeEditingNode;
 export const selectShowCodeNodes = (state: TreeNote.Store) => state.showCodeNodes;
 export const selectHistoryTop = (state: TreeNote.Store) => state.jumpHistory[state.jumpHistory.length - 1];
+const selectIsVscode = (state: TreeNote.Store) => state.isVscode;
 
 export const selectNodeInspectorState = (state: TreeNote.Store) => ({
   selectedNodes: state.selectedNodes,
@@ -152,6 +153,7 @@ export const selectMenuState = createSelector(
     selectHistoryTop,
     selectLang,
     selectSharedList,
+    selectIsVscode,
   ],
   (
     id,
@@ -165,7 +167,8 @@ export const selectMenuState = createSelector(
     codeRangeEditingNode,
     historyTop,
     lang,
-    sharedList
+    sharedList,
+    isVscode
   ) => {
     return {
       id,
@@ -180,6 +183,7 @@ export const selectMenuState = createSelector(
       historyTop,
       lang,
       canOpenSharedList: sharedList.length > 0,
+      isVscode,
     };
   }
 );
