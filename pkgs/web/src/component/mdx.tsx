@@ -1,4 +1,4 @@
-// import "@code-hike-local/mdx/dist/index.css";
+import "@code-hike-local/mdx/dist/index.css";
 
 import * as runtime from "react/jsx-runtime";
 

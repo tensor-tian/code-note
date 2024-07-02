@@ -32,6 +32,7 @@ import {
   FaLongArrowAltRight as IconRight,
   FaLongArrowAltDown as IconBottom,
 } from "react-icons/fa";
+import "react-tippy/dist/tippy.css";
 
 const Edge = LetterIcon("E");
 const Node = LetterIcon("N");
@@ -306,8 +307,8 @@ function AddNodeButton({ addNodeInDirection, Icon }: AddNodeButtonProps) {
       trigger="click"
       interactive
       position="left"
-      arrow={true}
       open={open}
+      arrow
       onRequestClose={closeMenu}
       html={
         <div className="flex bg-white  p-1">
