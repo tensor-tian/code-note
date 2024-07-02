@@ -1224,16 +1224,6 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
   }
 });
 
-function allowAddTextNode(source: Node, suffix: string): boolean {
-  if (isGroupNode(source) && suffix === "right") {
-    return false;
-  }
-  if (source.parentId && suffix === "bottom") {
-    return false;
-  }
-  return true;
-}
-
 function updateEdges(edges: Edge[], ...updates: [string, string][]): Edge[] {
   const res: Edge[] = [];
   const updateFns = updates.map(([handle, id]) => createUpdateEdge(handle, id));
