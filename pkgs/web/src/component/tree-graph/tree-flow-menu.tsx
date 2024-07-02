@@ -31,7 +31,6 @@ import {
   FaLongArrowAltRight as IconRight,
   FaLongArrowAltDown as IconBottom,
 } from "react-icons/fa";
-import "react-tippy/dist/tippy.css";
 import Popper from "@mui/material/Popper";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 

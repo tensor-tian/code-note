@@ -258,16 +258,3 @@ strike:after:hover {
   @apply !py-0;
   font-size: 12px !important;
 }
-
-.tippy-tooltip {
-  @apply !bg-white border border-solid border-gray-400 rounded-md;
-  transition: none;
-}
-
-.tippy-tooltip > .enter[x-circle] {
-  @apply !bg-white;
-  transition: none;
-}
-.tippy-popper[x-placement^="left"] [x-arrow] {
-  border-left: 7px solid #cbd5e0 !important;
-}
