@@ -15,7 +15,7 @@ import { Web2Ext } from "types";
 import { vscode } from "../utils";
 
 function Graph() {
-  const [graphType, setGraphType] = useState<string>("TreeNote");
+  const [graphType, _setGraphType] = useState<string>("TreeNote");
   useHideUnimportantErrors();
   const { setKV } = useTreeNoteStore();
   const { nodes: sharedNodes, open, textEditing } = useTreeNoteStore(selectShareNodes);
@@ -79,7 +79,8 @@ function Graph() {
                 <IconButton
                   arial-label="Insert Reference"
                   onClick={insertReference}
-                  className="absolute top-2 right-2 cursor-pointer"
+                  className="!absolute top-2 right-2 cursor-pointer"
+                  size="small"
                 >
                   <ShareForward />
                 </IconButton>

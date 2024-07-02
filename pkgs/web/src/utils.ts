@@ -9,6 +9,8 @@ const log = Debug("vscode-note:utils");
 export const nanoid = customAlphabet("01234567890abcdefghijklmnopqrstuvwxyz", 10);
 
 const mock: WebviewApi<any> = {
+  // @ts-ignore
+  isMock: true,
   postMessage(message: unknown) {
     log("post message to extension:", message);
   },
@@ -20,14 +22,8 @@ const mock: WebviewApi<any> = {
   },
 };
 
-export let isVscode = true;
-
-if (!window.acquireVsCodeApi) {
-  isVscode = false;
-  window.acquireVsCodeApi = () => mock;
-}
-
-export const vscode: WebviewApi<Web2Ext.Message> = acquireVsCodeApi();
+export const vscode: WebviewApi<Web2Ext.Message> = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : mock;
+export const isVscode = !("isMock" in vscode && vscode.isMock);
 
 export const saveNote = debounce((data: any) => {
   log("save note:", data);
@@ -60,7 +56,7 @@ export const vscodeMessage = {
   },
 };
 
-export const DEFAULT_BLOCK: Ext2Web.AddCode["data"] = {
+export const DEFAULT_BLOCK: Ext2Web.AddNode["data"] = {
   type: "Code",
   code: `\`\`\`ts src/dispose.ts lineNums=18:33 focus=22[1:32],23:25,26[1:15],33
 if (this._isDisposed) {

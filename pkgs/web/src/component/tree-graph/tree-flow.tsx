@@ -1,24 +1,10 @@
 import { DefaultNodeDimension, VIEWPORT, isGroupNode } from "./layout";
 import CodeEdge, { useEdge } from "./edge";
 import type { Node, Web2Ext } from "types";
-import ReactFlow, {
-  EdgeTypes,
-  MiniMap,
-  NodeTypes,
-  OnConnectStartParams,
-  ReactFlowInstance,
-  useReactFlow,
-} from "reactflow";
+import ReactFlow, { EdgeTypes, MiniMap, NodeTypes, ReactFlowInstance, useReactFlow } from "reactflow";
 import { selectActiveNodeAndGroup, selectNodes, selectTreeFlowState } from "./selector";
 import { useTreeNoteStore, TreeNote } from "./store";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  MouseEvent as ReactMouseEvent,
-  TouchEvent as ReactTouchEvent,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Code from "./node-code";
 import Text from "./node-text";
@@ -49,17 +35,9 @@ const DEFAULT_EDGE_OPTIONS = {
 
 function TreeFlow() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const {
-    setKV,
-    onNodeChange,
-    addCodeNode,
-    onConnect,
-    onConnectEnd: _onConnectEnd,
-    onConnectStart: _onConnectStart,
-  } = useTreeNoteStore();
+  const { setKV, onNodeChange, onConnect } = useTreeNoteStore();
   const { rootIds, selectedNodes, debug, handshake } = useTreeNoteStore(selectTreeFlowState);
   const nodes = useTreeNoteStore(selectNodes);
-  const [rfInstance, setRFInstance] = useState<ReactFlowInstance>();
 
   // edge operation
   const { edges, onEdgeClick, onEdgeMouseEnter, onEdgeMouseLeave, onEdgeChange } = useEdge();
@@ -91,30 +69,6 @@ function TreeFlow() {
 
   log("<TreeFlow> nodes:", nodes, "edges:", edges);
 
-  const [sourceHandle, setSourceHandle] = useState<string>("");
-  const onConnectStart = useCallback(
-    (_event: ReactMouseEvent | ReactTouchEvent, params: OnConnectStartParams) => {
-      const sourceHandle = params.handleId || "";
-      setSourceHandle(sourceHandle);
-      _onConnectStart(sourceHandle);
-    },
-    [setSourceHandle, _onConnectStart]
-  );
-  const onConnectEnd = useCallback(
-    (event: MouseEvent | TouchEvent) => {
-      if (!rfInstance) return;
-      if ("clientX" in event && "clientY" in event) {
-        const pos = rfInstance.screenToFlowPosition({
-          x: event.clientX,
-          y: event.clientY,
-        });
-        _onConnectEnd(sourceHandle, pos);
-        setSourceHandle("");
-      }
-    },
-    [_onConnectEnd, rfInstance, sourceHandle]
-  );
-
   return (
     <div ref={containerRef} className="top-0 bottom-0 w-full absolute">
       <ReactFlow
@@ -129,19 +83,16 @@ function TreeFlow() {
         onEdgeMouseEnter={onEdgeMouseEnter}
         onEdgeMouseLeave={onEdgeMouseLeave}
         onConnect={onConnect}
-        onConnectStart={onConnectStart}
-        onConnectEnd={onConnectEnd}
         zoomOnScroll={false}
         panOnScroll={true}
         nodesDraggable={true}
         nodesFocusable={false}
         zoomOnDoubleClick={false}
-        onInit={setRFInstance}
       >
         {/* <Controls /> */}
         <MiniMap pannable nodeClassName={nodeClassName} nodeComponent={MiniMapNode} />
         <Title />
-        <Menu addBlock={addCodeNode} />
+        <Menu />
         {debug && <NodeInspector />}
       </ReactFlow>
     </div>

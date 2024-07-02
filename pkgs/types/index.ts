@@ -85,10 +85,14 @@ export interface Note {
 export type TextNodeType = Note["type"] | Block["type"];
 
 namespace Ext2Web {
-  export type AddCodeData = CodeBlock;
-  export type AddCode = {
-    action: "ext2web-add-detail" | "ext2web-add-next";
-    data: AddCodeData;
+  export type AddNodeData = CodeBlock | TextBlock;
+  export type AddNode = {
+    action:
+      | "ext2web-add-right"
+      | "ext2web-add-bottom"
+      | "ext2web-add-left"
+      | "ext2web-add-top";
+    data: AddNodeData;
   };
   export type InitTreeNote = {
     action: "ext2web-init-tree-note";
@@ -130,7 +134,7 @@ namespace Ext2Web {
     };
   };
   export type Message =
-    | AddCode
+    | AddNode
     | InitTreeNote
     | TextChange
     | TextEditReady

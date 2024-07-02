@@ -1,27 +1,6 @@
 import { getHidden, hasCycle, isCodeNode, isGroupNode, isTextNode, DefaultNodeDimension } from "./layout";
-import type {
-  CodeBlock,
-  Edge,
-  Ext2Web,
-  GroupNode,
-  Node,
-  Note,
-  TemplateNode,
-  TextNode,
-  TextNodeType,
-  Web2Ext,
-  Lang,
-} from "types";
-import {
-  EdgeChange,
-  NodeChange,
-  OnConnect,
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-  Connection,
-  XYPosition,
-} from "reactflow";
+import type { CodeBlock, Edge, Ext2Web, GroupNode, Node, Note, TextNode, TextNodeType, Web2Ext, Lang } from "types";
+import { EdgeChange, NodeChange, OnConnect, addEdge, applyEdgeChanges, applyNodeChanges, Connection } from "reactflow";
 import { devtools, persist } from "zustand/middleware";
 import { isVscode, saveNote, vscode, vscodeMessage } from "../../utils";
 import Debug from "debug";
@@ -54,6 +33,7 @@ namespace TreeNote {
     saveMark: number;
     sharedListOpen: boolean;
     lang: Lang;
+    isVscode: boolean;
   }
   export type SetKVFn = <T extends keyof Store>(key: Exclude<T, "nodeMap" | "edges">, val: Store[T]) => void;
 
@@ -65,9 +45,7 @@ namespace TreeNote {
     onNodeChange: (changes: NodeChange[]) => void;
     onEdgeChange: (changes: EdgeChange[]) => void;
     onConnect: OnConnect;
-    onConnectStart: (sourceHandle: string) => void;
-    onConnectEnd: (sourceHandle: string, position: XYPosition) => void;
-    addCodeNode: (msg: Ext2Web.AddCode) => void;
+    addNode: (msg: Ext2Web.AddNode) => void;
     updateNodeText: (id: string, text: string) => void;
     updateNodeCodeRange: (data: Ext2Web.CodeRangeChange["data"]) => void;
     stopNodeCodeRangeEditing: () => void;
@@ -125,6 +103,7 @@ const initialData: TreeNote.Store = {
   lang: "en",
   sharedList: [],
   sharedListOpen: false,
+  isVscode,
 };
 
 export type { TreeNote };
@@ -288,73 +267,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
           set({ edges: applyEdgeChanges(changes, edges) }, "onEdgeChange", save);
         },
 
-        onConnectStart: async (sourceHandle) => {
-          const [nodeId, suffix] = sourceHandle.split("-");
-          const { nodeMap } = get();
-          const srcNode = nodeMap[nodeId];
-          if (!allowAddTextNode(srcNode, suffix)) {
-            return;
-          }
-          const parent = nodeMap[srcNode.parentId || ""];
-          const w = 120;
-          const h = 50;
-          let x: number, y: number;
-          if (suffix === "right") {
-            x = srcNode.position.x + srcNode.width! + 10;
-            y = srcNode.position.y + srcNode.height! / 2 - h - 50;
-          } else {
-            x = srcNode.position.x + srcNode.width! / 2 + 30;
-            y = srcNode.position.y + srcNode.height! + 10;
-          }
-          if (parent) {
-            x += parent.position.x;
-            y += parent.position.y;
-          }
-          const n = templateForTextNode(x, y, w, h);
-          const nextNodeMap = { ...nodeMap, [n.id]: n };
-          set({ nodeMap: nextNodeMap }, "onConnectStart", false);
-        },
-        onConnectEnd: async (sourceHandle, position) => {
-          const { nodeMap, edges, renderAsGroupNodes } = get();
-          const [source, sourceSuffix] = sourceHandle.split("-");
-          const srcNode = nodeMap[source];
-          if (!allowAddTextNode(srcNode, sourceSuffix)) {
-            return;
-          }
-          const tmpText = nodeMap[TextNodeTemplateID];
-
-          let nextNodeMap = { ...nodeMap };
-          delete nextNodeMap[TextNodeTemplateID];
-
-          if (inNodeBounding(tmpText, position)) {
-            // add text node
-            let nextEdges = [...edges];
-            const ids = await iDGenerator.requestIDs(2);
-            const textNode = newTextNode(ids[0]);
-            console.log("source handel:", sourceHandle);
-            nextNodeMap[textNode.id] = textNode;
-            nextEdges = updateEdges(nextEdges, [sourceHandle, textNode.id]);
-            const conn = {
-              source,
-              sourceHandle,
-              target: textNode.id,
-              targetHandle: `${textNode.id}-${sourceSuffix === "right" ? "left" : "top"}`,
-            };
-            // nextEdges = (newEdgeFromConn(conn, ids[1]), nextEdges);
-            nextEdges.push(newEdgeFromConn(conn, ids[1]));
-            let rootIds: string[];
-            ({ rootIds, nodeMap: nextNodeMap } = layout(nextNodeMap, nextEdges, renderAsGroupNodes));
-            set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds }, "onConnectEnd:Text", true);
-          } else {
-            set(
-              {
-                nodeMap: nextNodeMap,
-              },
-              "onConnectEnd",
-              false
-            );
-          }
-        },
         onConnect: async (conn) => {
           log("on connect:", conn);
           const { source, target, sourceHandle, targetHandle } = conn;
@@ -366,7 +278,6 @@ export const useTreeNoteStore = create<TreeNote.State>(
           if (!isX && !isY) return;
 
           let nextNodeMap = { ...nodeMap };
-          delete nextNodeMap[TextNodeTemplateID];
           let nextEdges = [...edges];
 
           const inEdge = edges.find((e) => e.target === target);
@@ -392,7 +303,8 @@ export const useTreeNoteStore = create<TreeNote.State>(
           set({ nodeMap: nextNodeMap, edges: nextEdges, rootIds: nextRootIds }, "onConnect", true);
         },
 
-        addCodeNode: async ({ action, data }) => {
+        addNode: async ({ action, data }) => {
+          console.log("add code node:", action, data);
           const { nodeMap, edges, activeNodeId, renderAsGroupNodes } = get();
           const nodes = Object.values(nodeMap);
           log("add code node:", activeNodeId, nodes.length);
@@ -408,10 +320,27 @@ export const useTreeNoteStore = create<TreeNote.State>(
               );
               return;
             }
-            if (action === "ext2web-add-detail") {
-              vscodeMessage.error("Adding a detail code node connecting to an active group node is not allowed.");
+            if (action === "ext2web-add-right" || action === "ext2web-add-left") {
+              vscodeMessage.error("Adding a code node horizontal connecting to an active group node is not allowed.");
               return;
             }
+          }
+          if (action === "ext2web-add-top") {
+            const hasLeftEdge = edges.find((e) => e.targetHandle === activeNodeId + "-left");
+            if (hasLeftEdge) {
+              vscodeMessage.error("Ensure there is only one incoming edge connecting to a node.");
+              return;
+            }
+          } else if (action === "ext2web-add-left") {
+            const hasTopIn = edges.find((e) => e.targetHandle === activeNodeId + "-top");
+            if (hasTopIn) {
+              vscodeMessage.error("Ensure there is only one incoming edge connecting to a node.");
+              return;
+            }
+          }
+          if (activeNode?.parentId && action.endsWith("-left")) {
+            vscodeMessage.error("Add a left incoming edge connecting to an group child node is not allowed.");
+            return;
           }
 
           const parent = nodeMap[activeNode?.parentId || ""] as GroupNode | undefined;
@@ -426,43 +355,26 @@ export const useTreeNoteStore = create<TreeNote.State>(
           }
 
           if (parent) {
-            const chain = parent.data.chain;
-            if (action === "ext2web-add-next") {
+            if (action === "ext2web-add-bottom" || action === "ext2web-add-top") {
+              const chain = parent.data.chain;
               node.parentId = parent.id;
               node.extent = "parent";
-              const pos = chain.findIndex((_id) => _id === activeNode.id);
-              chain.splice(pos + 1, 0, node.id);
-              nextNodeMap[parent.id] = { ...parent, data: { ...parent.data, chain: [...chain] } };
+
+              const index = chain.findIndex((_id) => _id === activeNode.id);
+              const pos = action === "ext2web-add-bottom" ? index + 1 : index;
+              const nextChain = chain.slice(0, pos);
+              nextChain.push(node.id, ...chain.slice(pos));
+
+              nextNodeMap[parent.id] = { ...parent, data: { ...parent.data, chain: nextChain } };
             }
           }
           const ids = await iDGenerator.requestIDs(2);
-          const nextEdges = [...edges, newEdge(ids[0], activeNodeId, node.id, action)];
+
           // add edges
-          if (action === "ext2web-add-detail") {
-            const iR = edges.findIndex(({ sourceHandle }) => sourceHandle === `${activeNodeId}-right`);
-            if (iR !== -1) {
-              nextEdges[iR] = newEdge(ids[1], node.id, nextEdges[iR].target, action);
-            }
-          } else if (action === "ext2web-add-next") {
-            const iB = edges.findIndex(({ sourceHandle }) => sourceHandle === `${activeNodeId}-bottom`);
-            if (iB !== -1) {
-              nextEdges[iB] = newEdge(ids[1], node.id, nextEdges[iB].target, action);
-            }
-            if (activeNode.parentId) {
-              const group = nextNodeMap[activeNode.parentId] as GroupNode;
-              const chain = group.data.chain;
-              if (chain.length - 1 === chain.indexOf(activeNodeId)) {
-                // the active note is the last of group chain node
-                nextNodeMap[group.id] = {
-                  ...group,
-                  data: {
-                    ...group.data,
-                    chain: [...chain, node.id],
-                  },
-                };
-              }
-            }
-          }
+          let nextEdges = [...edges];
+          const direction = action.substring("ext2web-add-".length) as DirectionType;
+          nextEdges = updateEdges(nextEdges, [`${activeNodeId}-${direction}`, node.id]);
+          nextEdges.push(newEdge(ids[0], activeNodeId, node.id, action));
           let nextRootIds: string[];
           ({ nodeMap: nextNodeMap, rootIds: nextRootIds } = layout(nextNodeMap, nextEdges, renderAsGroupNodes));
           set(
@@ -619,7 +531,7 @@ export const useTreeNoteStore = create<TreeNote.State>(
               extent: "parent",
             };
           });
-          nextEdges.push(newEdge(ids[1], firstNode.id, group.id, "ext2web-add-detail"));
+          nextEdges.push(newEdge(ids[1], firstNode.id, group.id, "ext2web-add-right"));
 
           ({ nodeMap: nextNodeMap, rootIds } = layout(nextNodeMap, nextEdges, renderAsGroupNodes));
           set(
@@ -832,7 +744,9 @@ export const useTreeNoteStore = create<TreeNote.State>(
           // remove edges connect to the node
           const nextEdges = edges.filter((e) => e.id !== inEdge?.id && e.id !== outEdge?.id);
           // connect two siblings around node
-          const action = (inEdge || outEdge)?.targetHandle?.endsWith("top") ? "ext2web-add-next" : "ext2web-add-detail";
+          const action = (inEdge || outEdge)?.targetHandle?.endsWith("top")
+            ? "ext2web-add-bottom"
+            : "ext2web-add-right";
           if (inEdge && outEdge) {
             const ids = await iDGenerator.requestIDs(1);
             nextEdges.push(newEdge(ids[0], inEdge.source, outEdge.target, action));
@@ -1054,20 +968,21 @@ function buildPartialize() {
   };
 }
 
-export function newEdge(
-  id: string,
-  source: string,
-  target: string,
-  action: "ext2web-add-detail" | "ext2web-add-next"
-): Edge {
+export function newEdge(id: string, source: string, target: string, action: Ext2Web.AddNode["action"]): Edge {
+  if (action === "ext2web-add-left" || action === "ext2web-add-top") {
+    const tmp = source;
+    source = target;
+    target = tmp;
+  }
+  const isVertical = action === "ext2web-add-left" || action === "ext2web-add-right";
   return {
     id,
     type: "CodeEdge",
     source,
     target,
     animated: true,
-    sourceHandle: action === "ext2web-add-detail" ? `${source}-right` : `${source}-bottom`,
-    targetHandle: action === "ext2web-add-detail" ? `${target}-left` : `${target}-top`,
+    sourceHandle: isVertical ? `${source}-right` : `${source}-bottom`,
+    targetHandle: isVertical ? `${target}-left` : `${target}-top`,
     data: { id },
   };
 }
@@ -1086,7 +1001,7 @@ export function newEdgeFromConn(conn: Connection, id: string): Edge {
 }
 
 export function newNode(
-  { action, data: block }: Ext2Web.AddCode,
+  { action, data: block }: Ext2Web.AddNode,
   activeNode: Node | undefined,
   parent: GroupNode | undefined
 ) {
@@ -1102,41 +1017,39 @@ export function newNode(
       x += parent.position.x;
       y += parent.position.y;
     }
-    if (action === "ext2web-add-detail") {
-      x += (activeNode.width || DefaultNodeDimension.W) + DefaultNodeDimension.X;
-    } else if (action === "ext2web-add-next") {
-      y = (activeNode.height || DefaultNodeDimension.H) + DefaultNodeDimension.Y;
+    switch (action) {
+      case "ext2web-add-right": {
+        x += (activeNode.width || DefaultNodeDimension.W) + DefaultNodeDimension.X;
+        break;
+      }
+      case "ext2web-add-bottom": {
+        y += (activeNode.height || DefaultNodeDimension.H) + DefaultNodeDimension.Y;
+        break;
+      }
+      case "ext2web-add-left": {
+        x -= (activeNode.width || DefaultNodeDimension.W) + DefaultNodeDimension.X;
+        break;
+      }
+      case "ext2web-add-top": {
+        y -= (activeNode.height || DefaultNodeDimension.H) + DefaultNodeDimension.Y;
+        break;
+      }
     }
   }
+  const h = block.type === "Code" ? { height: DefaultNodeDimension.H } : {};
   const node: Node = {
     id: block.id,
     type: block.type,
     position: { x, y },
     data: block,
     width: DefaultNodeDimension.W,
-    height: DefaultNodeDimension.H,
+    ...h,
     deletable: false,
   };
   return node;
 }
 
-const TextNodeTemplateID = "text-node-template-id";
-const KeepNodeIds = new Set([TextNodeTemplateID]);
-const templateForTextNode = (x: number, y: number, width: number, height: number): TemplateNode => ({
-  id: TextNodeTemplateID,
-  type: "Template",
-  position: { x, y },
-  width,
-  height,
-  data: {
-    id: TextNodeTemplateID,
-    text: multiLangText({
-      en: "Add Text Node",
-      zh: "新增 Text 节点",
-    }),
-    type: "Template",
-  },
-});
+const KeepNodeIds = new Set<string>([]);
 
 export function newTextNode(id: string): TextNode {
   return {
@@ -1202,7 +1115,6 @@ export function getNextChain(selections: string[], edges: Edge[]): string[] | un
     log("stop grouping: more than one chain");
     return;
   }
-
   return chain;
 }
 
@@ -1264,7 +1176,7 @@ class IDGenerator {
 export const iDGenerator = new IDGenerator();
 
 window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
-  const { setKV, resetNote, addCodeNode, updateNodeText, updateNodeCodeRange, stopNodeCodeRangeEditing, textEditDone } =
+  const { setKV, resetNote, addNode, updateNodeText, updateNodeCodeRange, stopNodeCodeRangeEditing, textEditDone } =
     useTreeNoteStore.getState();
   const { action, data } = event.data;
   if (!action?.startsWith("ext2web")) return;
@@ -1292,9 +1204,11 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
     case "ext2web-text-edit-done":
       textEditDone(data.id, data.type);
       break;
-    case "ext2web-add-detail":
-    case "ext2web-add-next":
-      addCodeNode(event.data);
+    case "ext2web-add-right":
+    case "ext2web-add-left":
+    case "ext2web-add-top":
+    case "ext2web-add-bottom":
+      addNode(event.data);
       break;
     case "ext2web-code-range-edit-ready":
       setKV("codeRangeEditingNode", data.id);
@@ -1309,16 +1223,6 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       iDGenerator.receiveIDs(data.key, data.ids);
   }
 });
-
-function allowAddTextNode(source: Node, suffix: string): boolean {
-  if (isGroupNode(source) && suffix === "right") {
-    return false;
-  }
-  if (source.parentId && suffix === "bottom") {
-    return false;
-  }
-  return true;
-}
 
 function updateEdges(edges: Edge[], ...updates: [string, string][]): Edge[] {
   const res: Edge[] = [];
@@ -1360,16 +1264,10 @@ function createUpdateEdge(oldHandle: string, newId: string) {
   };
 }
 
-function inNodeBounding(node: Node, pos: XYPosition): boolean {
-  return (
-    node.position.x <= pos.x &&
-    node.position.x + node.width! >= pos.x &&
-    node.position.y <= pos.y &&
-    node.position.y + node.height! >= pos.y
-  );
-}
-
-function multiLangText({ en, zh }: { en: string; zh: string }): string {
+export function multiLangText({ en, zh }: { en: string; zh: string }): string {
+  if (en.includes("<LangEn>")) {
+    return en;
+  }
   return `<LangEn>
 
 ${en}
@@ -1382,3 +1280,5 @@ ${zh}
 
 </LangZh>`;
 }
+export type DirectionType = "top" | "right" | "left" | "bottom";
+export const Directions = ["left", "top", "bottom", "right"] as const;

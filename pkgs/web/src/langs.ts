@@ -56,6 +56,14 @@ const langMap = {
     zh: "待引用节点列表",
     en: "Open Shared List",
   },
+  addCodeNode: {
+    zh: "添加 Code 节点",
+    en: "Add Code Block",
+  },
+  addTextNode: {
+    zh: "添加 Text 节点",
+    en: "Add Text Block",
+  },
 };
 
 export type TitleKey = keyof typeof langMap;
