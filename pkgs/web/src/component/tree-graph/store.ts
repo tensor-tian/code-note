@@ -1265,6 +1265,9 @@ function createUpdateEdge(oldHandle: string, newId: string) {
 }
 
 export function multiLangText({ en, zh }: { en: string; zh: string }): string {
+  if (en.includes("<LangEn>")) {
+    return en;
+  }
   return `<LangEn>
 
 ${en}
