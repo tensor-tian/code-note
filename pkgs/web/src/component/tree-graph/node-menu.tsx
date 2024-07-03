@@ -15,6 +15,7 @@ import { vscode, vscodeMessage } from "../../utils";
 import { MdCodeOff, MdCode } from "react-icons/md";
 import { BsFillEyeFill as EyeOpen, BsEyeSlash as EyeClosed } from "react-icons/bs";
 import { BiSolidShare as ShareBack } from "react-icons/bi";
+import Checkbox from "@mui/material/Checkbox";
 
 export type NodeMenuProps = {
   data: Block;
@@ -95,43 +96,38 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
 
   const checkboxId = "node-menu-" + id;
   return (
-    <div className="flex align-baseline text-gray-600 font-medium text-xs" onClick={onActivate}>
-      <div className="flex flex-grow justify-start gap-2">
+    <div className="flex align-baseline text-gray-600 font-medium text-xs " onClick={onActivate}>
+      <div className="flex flex-grow justify-start gap-1">
         {codeShowElement}
         <TextEditIcon id={id} type={typ} text={text} textEditing={textEditing} />
         {typ === "Code" ? <CodeEditIcon data={data} codeRangeEditingNode={codeRangeEditingNode} /> : null}
+
         <IconButton
           Icon={shared ? EyeOpen : EyeClosed}
           onClick={toggleShare}
-          className={cls(shared && "text-gray-900", "pr-0 ignore-activate")}
+          className={cls(shared && "text-gray-900 dark:text-gray-100", "ignore-activate")}
         />
         {historyBackElement}
       </div>
-      <pre className=" text-xs border-none rounded-sm px-1 bg-gray-100 text-gray-900 absolute left-1/2 -translate-x-1/2">
+      <pre className="text-xs border-none rounded-sm px-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-300 absolute left-1/2 -translate-x-1/2">
         {id}
       </pre>
-      <div className="flex flex-grow justify-end gap-2">
+      <div className="flex flex-grow justify-end gap-2 ">
         {typ === "Scrolly" ? <GroupRenderIcon id={id} renderAsGroup={renderAsGroup} /> : null}
         <IconButton Icon={TbViewportWide} onClick={widen} hide={hideWidthButtons} />
         <IconButton Icon={TbViewportNarrow} onClick={narrow} hide={hideWidthButtons} />
-        <BiCopy
-          className="cursor-pointer text-gray-500 hover:text-gray-900 hover:scale-110 hover:bg-gray-200"
-          onClick={copyMdx}
-          size={16}
-        />
-        <div className="flex justify-end align-baseline px hover:bg-gray-200 w-[110px]">
-          <label
-            htmlFor={checkboxId}
-            className="ignore-activate text-gray-600 hover:text-gray-900 font-medium text-xs mr-2 cursor-pointer "
-          >
+        <IconButton Icon={BiCopy} onClick={copyMdx} />
+        <div className="flex justify-end align-baseline  w-[115px] cn-btn text-xs ignore-activate ">
+          <label htmlFor={checkboxId} className="ignore-activate font-medium mr-2">
             {isSelected ? "Deselect Block" : "Select Block"}
           </label>
-          <input
+          <Checkbox
             id={checkboxId}
-            className="ignore-activate"
-            type="checkbox"
-            checked={isSelected}
+            inputProps={{ "aria-label": "Block Selection" }}
             onChange={toggleSelection}
+            checked={isSelected}
+            size="small"
+            className="w-[10px] h-[10px]"
           />
         </div>
       </div>
@@ -150,15 +146,11 @@ type Props = {
 function IconButton({ Icon, onClick, children, hide, className }: Props) {
   return (
     <div
-      className={cls(
-        "ignore-activate flex text-xs hover:text-gray-900  hover:bg-gray-200 cursor-pointer text-gray-600 bg-white rounded-sm pr-2 gap-1 hover:scale-110",
-        hide && "hidden",
-        className
-      )}
+      className={cls("ignore-activate cn-btn flex text-xs px-1 rounded-sm  gap-1 cn-btn", hide && "hidden", className)}
       onClick={onClick}
     >
       <Icon size={16} />
-      <span>{children}</span>
+      {children && <span>{children}</span>}
     </div>
   );
 }
@@ -208,21 +200,9 @@ function TextEditIcon({
     } as Web2Ext.TextEditStop);
   }, [id, typ]);
   if (isTextEditing) {
-    return (
-      <FaTextSlash
-        onClick={stopTextEdit}
-        size={15}
-        className="text-red hover:scale-110 cursor-pointer hover:bg-gray-200"
-      />
-    );
+    return <FaTextSlash onClick={stopTextEdit} size={15} className="cn-btn text-red" />;
   } else {
-    return (
-      <BiText
-        onClick={startTextEdit}
-        size={15}
-        className="text-gray-500 hover:text-gray-900 hover:scale-110 cursor-pointer hover:bg-gray-200"
-      />
-    );
+    return <BiText onClick={startTextEdit} size={15} className="cn-btn" />;
   }
 }
 
@@ -259,20 +239,8 @@ function CodeEditIcon({
     }
   }, [filePath, id, isCodeRangeEditing, pkgPath, ranges, typ, available]);
   if (isCodeRangeEditing) {
-    return (
-      <MdCodeOff
-        className="cursor-pointer hover:scale-110 hover:bg-gray-200 text-red scale-110"
-        onClick={onClick}
-        size={16}
-      />
-    );
+    return <MdCodeOff className="cn-btn" onClick={onClick} size={16} />;
   } else {
-    return (
-      <MdCode
-        className="cursor-pointer hover:text-gray-900 hover:scale-110 hover:bg-gray-200 text-gray-500"
-        onClick={onClick}
-        size={16}
-      />
-    );
+    return <MdCode className="cn-btn" onClick={onClick} size={16} />;
   }
 }

@@ -1,7 +1,7 @@
 import { DefaultNodeDimension, VIEWPORT, isGroupNode } from "./layout";
 import CodeEdge, { useEdge } from "./edge";
-import type { Node, Web2Ext } from "types";
-import ReactFlow, { EdgeTypes, MiniMap, NodeTypes, ReactFlowInstance, useReactFlow } from "reactflow";
+import type { Node } from "types";
+import ReactFlow, { EdgeTypes, MiniMap, NodeTypes, useReactFlow } from "reactflow";
 import { selectActiveNodeAndGroup, selectNodes, selectTreeFlowState } from "./selector";
 import { useTreeNoteStore, TreeNote } from "./store";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,9 +14,9 @@ import Title from "./tree-flow-header";
 import MiniMapNode from "./minimap-node";
 import NodeInspector from "./node-inspector";
 import { useNavKeys } from "./use-nav-keys";
-import { vscode } from "../../utils";
 import Menu from "./tree-flow-menu";
 import Debug from "debug";
+import Setting, { SettingProps } from "./tree-flow-setting";
 
 const log = Debug("vscode-note:tree-flow");
 const NODE_TYPES: NodeTypes = {
@@ -33,10 +33,12 @@ const DEFAULT_EDGE_OPTIONS = {
   deletable: false,
 };
 
-function TreeFlow() {
+type TreeFlowProps = SettingProps;
+
+function TreeFlow({ themeMode, setThemeMode, mode }: TreeFlowProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { setKV, onNodeChange, onConnect } = useTreeNoteStore();
-  const { rootIds, selectedNodes, debug, handshake } = useTreeNoteStore(selectTreeFlowState);
+  const { rootIds, selectedNodes, debug } = useTreeNoteStore(selectTreeFlowState);
   const nodes = useTreeNoteStore(selectNodes);
 
   // edge operation
@@ -46,9 +48,6 @@ function TreeFlow() {
   useNavKeys(edges);
   // auto focus node by reset viewport
   usePanToActiveNode(containerRef, setKV, nodes.length);
-  // get init note from extension
-  useInitNote(handshake, setKV);
-
   // minimap
   const nodeClassName = useCallback(
     (node: Node) => {
@@ -70,7 +69,7 @@ function TreeFlow() {
   log("<TreeFlow> nodes:", nodes, "edges:", edges);
 
   return (
-    <div ref={containerRef} className="top-0 bottom-0 w-full absolute">
+    <div ref={containerRef} className="top-0 bottom-0 w-full absolute ">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -88,11 +87,12 @@ function TreeFlow() {
         nodesDraggable={true}
         nodesFocusable={false}
         zoomOnDoubleClick={false}
+        className="cn-bg"
       >
-        {/* <Controls /> */}
-        <MiniMap pannable nodeClassName={nodeClassName} nodeComponent={MiniMapNode} />
+        <MiniMap pannable nodeClassName={nodeClassName} nodeComponent={MiniMapNode} className="cn-bg" />
         <Title />
         <Menu />
+        <Setting setThemeMode={setThemeMode} themeMode={themeMode} mode={mode} />
         {debug && <NodeInspector />}
       </ReactFlow>
     </div>
@@ -149,13 +149,4 @@ function usePanToActiveNode(ref: React.RefObject<HTMLDivElement>, setKV: TreeNot
   useEffect(() => {
     setMark(activeMark);
   }, [activeMark]);
-}
-
-function useInitNote(handshake: boolean, setKV: TreeNote.SetKVFn) {
-  useEffect(() => {
-    if (!handshake) {
-      vscode.postMessage({ action: "web2ext-ask-init-tree-note", data: "" } as Web2Ext.AskInitTreeNote);
-      setKV("handshake", true);
-    }
-  }, [handshake, setKV]);
 }

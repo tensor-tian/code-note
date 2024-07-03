@@ -83,6 +83,7 @@ export interface Note {
 }
 
 export type TextNodeType = Note["type"] | Block["type"];
+export type ThemeMode = "light" | "dark" | "system";
 
 namespace Ext2Web {
   export type AddNodeData = CodeBlock | TextBlock;
@@ -97,6 +98,10 @@ namespace Ext2Web {
   export type InitTreeNote = {
     action: "ext2web-init-tree-note";
     data: Note;
+  };
+  export type AskThemMode = {
+    action: "ext2web-ask-theme-mode";
+    data: ThemeMode;
   };
   export type TextChange = {
     action: "ext2web-text-change";
@@ -142,7 +147,8 @@ namespace Ext2Web {
     | CodeRangeEditReady
     | CodeRangeChange
     | CodeRangeEditDone
-    | ResponseForIDs;
+    | ResponseForIDs
+    | AskThemMode;
 }
 
 namespace Web2Ext {
@@ -158,6 +164,16 @@ namespace Web2Ext {
   export type AskInitTreeNote = {
     action: "web2ext-ask-init-tree-note";
     data: "";
+  };
+
+  export type AskThemeMode = {
+    action: "web2ext-ask-theme-mode";
+    data: "";
+  };
+
+  export type SetThemeMode = {
+    action: "web2ext-set-theme-mode";
+    data: ThemeMode;
   };
 
   export type TextEditStart = {
@@ -211,7 +227,9 @@ namespace Web2Ext {
     | CodeRangeEditStart
     | CodeRangeEditStop
     | RequestForIDs
-    | InsertTextContent;
+    | InsertTextContent
+    | AskThemeMode
+    | SetThemeMode;
 }
 
 export type { Ext2Web, Web2Ext };
