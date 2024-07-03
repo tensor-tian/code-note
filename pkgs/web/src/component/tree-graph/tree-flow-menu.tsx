@@ -33,6 +33,7 @@ import {
 } from "react-icons/fa";
 import Popper from "@mui/material/Popper";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
+import { useThemeMode } from "../context";
 
 const Edge = LetterIcon("E");
 const Node = LetterIcon("N");
@@ -129,10 +130,10 @@ export default function Menu({ className }: HTMLAttributes<HTMLDivElement>) {
   return (
     <Panel
       className={cls(
-        "flex flex-col gap-1 absolute !top-1/4 !bottom-1/4 !right-0 text-lg border border-solid border-gray-300 rounded-sm p-2",
+        "flex flex-col gap-1 absolute !top-[100px] text-lg border border-solid border-gray-300 rounded-sm p-2",
         className
       )}
-      position="bottom-right"
+      position="top-right"
     >
       <FileButton title={translate("openFile")} resetNote={resetNote} disabled={isVscode} />
       <RoundButtonWithToolTip
@@ -282,14 +283,29 @@ function AddNodeButton({ addNodeInDirection, Icon }: AddNodeButtonProps) {
     },
     [addNodeInDirection]
   );
+  const mode = useThemeMode();
 
   return (
     <>
       <RoundButton onClick={openMenu} Icon={Icon} />
       {open && (
         <ClickAwayListener onClickAway={closeMenu}>
-          <Popper sx={{ zIndex: 10 }} open={open} anchorEl={anchor} placement="left">
-            <div className="flex bg-white  p-1">
+          <Popper
+            sx={{ zIndex: 10 }}
+            open={open}
+            anchorEl={anchor}
+            placement="left"
+            data-theme={mode}
+            modifiers={[
+              {
+                name: "offset",
+                options: {
+                  offset: [0, 8],
+                },
+              },
+            ]}
+          >
+            <div className="flex bg-white dark:bg-[#222]  p-1 border border-solid border-r-0">
               {Directions.map((dir, i) => (
                 <RoundButton key={dir} arial-label={dir} Icon={Icons[dir]} data-direction={dir} onClick={onClickMenu} />
               ))}
@@ -322,7 +338,7 @@ function RoundButton({ disabled = false, Icon, onClick, ...rest }: RoundButtonPr
       {...rest}
     >
       <Icon
-        className={cls("!stroke-1", hover ? "fill-black stroke-black" : "fill-gray-600 stroke-gray-600")}
+        // className={cls("!stroke-1", hover ? "fill-black stroke-black" : "fill-gray-600 stroke-gray-600")}
         size={16}
         width={16}
         height={16}

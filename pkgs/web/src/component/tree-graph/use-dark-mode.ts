@@ -49,9 +49,9 @@ export function useDarkMode() {
   const mode = themeMode !== "system" ? themeMode : isDarkOS ? "dark" : "light";
   const theme = themes[mode];
   const setThemeMode = useCallback(
-    (v: ThemeMode) => {
-      setKV("themeMode", v);
-      vscode.postMessage({ action: "web2ext-set-theme-mode", data: v } as Web2Ext.SetThemeMode);
+    (val: ThemeMode) => {
+      setKV("themeMode", val);
+      vscode.postMessage({ action: "web2ext-set-kv", data: { key: "themeMode", val } } as Web2Ext.SetKV);
     },
     [setKV]
   );

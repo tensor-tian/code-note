@@ -1236,14 +1236,27 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
     case "ext2web-response-for-ids":
       iDGenerator.receiveIDs(data.key, data.ids);
       break;
-    case "ext2web-ask-theme-mode":
-      setKV("themeMode", data);
+    case "ext2web-get-kv":
+      const { key, val } = data;
+      switch (key) {
+        case "lang":
+          if ((["zh", "en"] as Lang[]).includes(val)) {
+            setKV("lang", val);
+          }
+          break;
+        case "themeMode":
+          if ((["dark", "light", "system"] as ThemeMode[]).includes(val)) {
+            setKV("themeMode", val);
+          }
+          break;
+      }
       break;
   }
 });
 
 vscode.postMessage({ action: "web2ext-ask-init-tree-note", data: "" } as Web2Ext.AskInitTreeNote);
-vscode.postMessage({ action: "web2ext-ask-theme-mode", data: "" } as Web2Ext.AskThemeMode);
+vscode.postMessage({ action: "web2ext-get-kv", data: { key: "themeMode" } } as Web2Ext.GetKV);
+vscode.postMessage({ action: "web2ext-get-kv", data: { key: "lang" } } as Web2Ext.GetKV);
 
 function updateEdges(edges: Edge[], ...updates: [string, string][]): Edge[] {
   const res: Edge[] = [];

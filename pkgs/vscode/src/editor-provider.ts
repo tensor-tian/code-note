@@ -266,19 +266,20 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
           this.insertTextContent(message.data);
           break;
         }
-        case "web2ext-ask-theme-mode": {
-          const mode =
-            this.store.getKV<string | undefined>("theme-mode") ||
-            ("system" as ThemeMode);
+        case "web2ext-get-kv": {
+          const val = this.store.getKV(message.data.key);
           webviewPanel.webview.postMessage({
-            action: "ext2web-ask-theme-mode",
-            data: mode,
-          } as Ext2Web.AskThemMode);
+            action: "ext2web-get-kv",
+            data: {
+              key: message.data.key,
+              val,
+            },
+          } as Ext2Web.GetKV);
           break;
         }
-        case "web2ext-set-theme-mode": {
-          this.store.setKV("theme-mode", message.data);
-          break;
+        case "web2ext-set-kv": {
+          const { key, val } = message.data;
+          this.store.setKV(key, val);
         }
       }
     };

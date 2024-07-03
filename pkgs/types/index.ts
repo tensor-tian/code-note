@@ -99,10 +99,6 @@ namespace Ext2Web {
     action: "ext2web-init-tree-note";
     data: Note;
   };
-  export type AskThemMode = {
-    action: "ext2web-ask-theme-mode";
-    data: ThemeMode;
-  };
   export type TextChange = {
     action: "ext2web-text-change";
     data: {
@@ -138,6 +134,13 @@ namespace Ext2Web {
       key: number;
     };
   };
+  export type GetKV = {
+    action: "ext2web-get-kv";
+    data: {
+      key: string;
+      val: any;
+    };
+  };
   export type Message =
     | AddNode
     | InitTreeNote
@@ -148,7 +151,7 @@ namespace Ext2Web {
     | CodeRangeChange
     | CodeRangeEditDone
     | ResponseForIDs
-    | AskThemMode;
+    | GetKV;
 }
 
 namespace Web2Ext {
@@ -164,16 +167,6 @@ namespace Web2Ext {
   export type AskInitTreeNote = {
     action: "web2ext-ask-init-tree-note";
     data: "";
-  };
-
-  export type AskThemeMode = {
-    action: "web2ext-ask-theme-mode";
-    data: "";
-  };
-
-  export type SetThemeMode = {
-    action: "web2ext-set-theme-mode";
-    data: ThemeMode;
   };
 
   export type TextEditStart = {
@@ -218,6 +211,21 @@ namespace Web2Ext {
     };
   };
 
+  export type SetKV = {
+    action: "web2ext-set-kv";
+    data: {
+      key: string;
+      val: any;
+    };
+  };
+
+  export type GetKV = {
+    action: "web2ext-get-kv";
+    data: {
+      key: string;
+    };
+  };
+
   export type Message =
     | SaveNote
     | ShowMsg
@@ -228,8 +236,8 @@ namespace Web2Ext {
     | CodeRangeEditStop
     | RequestForIDs
     | InsertTextContent
-    | AskThemeMode
-    | SetThemeMode;
+    | SetKV
+    | GetKV;
 }
 
 export type { Ext2Web, Web2Ext };

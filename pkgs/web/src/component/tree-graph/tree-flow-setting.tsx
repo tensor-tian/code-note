@@ -1,6 +1,6 @@
 import { PropsWithChildren, useCallback, useState } from "react";
 import { Panel } from "reactflow";
-import { Lang, ThemeMode } from "types";
+import { Lang, ThemeMode, Web2Ext } from "types";
 import { useTreeNoteStore } from "./store";
 import { selectSettingState } from "./selector";
 import { MdLanguage } from "react-icons/md";
@@ -15,6 +15,7 @@ import {
   MdComputer as IconSystem,
 } from "react-icons/md";
 import { IconType } from "react-icons";
+import { vscode } from "../../utils";
 
 const Icons = {
   light: IconLight,
@@ -54,6 +55,13 @@ export default function Setting({ setThemeMode, themeMode, mode }: SettingProps)
   const onLangChange = useCallback(
     (v: Lang) => {
       setKV("lang", v);
+      vscode.postMessage({
+        action: "web2ext-set-kv",
+        data: {
+          key: "lang",
+          val: v,
+        },
+      } as Web2Ext.SetKV);
     },
     [setKV]
   );
