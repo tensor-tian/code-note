@@ -34,7 +34,7 @@ interface NoteOperator {
 }
 
 interface KeyValueOperator {
-  setKV(key: string, value: string): void;
+  setKV(key: string, value: any): void;
   getKV(key: string): any;
 }
 
@@ -62,7 +62,7 @@ export class Store
     this.fs = vscode.workspace.fs;
   }
 
-  setKV(key: string, value: string): void {
+  setKV(key: string, value: any): void {
     this.kv.update(key, value);
   }
   getKV<T extends any>(key: string): T {

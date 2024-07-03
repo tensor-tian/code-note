@@ -124,7 +124,6 @@ const InnerPreview: FC<MDXProps & { mode: Mode }> = ({ mdx, width, id, mode, scr
     style.overflow = "auto";
     style.height = scrollRootHeight;
   }
-  console.log("id:", id, scrollRootHeight);
   return (
     <>
       {error ? (

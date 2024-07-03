@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { Ext2Web, Note, ThemeMode, Web2Ext } from "types";
+import type { Ext2Web, Note, Web2Ext } from "types";
 import { closeFileIfOpen, getActiveWorkspacePackageInfo } from "./utils";
 
 import { Highlight } from "./highlight";
@@ -280,6 +280,7 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         case "web2ext-set-kv": {
           const { key, val } = message.data;
           this.store.setKV(key, val);
+          break;
         }
       }
     };
