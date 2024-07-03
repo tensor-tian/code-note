@@ -5,13 +5,13 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import reportWebVitals from "./reportWebVitals";
 import { StyledEngineProvider } from "@mui/material/styles";
-import Home from "./component/home";
+import App from "./component/app";
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 
 root.render(
   <React.StrictMode>
     <StyledEngineProvider injectFirst>
-      <Home />
+      <App />
     </StyledEngineProvider>
   </React.StrictMode>
 );

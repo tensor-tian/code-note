@@ -28,6 +28,12 @@ const themes = {
   light: createTheme({
     palette: {
       mode: "light",
+      primary: {
+        main: "#1a202c", //gray 400
+        light: "#e5e7eb", // gray 200
+        dark: "#52525b", // gray 600
+        contrastText: "#111827", // gray 900
+      },
     },
     typography: {
       button: {

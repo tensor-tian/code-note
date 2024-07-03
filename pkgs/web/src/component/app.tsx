@@ -59,7 +59,7 @@ function Graph() {
   return graphType === "TreeNote" ? (
     <ThemeProvider theme={theme}>
       <ThemeModeProvider value={mode}>
-        <div data-theme={mode}>
+        <div data-theme={mode} className="text-gray-900 dark:text-[#ccc]">
           <TreeFlow setThemeMode={setThemeMode} themeMode={themeMode} mode={mode} />
           <Modal
             open={open}
@@ -107,7 +107,7 @@ function Graph() {
   ) : null;
 }
 
-function GraphWrapper() {
+function App() {
   return (
     <ReactFlowProvider>
       <Graph />
@@ -115,7 +115,7 @@ function GraphWrapper() {
   );
 }
 
-export default GraphWrapper;
+export default App;
 
 const useHideUnimportantErrors = () => {
   useEffect(() => {

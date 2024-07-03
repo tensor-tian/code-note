@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { Ext2Web, Note, Web2Ext } from "types";
+import type { Ext2Web, Note, ThemeMode, Web2Ext } from "types";
 import { closeFileIfOpen, getActiveWorkspacePackageInfo } from "./utils";
 
 import { Highlight } from "./highlight";
@@ -264,6 +264,20 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
         }
         case "web2ext-insert-text-content": {
           this.insertTextContent(message.data);
+          break;
+        }
+        case "web2ext-ask-theme-mode": {
+          const mode =
+            this.store.getKV<string | undefined>("theme-mode") ||
+            ("system" as ThemeMode);
+          webviewPanel.webview.postMessage({
+            action: "ext2web-ask-theme-mode",
+            data: mode,
+          } as Ext2Web.AskThemMode);
+          break;
+        }
+        case "web2ext-set-theme-mode": {
+          this.store.setKV("theme-mode", message.data);
           break;
         }
       }
