@@ -21,6 +21,7 @@ export const selectCodeRangeEditingNode = (state: TreeNote.Store) => state.codeR
 export const selectShowCodeNodes = (state: TreeNote.Store) => state.showCodeNodes;
 export const selectHistoryTop = (state: TreeNote.Store) => state.jumpHistory[state.jumpHistory.length - 1];
 const selectIsVscode = (state: TreeNote.Store) => state.isVscode;
+export const selectThemeMode = (state: TreeNote.Store) => state.themeMode;
 
 export const selectNodeInspectorState = (state: TreeNote.Store) => ({
   selectedNodes: state.selectedNodes,
@@ -77,15 +78,14 @@ const selectChain = createSelector([selectAllEdges, selectSelectedNodes, selectN
   return getNextChain(selections, edges);
 });
 
-export const selectLangClass = createSelector([selectLang], (lang) => {
-  return `only-show-lang-${lang}`;
-});
-
 export const selectTitleState = (state: TreeNote.Store) => ({
   id: state.id,
   text: state.text,
   debug: state.debug,
   nodeIds: Object.keys(state.nodeMap).sort(),
+});
+
+export const selectSettingState = (state: TreeNote.Store) => ({
   lang: state.lang,
 });
 

@@ -266,6 +266,22 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
           this.insertTextContent(message.data);
           break;
         }
+        case "web2ext-get-kv": {
+          const val = this.store.getKV(message.data.key);
+          webviewPanel.webview.postMessage({
+            action: "ext2web-get-kv",
+            data: {
+              key: message.data.key,
+              val,
+            },
+          } as Ext2Web.GetKV);
+          break;
+        }
+        case "web2ext-set-kv": {
+          const { key, val } = message.data;
+          this.store.setKV(key, val);
+          break;
+        }
       }
     };
   private sendCachedTextChangeMsg(

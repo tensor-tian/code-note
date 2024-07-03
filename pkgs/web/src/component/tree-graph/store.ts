@@ -1,5 +1,17 @@
 import { getHidden, hasCycle, isCodeNode, isGroupNode, isTextNode, DefaultNodeDimension } from "./layout";
-import type { CodeBlock, Edge, Ext2Web, GroupNode, Node, Note, TextNode, TextNodeType, Web2Ext, Lang } from "types";
+import type {
+  CodeBlock,
+  Edge,
+  Ext2Web,
+  GroupNode,
+  Node,
+  Note,
+  TextNode,
+  TextNodeType,
+  Web2Ext,
+  Lang,
+  ThemeMode,
+} from "types";
 import { EdgeChange, NodeChange, OnConnect, addEdge, applyEdgeChanges, applyNodeChanges, Connection } from "reactflow";
 import { devtools, persist } from "zustand/middleware";
 import { isVscode, saveNote, vscode, vscodeMessage } from "../../utils";
@@ -34,6 +46,7 @@ namespace TreeNote {
     sharedListOpen: boolean;
     lang: Lang;
     isVscode: boolean;
+    themeMode: ThemeMode;
   }
   export type SetKVFn = <T extends keyof Store>(key: Exclude<T, "nodeMap" | "edges">, val: Store[T]) => void;
 
@@ -104,6 +117,7 @@ const initialData: TreeNote.Store = {
   sharedList: [],
   sharedListOpen: false,
   isVscode,
+  themeMode: "system",
 };
 
 export type { TreeNote };
@@ -1221,8 +1235,28 @@ window.addEventListener("message", (event: MessageEvent<Ext2Web.Message>) => {
       break;
     case "ext2web-response-for-ids":
       iDGenerator.receiveIDs(data.key, data.ids);
+      break;
+    case "ext2web-get-kv":
+      const { key, val } = data;
+      switch (key) {
+        case "lang":
+          if ((["zh", "en"] as Lang[]).includes(val)) {
+            setKV("lang", val);
+          }
+          break;
+        case "themeMode":
+          if ((["dark", "light", "system"] as ThemeMode[]).includes(val)) {
+            setKV("themeMode", val);
+          }
+          break;
+      }
+      break;
   }
 });
+
+vscode.postMessage({ action: "web2ext-ask-init-tree-note", data: "" } as Web2Ext.AskInitTreeNote);
+vscode.postMessage({ action: "web2ext-get-kv", data: { key: "themeMode" } } as Web2Ext.GetKV);
+vscode.postMessage({ action: "web2ext-get-kv", data: { key: "lang" } } as Web2Ext.GetKV);
 
 function updateEdges(edges: Edge[], ...updates: [string, string][]): Edge[] {
   const res: Edge[] = [];

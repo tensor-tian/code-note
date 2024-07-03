@@ -83,6 +83,7 @@ export interface Note {
 }
 
 export type TextNodeType = Note["type"] | Block["type"];
+export type ThemeMode = "light" | "dark" | "system";
 
 namespace Ext2Web {
   export type AddNodeData = CodeBlock | TextBlock;
@@ -133,6 +134,13 @@ namespace Ext2Web {
       key: number;
     };
   };
+  export type GetKV = {
+    action: "ext2web-get-kv";
+    data: {
+      key: string;
+      val: any;
+    };
+  };
   export type Message =
     | AddNode
     | InitTreeNote
@@ -142,7 +150,8 @@ namespace Ext2Web {
     | CodeRangeEditReady
     | CodeRangeChange
     | CodeRangeEditDone
-    | ResponseForIDs;
+    | ResponseForIDs
+    | GetKV;
 }
 
 namespace Web2Ext {
@@ -202,6 +211,21 @@ namespace Web2Ext {
     };
   };
 
+  export type SetKV = {
+    action: "web2ext-set-kv";
+    data: {
+      key: string;
+      val: any;
+    };
+  };
+
+  export type GetKV = {
+    action: "web2ext-get-kv";
+    data: {
+      key: string;
+    };
+  };
+
   export type Message =
     | SaveNote
     | ShowMsg
@@ -211,7 +235,9 @@ namespace Web2Ext {
     | CodeRangeEditStart
     | CodeRangeEditStop
     | RequestForIDs
-    | InsertTextContent;
+    | InsertTextContent
+    | SetKV
+    | GetKV;
 }
 
 export type { Ext2Web, Web2Ext };

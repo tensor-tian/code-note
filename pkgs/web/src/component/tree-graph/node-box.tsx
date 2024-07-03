@@ -32,12 +32,13 @@ export default function NodeBox({ id, isActive, isRoot, isSelected, children, cl
   return (
     <div
       className={cx(
-        "node-box",
-        "border bg-white",
-        className,
-        isActive ? "border-gray-600 shadow-lg shadow-gray-900 nowheel" : "border-gray-300",
-        isRoot ? "bg-indigo-100" : "bg-white",
-        isSelected ? "!border-blue-600 !shadow-blue-600" : "bg-white"
+        "node-box  border cn-bg",
+        isActive
+          ? "nowheel border-gray-600 shadow-md shadow-gray-900 dark:border-gray-300 dark:shadow-gray-300"
+          : "border-gray-300 dark:border-gray-600",
+        isRoot ? "!bg-red-100" : "bg-white",
+        isSelected && "!border-blue-600 !shadow-blue-600",
+        className
       )}
       onClick={onActivate}
       style={style}

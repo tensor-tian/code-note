@@ -13,6 +13,9 @@ import IconButton from "@mui/material/IconButton";
 import { IoMdShareAlt as ShareForward } from "react-icons/io";
 import { Web2Ext } from "types";
 import { vscode } from "../utils";
+import { useDarkMode } from "./tree-graph/use-dark-mode";
+import { ThemeProvider } from "@mui/material/styles";
+import { ThemeModeProvider } from "./context";
 
 function Graph() {
   const [graphType, _setGraphType] = useState<string>("TreeNote");
@@ -34,7 +37,6 @@ function Graph() {
           break;
         }
       }
-      console.log("click insert reference btn:", to);
       const prefix = `<Reference to="${to}">`;
       const suffix = "</Reference>";
       navigator.clipboard.writeText(prefix + to + suffix);
@@ -53,48 +55,59 @@ function Graph() {
     },
     [setKV, textEditing]
   );
+  const { mode, setThemeMode, theme, themeMode } = useDarkMode();
   return graphType === "TreeNote" ? (
-    <div>
-      <TreeFlow />
-      <Modal
-        open={open}
-        onClose={onModalClose}
-        aria-labelledby="modal-select-shared-node"
-        aria-describedby="modal-select-shared-node"
-      >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 !w-[800px] border-gray-900 border-solid shadow-sm p-2 rounded-md bg-white ">
-          <div className="flex justify-end">
-            <IconButton aria-label="delete" onClick={onModalClose}>
-              <MdOutlineClose />
-            </IconButton>
-          </div>
-          {sharedNodes.map((node, i) => (
-            <div key={node.id}>
-              <Divider />
-              <Box
-                id={"shared-item-" + node.id}
-                className={cls("my-4 p-2  hover:bg-gray-300 transition-all duration-300 relative")}
-                data-shared-node-id={node.id}
-              >
-                <IconButton
-                  arial-label="Insert Reference"
-                  onClick={insertReference}
-                  className="!absolute top-2 right-2 cursor-pointer"
-                  size="small"
-                >
-                  <ShareForward />
+    <ThemeProvider theme={theme}>
+      <ThemeModeProvider value={mode}>
+        <div data-theme={mode} className="text-gray-900 dark:text-[#ccc]">
+          <TreeFlow setThemeMode={setThemeMode} themeMode={themeMode} mode={mode} />
+          <Modal
+            open={open}
+            onClose={onModalClose}
+            aria-labelledby="modal-select-shared-node"
+            aria-describedby="modal-select-shared-node"
+            data-theme={mode}
+          >
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 !w-[800px] border-gray-900 border-solid shadow-sm p-2 rounded-md  cn-bg">
+              <div className="flex justify-end">
+                <IconButton aria-label="delete" onClick={onModalClose}>
+                  <MdOutlineClose />
                 </IconButton>
-                <MDX mdx={node.data.text} width={500} id={"shared-" + node.id} />
-              </Box>
+              </div>
+              {sharedNodes.map((node, i) => (
+                <div key={node.id}>
+                  <Divider />
+                  <Box
+                    id={"shared-item-" + node.id}
+                    className={cls(
+                      "my-4 p-2  hover:bg-gray-300 hover:dark:bg-gray-800 transition-all duration-300 relative"
+                    )}
+                    data-shared-node-id={node.id}
+                  >
+                    <IconButton
+                      arial-label="Insert Reference"
+                      onClick={insertReference}
+                      className="!absolute top-2 right-2 cursor-pointer"
+                      size="small"
+                    >
+                      <ShareForward />
+                    </IconButton>
+                    <div className="absolute top-2.5 right-12 text-gray-900 dark:text-white text-sm">
+                      ID: <code className="bg-gray-400 dark:bg-gray-700 rounded-sm px-1">{node.id} </code>
+                    </div>
+                    <MDX mdx={node.data.text} width={500} id={"shared-" + node.id} />
+                  </Box>
+                </div>
+              ))}
             </div>
-          ))}
+          </Modal>
         </div>
-      </Modal>
-    </div>
+      </ThemeModeProvider>
+    </ThemeProvider>
   ) : null;
 }
 
-function GraphWrapper() {
+function App() {
   return (
     <ReactFlowProvider>
       <Graph />
@@ -102,7 +115,7 @@ function GraphWrapper() {
   );
 }
 
-export default GraphWrapper;
+export default App;
 
 const useHideUnimportantErrors = () => {
   useEffect(() => {

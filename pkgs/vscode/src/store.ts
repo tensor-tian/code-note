@@ -33,6 +33,11 @@ interface NoteOperator {
   removeNote(uri: Uri): Promise<void>;
 }
 
+interface KeyValueOperator {
+  setKV(key: string, value: any): void;
+  getKV(key: string): any;
+}
+
 const workDir = "code-note";
 const blockIDKey = "code-note-block-id";
 const noteIDKey = "code-note-note-id";
@@ -40,7 +45,9 @@ const addOne = (id: string): string => {
   return (parseInt(id, 36) + 1).toString(36);
 };
 
-export class Store implements VirtualDocOperator, NoteOperator, ID {
+export class Store
+  implements VirtualDocOperator, NoteOperator, ID, KeyValueOperator
+{
   private kv: Memento;
   private fs: vscode.FileSystem;
 
@@ -53,6 +60,13 @@ export class Store implements VirtualDocOperator, NoteOperator, ID {
     //   })
     // );
     this.fs = vscode.workspace.fs;
+  }
+
+  setKV(key: string, value: any): void {
+    this.kv.update(key, value);
+  }
+  getKV<T extends any>(key: string): T {
+    return this.kv.get(key) as T;
   }
 
   getBlockId(): string {

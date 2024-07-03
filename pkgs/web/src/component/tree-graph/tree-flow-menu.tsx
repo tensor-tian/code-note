@@ -10,7 +10,7 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import { BsFileEarmarkArrowUp } from "react-icons/bs";
 import { useHover } from "usehooks-ts";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { HTMLAttributes, useCallback, useMemo, useRef, useState } from "react";
 import cls from "classnames";
 import { vscode, DEFAULT_BLOCK } from "../../utils";
 import { Directions, iDGenerator, multiLangText, useTreeNoteStore } from "./store";
@@ -33,11 +33,12 @@ import {
 } from "react-icons/fa";
 import Popper from "@mui/material/Popper";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
+import { useThemeMode } from "../context";
 
 const Edge = LetterIcon("E");
 const Node = LetterIcon("N");
 
-export default function Menu() {
+export default function Menu({ className }: HTMLAttributes<HTMLDivElement>) {
   const {
     setKV,
     groupNodes,
@@ -127,7 +128,13 @@ export default function Menu() {
   );
 
   return (
-    <Panel className="flex flex-col gap-1 absolute !top-1/4 !bottom-1/4 !right-0 text-lg" position="bottom-right">
+    <Panel
+      className={cls(
+        "flex flex-col gap-1 absolute !top-[100px] text-lg border border-solid border-gray-300 rounded-sm p-2",
+        className
+      )}
+      position="top-right"
+    >
       <FileButton title={translate("openFile")} resetNote={resetNote} disabled={isVscode} />
       <RoundButtonWithToolTip
         Icon={textEditing ? FaTextSlash : BiText}
@@ -183,7 +190,7 @@ export default function Menu() {
 function LetterIcon(letter: string) {
   return ({ className }: { className?: string }) => {
     return (
-      <span className={cls("bg-opacity-0 text-gray-600 ", className, "text-sm font-bold")}>
+      <span className={cls(className, "text-sm font-bold")}>
         <s>{letter}</s>
       </span>
     );
@@ -198,28 +205,17 @@ type RoundButtonWithToolTipProps = {
 };
 
 function RoundButtonWithToolTip({ Icon, title, disabled, onClick }: RoundButtonWithToolTipProps) {
-  const ref = useRef(null);
-  const hover = useHover(ref);
-
   return (
     <Tooltip title={title} arrow placement="left">
       <IconButton
         color="default"
         size="small"
-        ref={ref}
-        className="hover:bg-gray-600"
+        className="cn-menu-btn"
         disabled={disabled}
         onClick={onClick}
         component="span"
       >
-        <Icon
-          className={cls(
-            !hover && "fill-gray-600 stroke-gray-600",
-            hover && "fill-white stroke-white",
-            disabled && "!fill-gray-400"
-          )}
-          size={16}
-        />
+        <Icon size={16} />
       </IconButton>
     </Tooltip>
   );
@@ -230,8 +226,6 @@ type FileButtonProps = {
   resetNote: (note: Note) => void;
 };
 function FileButton({ title, disabled, resetNote }: FileButtonProps) {
-  const ref = useRef(null);
-  const isHover = useHover(ref);
   const onChange = useCallback(
     async (event: React.ChangeEvent) => {
       const input = event.target as HTMLInputElement;
@@ -249,23 +243,8 @@ function FileButton({ title, disabled, resetNote }: FileButtonProps) {
       <div>
         <input type="file" className="hidden" id="menu-open-note-file-id" onChange={onChange} accept=".cnote" />
         <label htmlFor="menu-open-note-file-id">
-          <IconButton
-            color="default"
-            size="small"
-            ref={ref}
-            className={cls("bg-white hover:!bg-gray-500")}
-            disabled={disabled}
-            component="span"
-            // onClick={onClick}
-          >
-            <BsFileEarmarkArrowUp
-              className={cls({
-                "fill-white text-white stroke-white": isHover,
-                "fill-gray-600 stroke-gray-600": !isHover,
-                "!fill-gray-400": disabled,
-              })}
-              size={16}
-            />
+          <IconButton color="default" size="small" className="cn-menu-btn" disabled={disabled} component="span">
+            <BsFileEarmarkArrowUp size={16} />
           </IconButton>
         </label>
       </div>
@@ -304,14 +283,29 @@ function AddNodeButton({ addNodeInDirection, Icon }: AddNodeButtonProps) {
     },
     [addNodeInDirection]
   );
+  const mode = useThemeMode();
 
   return (
     <>
       <RoundButton onClick={openMenu} Icon={Icon} />
       {open && (
         <ClickAwayListener onClickAway={closeMenu}>
-          <Popper sx={{ zIndex: 10 }} open={open} anchorEl={anchor} placement="left">
-            <div className="flex bg-white  p-1">
+          <Popper
+            sx={{ zIndex: 10 }}
+            open={open}
+            anchorEl={anchor}
+            placement="left"
+            data-theme={mode}
+            modifiers={[
+              {
+                name: "offset",
+                options: {
+                  offset: [0, 8],
+                },
+              },
+            ]}
+          >
+            <div className="flex bg-white dark:bg-[#222]  p-1 border border-solid border-r-0">
               {Directions.map((dir, i) => (
                 <RoundButton key={dir} arial-label={dir} Icon={Icons[dir]} data-direction={dir} onClick={onClickMenu} />
               ))}
@@ -337,18 +331,14 @@ function RoundButton({ disabled = false, Icon, onClick, ...rest }: RoundButtonPr
       ref={ref}
       color="default"
       size="small"
-      className={cls("bg-white hover:!bg-gray-500")}
+      className={cls("cn-menu-btn")}
       disabled={disabled}
       component="span"
       onClick={onClick}
       {...rest}
     >
       <Icon
-        className={cls(
-          !hover && "fill-gray-600 stroke-gray-600",
-          hover && "fill-white stroke-white",
-          disabled && "!fill-gray-400"
-        )}
+        // className={cls("!stroke-1", hover ? "fill-black stroke-black" : "fill-gray-600 stroke-gray-600")}
         size={16}
         width={16}
         height={16}
