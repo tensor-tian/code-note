@@ -118,7 +118,6 @@ function ErrorFallback({ error }: { error: string }) {
 const InnerPreview: FC<MDXProps & { mode: Mode }> = ({ mdx, width, id, mode, scrollRootHeight }) => {
   // trigger rerender when width changed
 
-  const langClass = "only-show-lang-" + useTreeNoteStore(selectLang);
   const { Component, error, loading } = useInput(mdx, width, id, mode);
   let style: CSSProperties = {};
   if (id.startsWith("scrolly-") && typeof scrollRootHeight === "number") {
@@ -152,13 +151,9 @@ const InnerPreview: FC<MDXProps & { mode: Mode }> = ({ mdx, width, id, mode, scr
         </div>
       ) : null}
       <div
-        className={cls(
-          "preview-container markdown-body prose dark:prose-invert",
-          {
-            "with-error": error,
-          },
-          langClass
-        )}
+        className={cls("preview-container markdown-body prose dark:prose-invert", {
+          "with-error": error,
+        })}
         style={style}
         id={id}
       >

@@ -184,13 +184,6 @@ strike:after:hover {
   margin-top: 0.25rem !important;
 }
 
-.only-show-lang-en .lang-zh {
-  display: none;
-}
-.only-show-lang-zh .lang-en {
-  display: none;
-}
-
 .reference code {
   @apply !py-0;
   font-size: 12px !important;
