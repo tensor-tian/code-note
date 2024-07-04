@@ -10,7 +10,6 @@ type Props = {
 export default function NodeHandles({ id }: Props) {
   const activeEdge = useTreeNoteStore(selectActiveEdge);
   const selectedEdge = useTreeNoteStore(selectSelectedEdge);
-  console.log("handle:", activeEdge, selectedEdge);
   const isX: IsValidConnection = useCallback((edge) => edge.sourceHandle?.endsWith("right") ?? false, []);
   const isY: IsValidConnection = useCallback((edge) => edge.sourceHandle?.endsWith("bottom") ?? false, []);
 
