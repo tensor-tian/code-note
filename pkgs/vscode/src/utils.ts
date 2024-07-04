@@ -117,7 +117,9 @@ export function nextCol(col: vscode.ViewColumn | undefined): vscode.ViewColumn {
   return col ? col! + 1 : vscode.ViewColumn.Two;
 }
 
+/*
 export function isDark() {
   const systemTheme = vscode.window.activeColorTheme.kind;
   return systemTheme === vscode.ColorThemeKind.Dark;
 }
+*/

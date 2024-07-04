@@ -5,7 +5,7 @@ import { getPartialBlock, getCodeRangeChange } from "./code-hike-mdx";
 
 import type { PartialBlock } from "./code-hike-mdx";
 import { Store } from "./store";
-import { getPackageInfo, isDark } from "./utils";
+import { getPackageInfo } from "./utils";
 
 export enum DecorationKind {
   Code = 0,
@@ -15,69 +15,64 @@ export enum DecorationKind {
 }
 // https://tailwindcss.com/docs/customizing-colors
 
-const DecorationStyles: vscode.DecorationRenderOptions[] = isDark()
-  ? [
-      {
-        // Code
-        isWholeLine: true,
-        backgroundColor: "#1f293780", // gray 800
-        overviewRulerColor: "#4ade80", // green-400
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-      },
-      {
-        // Focus
-        isWholeLine: true,
-        backgroundColor: "#00000080", // black 950
-        overviewRulerColor: "#4ade80", // green-400
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-      },
-      {
-        borderRadius: "3px",
-        backgroundColor: "#7f1d1d", // red 900
-        overviewRulerColor: "#4ade80", // green-400
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-      },
-      {
-        // Link
-        backgroundColor: "#14532d", // green 900
-        borderRadius: "3px",
-        overviewRulerColor: "#4ade80", // green-400
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-      },
-    ]
-  : [
-      {
-        // Code
-        isWholeLine: true,
-        backgroundColor: "#fef9c380", // yellow-100
-        overviewRulerColor: "#4ade80", // green-400
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-      },
-      {
-        // Focus
-        isWholeLine: true,
-        backgroundColor: "#fecaca80", // red-200
-        overviewRulerColor: "#4ade80", // green-400
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-      },
-      {
-        // Mark
-        border: "solid",
-        borderWidth: "1px",
-        borderColor: "#ea580c", // orange 600
-        borderRadius: "3px",
-        backgroundColor: "#fcd34d80", // yellow 300
-        overviewRulerColor: "#4ade80", // green-400
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-      },
-      {
-        // Link
-        borderRadius: "3px",
-        backgroundColor: "#86efac80", // green 300
-        overviewRulerColor: "#4ade80", // green-400
-        overviewRulerLane: vscode.OverviewRulerLane.Right,
-      },
-    ];
+const black = "#00000066";
+const blue900 = "#1e3a8a80";
+const DecorationStyles: vscode.DecorationRenderOptions[] = [
+  {
+    // Code
+    isWholeLine: true,
+    overviewRulerLane: vscode.OverviewRulerLane.Right,
+    dark: {
+      backgroundColor: black,
+      overviewRulerColor: "#4ade80", // green-400
+    },
+    light: {
+      backgroundColor: "#fef9c380", // yellow-100
+      overviewRulerColor: "#4ade80", // green-400
+    },
+  },
+  {
+    // Focus
+    isWholeLine: true,
+    overviewRulerLane: vscode.OverviewRulerLane.Right,
+    dark: {
+      backgroundColor: blue900,
+      overviewRulerColor: "#4ade80", // green-400
+    },
+    light: {
+      backgroundColor: "#fecaca80", // red-200
+      overviewRulerColor: "#4ade80", // green-400
+    },
+  },
+  {
+    // Mark
+    overviewRulerLane: vscode.OverviewRulerLane.Right,
+    dark: {
+      borderRadius: "3px",
+      backgroundColor: "#be185d", // red 700
+      overviewRulerColor: "#4ade80", // green-400
+    },
+    light: {
+      borderRadius: "3px",
+      backgroundColor: "#fcd34d80", // yellow 300
+      overviewRulerColor: "#4ade80", // green-400
+    },
+  },
+  {
+    // Link
+    overviewRulerLane: vscode.OverviewRulerLane.Right,
+    dark: {
+      backgroundColor: "#a21caf", // fuchsia 700
+      borderRadius: "3px",
+      overviewRulerColor: "#4ade80", // green-400
+    },
+    light: {
+      borderRadius: "3px",
+      backgroundColor: "#86efac80", // green 300
+      overviewRulerColor: "#4ade80", // green-400
+    },
+  },
+];
 
 const N = Object.values(DecorationKind).length / 2;
 
