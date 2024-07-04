@@ -126,11 +126,13 @@ body,
 }
 
 .code-handle {
-  @apply bg-gray-900 border-gray-900 w-1 h-1;
+  @apply bg-gray-900 border-gray-900 dark:!bg-gray-200 dark:!border-gray-200 w-1 h-1;
 }
+
 .code-handle-hl {
-  @apply bg-gray-900 border-gray-900 w-2 h-2;
+  @apply dark:!bg-gray-200 dark:!border-gray-200 w-2 h-2;
 }
+
 .react-flow__devtools-nodeinspector {
   pointer-events: none;
   font-family: monospace, sans-serif;

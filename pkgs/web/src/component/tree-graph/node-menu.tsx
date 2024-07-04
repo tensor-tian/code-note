@@ -6,7 +6,7 @@ import { BiCopy, BiText } from "react-icons/bi";
 import { FaTextSlash } from "react-icons/fa6";
 import { useTreeNoteStore } from "./store";
 // import { IoCode } from "react-icons/io5";
-import { selectBlockState, selectDebug } from "./selector";
+import { selectBlockState } from "./selector";
 import { AiOutlineGroup } from "react-icons/ai";
 import { FaRegRectangleList } from "react-icons/fa6";
 import { TbViewportNarrow, TbViewportWide } from "react-icons/tb";
@@ -109,7 +109,7 @@ export default function NodeMenu({ data, copyMdx }: NodeMenuProps) {
         />
         {historyBackElement}
       </div>
-      <pre className="text-xs border-none rounded-sm px-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-300 absolute left-1/2 -translate-x-1/2">
+      <pre className="text-xs border-none rounded-sm px-1 bg-gray-100 dark:bg-gray-800 text-gray-500 absolute left-1/2 -translate-x-1/2">
         {id}
       </pre>
       <div className="flex flex-grow justify-end gap-2 ">

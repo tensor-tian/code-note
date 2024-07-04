@@ -3,7 +3,6 @@ import { useTreeNoteStore } from "./store";
 import { selectActiveEdge, selectSelectedEdge } from "./selector";
 import { useCallback } from "react";
 import cx from "classnames";
-import { useThemeMode } from "../hooks";
 
 type Props = {
   id: string;
@@ -11,7 +10,7 @@ type Props = {
 export default function NodeHandles({ id }: Props) {
   const activeEdge = useTreeNoteStore(selectActiveEdge);
   const selectedEdge = useTreeNoteStore(selectSelectedEdge);
-  const mode = useThemeMode();
+  console.log("handle:", activeEdge, selectedEdge);
   const isX: IsValidConnection = useCallback((edge) => edge.sourceHandle?.endsWith("right") ?? false, []);
   const isY: IsValidConnection = useCallback((edge) => edge.sourceHandle?.endsWith("bottom") ?? false, []);
 
@@ -29,12 +28,9 @@ export default function NodeHandles({ id }: Props) {
         isConnectableStart={false}
         position={Position.Top}
         className={cx(
-          "code-handle -top-0.5",
-          activeEdge?.targetHandle === idTop
-            ? "code-handle-hl -top-1"
-            : selectedEdge?.targetHandle === idTop
-            ? "!bg-blue !border-blue"
-            : "bg-gray-900"
+          "code-handle -top-0.5 ",
+          selectedEdge?.targetHandle === idTop && "!bg-blue !border-blue",
+          activeEdge?.targetHandle === idTop && "code-handle-hl -top-1"
         )}
         isValidConnection={isY}
       />
@@ -46,11 +42,8 @@ export default function NodeHandles({ id }: Props) {
         position={Position.Left}
         className={cx(
           "code-handle -left-0.5",
-          activeEdge?.targetHandle === idLeft
-            ? "code-handle-hl -left-1"
-            : selectedEdge?.targetHandle === idLeft
-            ? "!bg-blue !border-blue"
-            : "bg-gray-900"
+          selectedEdge?.targetHandle === idLeft && "!bg-blue !border-blue",
+          activeEdge?.targetHandle === idLeft && "code-handle-hl -left-1"
         )}
         isValidConnection={isX}
       />
@@ -62,11 +55,8 @@ export default function NodeHandles({ id }: Props) {
         position={Position.Right}
         className={cx(
           "code-handle -right-0.5",
-          activeEdge?.sourceHandle === idRight
-            ? "code-handle-hl -right-1"
-            : selectedEdge?.sourceHandle === idRight
-            ? "!bg-blue !border-blue"
-            : "bg-gray-900"
+          selectedEdge?.sourceHandle === idRight && "!bg-blue !border-blue",
+          activeEdge?.sourceHandle === idRight && "code-handle-hl -right-1"
         )}
       />
       <Handle
@@ -77,11 +67,8 @@ export default function NodeHandles({ id }: Props) {
         isConnectableEnd={false}
         className={cx(
           "code-handle -bottom-0.5",
-          activeEdge?.sourceHandle === idBottom
-            ? "code-handle-hl -bottom-1"
-            : selectedEdge?.sourceHandle === idBottom
-            ? "!bg-blue !border-blue"
-            : "bg-gray-900"
+          selectedEdge?.sourceHandle === idBottom && "!bg-blue !border-blue",
+          activeEdge?.sourceHandle === idBottom && "code-handle-hl -bottom-1"
         )}
       />
     </>
