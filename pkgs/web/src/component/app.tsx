@@ -15,7 +15,7 @@ import { Web2Ext } from "types";
 import { vscode } from "../utils";
 import { useDarkMode } from "./tree-graph/use-dark-mode";
 import { ThemeProvider } from "@mui/material/styles";
-import { ThemeModeProvider } from "./context";
+import { ThemeModeProvider } from "./hooks";
 
 function Graph() {
   const [graphType, _setGraphType] = useState<string>("TreeNote");

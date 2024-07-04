@@ -206,18 +206,21 @@ export const useTreeNoteStore = create<TreeNote.State>(
           set({ [key]: val }, "setKV:" + key, save);
         },
         activateNode: (id, edge) => {
-          const { nodeMap, renderAsGroupNodes } = get();
+          const { nodeMap, renderAsGroupNodes, activeNodeId } = get();
+          if (activeNodeId === id) {
+            return;
+          }
           const node = nodeMap[id];
-          let activeNodeId = id;
+          let nextActiveNodeId = id;
           if (isGroupNode(node) && !renderAsGroupNodes.includes(id) && edge) {
             const chain = node.data.chain;
             if (edge.target === node.id) {
-              activeNodeId = chain[0];
+              nextActiveNodeId = chain[0];
             } else {
-              activeNodeId = chain[chain.length - 1];
+              nextActiveNodeId = chain[chain.length - 1];
             }
           }
-          set({ activeNodeId }, "activateNode", false);
+          set({ activeNodeId: nextActiveNodeId }, "activateNode", false);
           panToActive();
         },
         toggleNodeSelection: (id) => {
