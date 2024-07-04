@@ -1,10 +1,11 @@
 import "@code-hike-local/mdx/dist/index.css";
+import "./github-markdown.css";
 
 import * as runtime from "react/jsx-runtime";
 
 import type { CSSProperties, ErrorInfo, FC, PropsWithChildren } from "react";
 import { compile, run } from "@mdx-js/mdx";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CH } from "@code-hike-local/mdx/components";
 import { ErrorBoundary } from "react-error-boundary";
@@ -20,7 +21,7 @@ import { useTreeNoteStore } from "./tree-graph/store";
 import { selectLang } from "./tree-graph/selector";
 import { useNodeId } from "reactflow";
 import { ThemeMode } from "types";
-import { useThemeMode } from "./context";
+import { useThemeMode } from "./hooks";
 
 type Mode = Exclude<ThemeMode, "system">;
 const themeMap = {
@@ -124,6 +125,24 @@ const InnerPreview: FC<MDXProps & { mode: Mode }> = ({ mdx, width, id, mode, scr
     style.overflow = "auto";
     style.height = scrollRootHeight;
   }
+  const lang = useTreeNoteStore(selectLang);
+  const components = useMemo(() => {
+    if (lang === "en") {
+      return {
+        CH,
+        Reference,
+        LangZh: () => null,
+        LangEn,
+      };
+    } else if (lang === "zh") {
+      return {
+        CH,
+        Reference,
+        LangZh,
+        LangEn: () => null,
+      };
+    }
+  }, [lang]);
   return (
     <>
       {error ? (
@@ -134,7 +153,7 @@ const InnerPreview: FC<MDXProps & { mode: Mode }> = ({ mdx, width, id, mode, scr
       ) : null}
       <div
         className={cls(
-          "preview-container",
+          "preview-container markdown-body prose dark:prose-invert",
           {
             "with-error": error,
           },
@@ -144,7 +163,7 @@ const InnerPreview: FC<MDXProps & { mode: Mode }> = ({ mdx, width, id, mode, scr
         id={id}
       >
         {/* <div style={{ opacity: loading ? 1 : 0 }} className="loading-border" /> */}
-        {Component ? <Component components={{ CH, LangZh, LangEn, Reference }} /> : null}
+        {Component ? <Component components={components} /> : null}
       </div>
     </>
   );

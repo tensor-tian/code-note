@@ -33,7 +33,7 @@ import {
 } from "react-icons/fa";
 import Popper from "@mui/material/Popper";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
-import { useThemeMode } from "../context";
+import { useThemeMode } from "../hooks";
 
 const Edge = LetterIcon("E");
 const Node = LetterIcon("N");

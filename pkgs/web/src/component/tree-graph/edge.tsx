@@ -1,10 +1,10 @@
 import type { EdgeMouseHandler, EdgeProps } from "reactflow";
 import { selectActiveEdgeId, selectActiveNodeId, selectEdges } from "./selector";
 import { useTreeNoteStore } from "./store";
-import { useCallback, useContext, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import { BezierEdge } from "reactflow";
-import { useThemeMode } from "../context";
+import { useThemeMode } from "../hooks";
 
 const gray100 = "#f7fafc";
 const gray900 = "#1a202c";
@@ -23,20 +23,18 @@ const CodeEdge = (props: EdgeProps) => {
         strokeWidth: 4,
         ...style,
       };
-    } else {
-      if (isSelected) {
-        return {
-          stroke: blue400,
-          strokeWidth: 2,
-          ...style,
-        };
-      }
+    } else if (isSelected) {
       return {
-        stroke: mode === "light" ? gray100 : gray600,
-        strokeWidth: 1,
+        stroke: blue400,
+        strokeWidth: 2,
         ...style,
       };
     }
+    return {
+      stroke: gray600,
+      strokeWidth: 1,
+      ...style,
+    };
   }, [isActive, isSelected, mode, style]);
   return <BezierEdge {...props} style={newStyle} />;
 };

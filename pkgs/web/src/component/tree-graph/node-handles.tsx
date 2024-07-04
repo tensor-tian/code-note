@@ -3,6 +3,7 @@ import { useTreeNoteStore } from "./store";
 import { selectActiveEdge, selectSelectedEdge } from "./selector";
 import { useCallback } from "react";
 import cx from "classnames";
+import { useThemeMode } from "../hooks";
 
 type Props = {
   id: string;
@@ -10,6 +11,7 @@ type Props = {
 export default function NodeHandles({ id }: Props) {
   const activeEdge = useTreeNoteStore(selectActiveEdge);
   const selectedEdge = useTreeNoteStore(selectSelectedEdge);
+  const mode = useThemeMode();
   const isX: IsValidConnection = useCallback((edge) => edge.sourceHandle?.endsWith("right") ?? false, []);
   const isY: IsValidConnection = useCallback((edge) => edge.sourceHandle?.endsWith("bottom") ?? false, []);
 
