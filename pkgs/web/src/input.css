@@ -173,6 +173,7 @@ strike:after:hover {
 
 .preview-container {
   overflow-wrap: break-word;
+  max-width: none !important;
 }
 
 .ch-scrollycoding-step-content[data-selected] {

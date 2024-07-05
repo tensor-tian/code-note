@@ -1138,3 +1138,7 @@
 .markdown-body > *:first-child > .heading-element:first-child {
   margin-top: 0 !important;
 }
+
+.markdown-body p code {
+  font-weight: 400 !important;
+}
