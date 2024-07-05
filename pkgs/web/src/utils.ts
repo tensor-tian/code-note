@@ -82,7 +82,7 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   filePath: "src/dispose.ts",
   pkgName: "custom-editor-sample",
   pkgPath: "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
-  text: `#### \`disposeAll\` dispose by hand 5 
+  text: `#### _\`disposeAll\`_ dispose by hand 5 
   some text <Reference to="255s">_\`test\`_</Reference> Emphasis, aka italics, with *asterisks* or _underscores_.
 
 | Tables        | Are           | Cool  |

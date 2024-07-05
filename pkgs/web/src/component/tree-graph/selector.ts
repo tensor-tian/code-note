@@ -43,6 +43,7 @@ export const selectBlockState = (id: string) =>
       selectTextEditing,
       selectHistoryTop,
       selectSharedList,
+      selectLang,
     ],
     (
       node,
@@ -54,7 +55,8 @@ export const selectBlockState = (id: string) =>
       codeRangeEditingNode,
       textEditing,
       historyTop,
-      sharedList
+      sharedList,
+      lang
     ) => {
       const width = isGroupNode(node)
         ? +(node.style?.width || node.width || DefaultNodeDimension.W)
@@ -70,6 +72,7 @@ export const selectBlockState = (id: string) =>
         textEditing,
         historyTop,
         shared: sharedList.includes(id),
+        lang,
       };
     }
   );

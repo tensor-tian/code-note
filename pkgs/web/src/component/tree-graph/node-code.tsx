@@ -1,4 +1,4 @@
-import { CodeBlock, Web2Ext } from "types";
+import { CodeBlock, Lang, Web2Ext } from "types";
 import { NodeProps } from "reactflow";
 import { MouseEvent as ReactMouseEvent, memo, useCallback, useMemo } from "react";
 import { useTreeNoteStore } from "./store";
@@ -11,10 +11,10 @@ import NodeMenu from "./node-menu";
 import { selectBlockState } from "./selector";
 
 function CodeNode({ id, data }: NodeProps<CodeBlock>) {
-  const { isSelected, isActive, isRoot, width, showCode } = useTreeNoteStore(selectBlockState(id));
+  const { isSelected, isActive, isRoot, width, showCode, lang } = useTreeNoteStore(selectBlockState(id));
 
   const { mdx, copyMdx } = useMemo(() => {
-    const mdx = showCode ? block2MDX(data) : data.text;
+    const mdx = showCode ? block2MDX(data, lang) : data.text;
     const copyMdx = () => {
       navigator.clipboard.writeText(mdx);
       vscode.postMessage({
@@ -23,7 +23,7 @@ function CodeNode({ id, data }: NodeProps<CodeBlock>) {
       } as Web2Ext.ShowMsg);
     };
     return { mdx, copyMdx };
-  }, [data, showCode]);
+  }, [data, lang, showCode]);
 
   return (
     <NodeBox id={id} isActive={isActive} isRoot={isRoot} isSelected={isSelected} className="p-4" style={{ width }}>
@@ -39,13 +39,25 @@ function CodeNode({ id, data }: NodeProps<CodeBlock>) {
 
 export default memo(CodeNode);
 
-function block2MDX(block: CodeBlock): string {
+function cap1stChar(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function extractInnerContent<T extends string>(text: string, category: T, prefix?: string) {
+  const tag = prefix ?? "" + cap1stChar(category);
+  const ret = text.match(RegExp(`/([\\s\\S]*?)<${tag}>([\\s\\S]*?)<\\/${tag}>([\\s\\S]*?)/gm`));
+  const inner = ret ? ret[2] : text;
+  const outside = ret ? (ret[1] ?? "") + "\n" + (ret[3] ?? "") : "";
+  return {
+    inner,
+    outside,
+  };
+}
+
+function block2MDX(block: CodeBlock, lang: Lang): string {
   const rows = block.rowCount > 50 ? "" : "";
-  let [text, sectionText] = block.text.split("---");
-  if (typeof sectionText === "undefined") {
-    sectionText = text;
-    text = "";
-  }
+  const { inner: langText } = extractInnerContent(block.text, lang, "Lang");
+  const { inner: sectionText, outside: text } = extractInnerContent(langText, "sectionText");
   return `
 ${text}
 
