@@ -2,7 +2,8 @@ import "@code-hike-local/mdx/dist/index.css";
 import "./github-markdown.css";
 
 import * as runtime from "react/jsx-runtime";
-
+// @ts-ignore
+import addClasses from "rehype-add-classes";
 import type { CSSProperties, ErrorInfo, FC, PropsWithChildren } from "react";
 import { compile, run } from "@mdx-js/mdx";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -36,6 +37,12 @@ async function compileAndRun(input: string, mode: Mode) {
       rehypePlugins: [
         // @ts-ignore
         rehypeKatex,
+        [
+          addClasses,
+          {
+            table: "not-prose",
+          },
+        ],
       ],
       remarkPlugins: [
         remarkMath,

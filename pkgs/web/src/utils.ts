@@ -93,7 +93,7 @@ Go \`map\` 的使用基于拉链法（[separate chaining | wikipedia](https://en
 |-------|-----------------|------------------|
 | 桶     | bucket          | _\`bmap\`_         |
 | 桶数组 | array of bucket | _\`hmap.buckets\`_ |
-| 桶链表 ｜ linked list of bucket | _\`hmap.bucket[i]\`_ _\`mapextra.overflow[i]\`_ |
+| 桶链表 | linked list of bucket | _\`hmap.bucket[i]\`_ _\`mapextra.overflow[i]\`_ |
 
 `,
   ranges: "[[], [], [], []]",

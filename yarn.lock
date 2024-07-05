@@ -9102,6 +9102,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"camelcase@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "camelcase@npm:3.0.0"
+  checksum: 10c0/98871bb40b936430beca49490d325759f8d8ade32bea538ee63c20b17b326abb6bbd3e1d84daf63d9332b2fc7637f28696bf76da59180b1247051b955cb1da12
+  languageName: node
+  linkType: hard
+
 "camelcase@npm:^5.0.0, camelcase@npm:^5.3.1":
   version: 5.3.1
   resolution: "camelcase@npm:5.3.1"
@@ -9631,7 +9638,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"comma-separated-tokens@npm:^1.0.0":
+"comma-separated-tokens@npm:^1.0.0, comma-separated-tokens@npm:^1.0.2":
   version: 1.0.8
   resolution: "comma-separated-tokens@npm:1.0.8"
   checksum: 10c0/c3bcfeaa6d50313528a006a40bcc0f9576086665c9b48d4b3a76ddd63e7d6174734386c98be1881cbf6ecfc25e1db61cd775a7b896d2ea7a65de28f83a0f9b17
@@ -10279,6 +10286,13 @@ __metadata:
     domutils: "npm:^2.8.0"
     nth-check: "npm:^2.0.1"
   checksum: 10c0/a489d8e5628e61063d5a8fe0fa1cc7ae2478cb334a388a354e91cf2908154be97eac9fa7ed4dffe87a3e06cf6fcaa6016553115335c4fd3377e13dac7bd5a8e1
+  languageName: node
+  linkType: hard
+
+"css-selector-parser@npm:^1.3.0":
+  version: 1.4.1
+  resolution: "css-selector-parser@npm:1.4.1"
+  checksum: 10c0/4a89a7b61072cf0e4d09e8abbb9a77bc661232b6fe6a6fe51ba775757bae0e3fc462b0db4c9a857da55afb89a1c1746a7b2ec1200f639c539556ebdc758b0101
   languageName: node
   linkType: hard
 
@@ -14393,6 +14407,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hast-util-has-property@npm:^1.0.0":
+  version: 1.0.4
+  resolution: "hast-util-has-property@npm:1.0.4"
+  checksum: 10c0/dcad2e0fc6e2e13b42028ccec40cea5f607ea5fd0c38706467e546df52a5ed5db95c94ba29028855a6024d7a571d7d3dc55403fc16e370f580187716d48865ef
+  languageName: node
+  linkType: hard
+
 "hast-util-heading-rank@npm:^2.1.0":
   version: 2.1.1
   resolution: "hast-util-heading-rank@npm:2.1.1"
@@ -14411,6 +14432,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hast-util-is-element@npm:^1.0.0":
+  version: 1.1.0
+  resolution: "hast-util-is-element@npm:1.1.0"
+  checksum: 10c0/9f95b1e356af3d891a293c1e63560480cb9c2aa33c14e0da3abfaf76aa3f2de8e178643f8459b10e1e2d11a0bc4553c628b57e5afa607791073b61d456f77926
+  languageName: node
+  linkType: hard
+
 "hast-util-is-element@npm:^3.0.0":
   version: 3.0.0
   resolution: "hast-util-is-element@npm:3.0.0"
@@ -14426,6 +14454,25 @@ __metadata:
   dependencies:
     "@types/hast": "npm:^3.0.0"
   checksum: 10c0/5e98168cb44470dc274aabf1a28317e4feb09b1eaf7a48bbaa8c1de1b43a89cd195cb1284e535698e658e3ec26ad91bc5e52c9563c36feb75abbc68aaf68fb9f
+  languageName: node
+  linkType: hard
+
+"hast-util-select@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "hast-util-select@npm:1.0.1"
+  dependencies:
+    camelcase: "npm:^3.0.0"
+    comma-separated-tokens: "npm:^1.0.2"
+    css-selector-parser: "npm:^1.3.0"
+    hast-util-has-property: "npm:^1.0.0"
+    hast-util-is-element: "npm:^1.0.0"
+    hast-util-whitespace: "npm:^1.0.0"
+    not: "npm:^0.1.0"
+    nth-check: "npm:^1.0.1"
+    property-information: "npm:^3.1.0"
+    space-separated-tokens: "npm:^1.1.0"
+    zwitch: "npm:^1.0.0"
+  checksum: 10c0/670ffdcdded6e75156e0677c6dce6e9cd8e5d2230f4c15d8da75a4f2c0b999455fb9f480937289a5e22fe4078999a413b1184243451852e6c5aed65aca871a56
   languageName: node
   linkType: hard
 
@@ -19531,6 +19578,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"not@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "not@npm:0.1.0"
+  checksum: 10c0/b75d7b2e41d73e2e1cb3327826d53667b41bc6ff7d7ff1d8014ad3bf410d4ecd46f512683b22a4c043e03cbb2b0a483aa69232d4bf9c0e2ee1a9127fe02f047a
+  languageName: node
+  linkType: hard
+
 "npm-bundled@npm:^1.1.1":
   version: 1.1.2
   resolution: "npm-bundled@npm:1.1.2"
@@ -19684,7 +19738,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nth-check@npm:^1.0.2":
+"nth-check@npm:^1.0.1, nth-check@npm:^1.0.2":
   version: 1.0.2
   resolution: "nth-check@npm:1.0.2"
   dependencies:
@@ -21971,6 +22025,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"property-information@npm:^3.1.0":
+  version: 3.2.0
+  resolution: "property-information@npm:3.2.0"
+  checksum: 10c0/d277be23e1eabc715f04c8447438a034921eca615e1c876d963f94bb174f7d0e4e2286ba97c9ee85d1bccec3eb2db21f99ad5782aac6dcdc9901d3e210a756ba
+  languageName: node
+  linkType: hard
+
 "property-information@npm:^5.0.0":
   version: 5.6.0
   resolution: "property-information@npm:5.6.0"
@@ -22937,6 +22998,15 @@ __metadata:
   bin:
     regjsparser: bin/parser
   checksum: 10c0/fe44fcf19a99fe4f92809b0b6179530e5ef313ff7f87df143b08ce9a2eb3c4b6189b43735d645be6e8f4033bfb015ed1ca54f0583bc7561bed53fd379feb8225
+  languageName: node
+  linkType: hard
+
+"rehype-add-classes@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "rehype-add-classes@npm:1.0.0"
+  dependencies:
+    hast-util-select: "npm:^1.0.1"
+  checksum: 10c0/1e8bdd020b5b22c20fe468761d94885d9c868bed57087fcc627b215e198636e23a3bcabe7b75856938f4d216f72add73da541abe21051062244fa9c0c591c206
   languageName: node
   linkType: hard
 
@@ -24311,7 +24381,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"space-separated-tokens@npm:^1.0.0":
+"space-separated-tokens@npm:^1.0.0, space-separated-tokens@npm:^1.1.0":
   version: 1.1.5
   resolution: "space-separated-tokens@npm:1.1.5"
   checksum: 10c0/3ee0a6905f89e1ffdfe474124b1ade9fe97276a377a0b01350bc079b6ec566eb5b219e26064cc5b7f3899c05bde51ffbc9154290b96eaf82916a1e2c2c13ead9
@@ -27049,6 +27119,7 @@ __metadata:
     react-use-keypress: "npm:^1.3.1"
     reactflow: "npm:11.11.3"
     redux: "npm:^5.0.1"
+    rehype-add-classes: "npm:^1.0.0"
     rehype-katex: "npm:^7.0.0"
     remark-gfm: "npm:3.0.1"
     remark-math: "npm:^6.0.0"

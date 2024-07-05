@@ -26,7 +26,7 @@
     --bgColor-neutral-muted: #6e768166;
     --bgColor-attention-muted: #bb800926;
     --borderColor-default: #30363d;
-    --borderColor-muted: #30363db3;
+    --borderColor-muted: #30363dd3;
     --borderColor-head: #737373;
     --borderColor-neutral-muted: #6e768166;
     --borderColor-accent-emphasis: #1f6feb;
@@ -662,6 +662,12 @@
 .markdown-body table th {
   font-weight: var(--base-text-weight-semibold, 600);
   /* background-color: var(--bgColor-head); */
+}
+
+.markdown-body table {
+  border-top: 1px solid var(--borderColor-head);
+  border-bottom: 1px solid var(--borderColor-head);
+  font-size: 0.875em;
 }
 
 .markdown-body table th,

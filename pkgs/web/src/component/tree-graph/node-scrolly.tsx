@@ -41,9 +41,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
     ref: textRef,
     box: "border-box",
   });
-  // console.log("use resize observer:", height, "renderAsGroup:", renderAsGroup);
   useEffect(() => {
-    console.log("height changed:", height, renderAsGroup);
     if (!renderAsGroup && typeof height === "number" && height > 0) {
       setGroupTextHeight(id, height);
     }
