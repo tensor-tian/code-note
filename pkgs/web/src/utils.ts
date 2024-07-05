@@ -82,15 +82,18 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   filePath: "src/dispose.ts",
   pkgName: "custom-editor-sample",
   pkgPath: "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
-  text: `#### _\`disposeAll\`_ dispose by hand 5 
-  some text <Reference to="255s">_\`test\`_</Reference> Emphasis, aka italics, with *asterisks* or _underscores_.
+  text: `###  Go map 相关的数据结构字段
 
-| Tables        | Are           | Cool  |
-| ------------- |:-------------:| -----:|
-| col 3 is      | right-aligned |  |
-| col 2 is      | centered      |    |
-| zebra stripes | are neat      |     |
 
+Go \`map\` 的使用基于拉链法（[separate chaining | wikipedia](https://en.wikipedia.org/wiki/Hash_table#Separate_chaining)）的哈希表实现。
+拉链法中，将散列值相同的键值对所在的桶串联成桶链表，桶数组中每一个元素都是一个桶链表的头 （header of linked list）。
+
+对应的数据结构：
+| 简称   |                 | Go               |
+|-------|-----------------|------------------|
+| 桶     | bucket          | _\`bmap\`_         |
+| 桶数组 | array of bucket | _\`hmap.buckets\`_ |
+| 桶链表 ｜ linked list of bucket | _\`hmap.bucket[i]\`_ _\`mapextra.overflow[i]\`_ |
 
 `,
   ranges: "[[], [], [], []]",

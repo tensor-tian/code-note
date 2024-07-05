@@ -41,11 +41,13 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
     ref: textRef,
     box: "border-box",
   });
+  // console.log("use resize observer:", height, "renderAsGroup:", renderAsGroup);
   useEffect(() => {
-    if (typeof height === "number") {
+    console.log("height changed:", height, renderAsGroup);
+    if (!renderAsGroup && typeof height === "number" && height > 0) {
       setGroupTextHeight(id, height);
     }
-  }, [height, id, setGroupTextHeight]);
+  }, [height, id, renderAsGroup, setGroupTextHeight]);
   const stickerWidth = Math.max((3 * width) / 5, 420);
   const contentWidth = width - stickerWidth;
   const style = {
@@ -64,7 +66,13 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
       style={style}
     >
       <NodeMenu data={data} copyMdx={copyMdx} />
-      {mdx.length > 0 && <MDX mdx={mdx} width={width} id={"scrolly-" + id} scrollRootHeight={scrollRootHeight} />}
+      {renderAsGroup
+        ? mdx.length > 0 && <MDX mdx={mdx} width={width} id={"scrolly-" + id} scrollRootHeight={scrollRootHeight} />
+        : mdx.length > 0 && (
+            <div ref={textRef}>
+              <MDX mdx={mdx} width={width} id={"scrolly-" + id} scrollRootHeight={scrollRootHeight} />
+            </div>
+          )}
       <NodeHandles id={id} />
     </NodeBox>
   );
