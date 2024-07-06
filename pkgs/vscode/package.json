@@ -117,14 +117,24 @@
         "when": "editorTextFocus"
       },
       {
-        "command": "vscode-note.add-next",
-        "key": "ctrl+h n",
-        "mac": "cmd+h n"
-      },
-      {
-        "command": "vscode-note.add-detail",
+        "command": "vscode-note.add-node-down",
         "key": "ctrl+h d",
         "mac": "cmd+h d"
+      },
+      {
+        "command": "vscode-note.add-node-right",
+        "key": "ctrl+h r",
+        "mac": "cmd+h r"
+      },
+      {
+        "command": "vscode-note.add-node-up",
+        "key": "ctrl+h u",
+        "mac": "cmd+h u"
+      },
+      {
+        "command": "vscode-note.add-node-left",
+        "key": "ctrl+h l",
+        "mac": "cmd+h l"
       },
       {
         "command": "vscode-note.remove-all",
