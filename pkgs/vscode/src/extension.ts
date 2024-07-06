@@ -41,17 +41,17 @@ export function activate(context: vscode.ExtensionContext) {
         console.error
       );
     }),
-    vscode.commands.registerCommand("vscode-note.add-up", () => {
+    vscode.commands.registerCommand("vscode-note.add-node-up", () => {
       addBlock(editorProvider, highlight, "ext2web-add-top", store).catch(
         console.error
       );
     }),
-    vscode.commands.registerCommand("vscode-note.add-right", () => {
+    vscode.commands.registerCommand("vscode-note.add-node-right", () => {
       addBlock(editorProvider, highlight, "ext2web-add-right", store).catch(
         console.error
       );
     }),
-    vscode.commands.registerCommand("vscode-note.add-down", () => {
+    vscode.commands.registerCommand("vscode-note.add-node-down", () => {
       addBlock(editorProvider, highlight, "ext2web-add-bottom", store).catch(
         console.error
       );
