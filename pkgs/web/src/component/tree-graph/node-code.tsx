@@ -4,7 +4,7 @@ import { MouseEvent as ReactMouseEvent, memo, useCallback, useMemo } from "react
 import { useTreeNoteStore } from "./store";
 
 import MDX from "../mdx";
-import { vscode } from "../../utils";
+import { extractInnerContent, vscode } from "../../utils";
 import NodeHandles from "./node-handles";
 import NodeBox from "./node-box";
 import NodeMenu from "./node-menu";
@@ -14,7 +14,7 @@ function CodeNode({ id, data }: NodeProps<CodeBlock>) {
   const { isSelected, isActive, isRoot, width, showCode, lang } = useTreeNoteStore(selectBlockState(id));
 
   const { mdx, copyMdx } = useMemo(() => {
-    const mdx = showCode ? block2MDX(data, lang) : data.text;
+    const mdx = block2MDX(data, lang, showCode);
     const copyMdx = () => {
       navigator.clipboard.writeText(mdx);
       vscode.postMessage({
@@ -39,26 +39,12 @@ function CodeNode({ id, data }: NodeProps<CodeBlock>) {
 
 export default memo(CodeNode);
 
-function cap1stChar(str: string) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function extractInnerContent<T extends string>(text: string, category: T, prefix?: string) {
-  const tag = prefix ?? "" + cap1stChar(category);
-  const ret = text.match(RegExp(`/([\\s\\S]*?)<${tag}>([\\s\\S]*?)<\\/${tag}>([\\s\\S]*?)/gm`));
-  const inner = ret ? ret[2] : text;
-  const outside = ret ? (ret[1] ?? "") + "\n" + (ret[3] ?? "") : "";
-  return {
-    inner,
-    outside,
-  };
-}
-
-function block2MDX(block: CodeBlock, lang: Lang): string {
+function block2MDX(block: CodeBlock, lang: Lang, showCode = false): string {
   const rows = block.rowCount > 50 ? "" : "";
   const { inner: langText } = extractInnerContent(block.text, lang, "Lang");
-  const { inner: sectionText, outside: text } = extractInnerContent(langText, "sectionText");
-  return `
+  const { inner: sectionText, outside: text } = extractInnerContent(langText, "SectionText");
+  if (showCode) {
+    return `
 ${text}
 
 <CH.Section>
@@ -74,4 +60,11 @@ ${block.code}
 
 </CH.Section>
   `;
+  } else {
+    return `
+${text}
+
+${sectionText}
+  `;
+  }
 }

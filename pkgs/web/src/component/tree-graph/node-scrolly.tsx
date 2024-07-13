@@ -6,7 +6,7 @@ import { CodeNode, ScrollyCodeBlock, Web2Ext } from "types";
 import { CSSProperties, useEffect, useMemo, useRef } from "react";
 import NodeHandles from "./node-handles";
 
-import { vscode } from "../../utils";
+import { extractInnerContent, unwrap, vscode } from "../../utils";
 import MDX from "../mdx";
 import NodeBox from "./node-box";
 import NodeMenu from "./node-menu";
@@ -16,7 +16,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
   const { text } = data;
   const { setGroupTextHeight } = useTreeNoteStore();
   const codes = useTreeNoteStore(selectGroupCodes(id));
-  const { isSelected, isActive, isRoot, width, renderAsGroup } = useTreeNoteStore(selectBlockState(id));
+  const { isSelected, isActive, isRoot, width, renderAsGroup, lang } = useTreeNoteStore(selectBlockState(id));
 
   const { mdx, copyMdx, scrollRootHeight } = useMemo(() => {
     let _mdx = text;
@@ -33,7 +33,7 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
       return { mdx: "", copyMdx: () => {}, scrollRootHeight: undefined };
     }
     scrollRootHeight = Math.min(800, codes.length * 200 + 50);
-    _mdx += "\n\n" + groupCodesMDX(id, codes, scrollRootHeight);
+    _mdx += "\n\n" + groupCodesMDX(id, codes, scrollRootHeight, lang);
     return { mdx: _mdx, copyMdx, scrollRootHeight };
   }, [codes, id, renderAsGroup, text]);
   const textRef = useRef<HTMLDivElement>(null);
@@ -78,10 +78,14 @@ function ScrollyNode({ id, data }: NodeProps<ScrollyCodeBlock>) {
 
 export default ScrollyNode;
 
-function groupCodesMDX(id: string, codes: CodeNode[], scrollRootHeight: number): string {
+function groupCodesMDX(id: string, codes: CodeNode[], scrollRootHeight: number, lang: string): string {
   const maxRows = codes.reduce((rows, code) => Math.max(rows, code.data.rowCount), 10) + 2;
-  return `<CH.Scrollycoding id="${id}" enableScroller={true} rows={${maxRows}} height={${scrollRootHeight}} >
-${codes.map(({ data }) => `\n${data.text}\n\n${data.code}\n`).join("\n---\n")}
-</CH.Scrollycoding>
-`;
+  const text = codes
+    .map(({ data }) => {
+      let { inner: langText } = extractInnerContent(data.text, lang, "Lang");
+      const text = unwrap(langText, "SectionText");
+      return `\n${data.code}\n${text}\n`;
+    })
+    .join("\n---\n");
+  return `<CH.Scrollycoding id="${id}" enableScroller={true} rows={${maxRows}} height={${scrollRootHeight}} >${text}</CH.Scrollycoding>`;
 }

@@ -207,7 +207,6 @@ function Reference({ to, children }: PropsWithChildren<ReferenceProps>) {
   const onClick = useCallback(
     (event: React.MouseEvent) => {
       event.stopPropagation();
-      // console.log("reference to", "id:", id, "to:", to);
       if (id) {
         historyForward(id, to);
       }

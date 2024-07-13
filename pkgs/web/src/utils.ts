@@ -82,20 +82,78 @@ protected _register<T extends vscode.Disposable>(value: T): T {
   filePath: "src/dispose.ts",
   pkgName: "custom-editor-sample",
   pkgPath: "/Users/jinmao/code/vscode/vscode-extension-samples/custom-editor-sample",
-  text: `###  Go map 相关的数据结构字段
+  text: `<LangEn>
+
+### Access value by key
+_\`mapaccess(t, h, key)\`_ is the implementation of map get in Go.
+
+\`\`\`go
+var val = h[key]
+var val, exists = h[key]
+for key, val := range h {
+  // ...
+}
+\`\`\`
+<SectionText>
+Go choose [Seperate chaining](https://en.wikipedia.org/wiki/Hash_table#Separate_chaining) method for resolving collision.
+
+1. It first locates the bucket _\`b\`_ by hashing the _\`key\`_.
+2. Then, it traverses the linked list of bucket, comparing key.
+3. If the key is found, it returns the associated value.
+4. Otherwise, it returns zero value if not found.
 
 
-Go \`map\` 的使用基于拉链法（[separate chaining | wikipedia](https://en.wikipedia.org/wiki/Hash_table#Separate_chaining)）的哈希表实现。
-拉链法中，将散列值相同的键值对所在的桶串联成桶链表，桶数组中每一个元素都是一个桶链表的头 （header of linked list）。
+ </SectionText> 
+</LangEn>
+<LangZh>
 
-对应的数据结构：
-| 简称   |                 | Go               |
-|-------|-----------------|------------------|
-| 桶     | bucket          | _\`bmap\`_         |
-| 桶数组 | array of bucket | _\`hmap.buckets\`_ |
-| 桶链表 | linked list of bucket | _\`hmap.bucket[i]\`_ _\`mapextra.overflow[i]\`_ |
+### Access value by key 2
+_\`mapaccess(t, h, key)\`_ is the implementation of map get in Go.
 
+\`\`\`go
+var val = h[key]
+var val, exists = h[key]
+for key, val := range h {
+  // ...
+}
+\`\`\`
+<SectionText>
+
+Go choose [Seperate chaining](https://en.wikipedia.org/wiki/Hash_table#Separate_chaining) method for resolving collision.
+
+1. It first locates the bucket _\`b\`_ by hashing the _\`key\`_.
+2. Then, it traverses the linked list of bucket, comparing key.
+3. If the key is found, it returns the associated value.
+4. Otherwise, it returns zero value if not found.
+
+</SectionText>
+</LangZh>
 `,
   ranges: "[[], [], [], []]",
   id: "",
 };
+
+function cap1stChar(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function extractInnerContent<T extends string>(text: string, category: T, prefix?: string) {
+  const tag = (prefix ?? "") + cap1stChar(category);
+  const regStr = `([\\s\\S]*)<${tag}>([\\s\\S]*?)<\\/${tag}>([\\s\\S]*)`;
+  const ret = text.match(new RegExp(regStr));
+  const inner = ret ? ret[2] : text;
+  const outside = ret ? (ret[1] ?? "") + "\n" + (ret[3] ?? "") : "";
+  return {
+    inner,
+    outside,
+  };
+}
+
+export function unwrap(text: string, tag: string): string {
+  const regStr = `([\\s\\S]*)<${tag}>([\\s\\S]*?)<\\/${tag}>([\\s\\S]*)`;
+  const ret = text.match(new RegExp(regStr));
+  if (!ret) {
+    return text;
+  }
+  return `${ret[1]}\n${ret[2]}\n${ret[3]}\n`;
+}
