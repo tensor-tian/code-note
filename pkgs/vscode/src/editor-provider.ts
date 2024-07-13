@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import type { Ext2Web, Note, Web2Ext } from "types";
 import { closeFileIfOpen, getActiveWorkspacePackageInfo } from "./utils";
 
-import { Highlight } from "./highlight";
+import { Highlight, lastCharOfLine } from "./highlight";
 import { Store } from "./store";
 import fs from "fs";
 import { initCodeNote } from "./store";
@@ -369,6 +369,18 @@ export class CodeNoteEditorProvider implements vscode.CustomTextEditorProvider {
       viewColumn: editor.viewColumn,
     });
     const text = editor.document.getText(editor.selection);
+    let selection = editor.selection;
+    if (
+      text.endsWith("\n") ||
+      (selection.end.line === selection.start.line + 1 &&
+        selection.end.character === 0)
+    ) {
+      const end = new vscode.Position(
+        selection.end.line - 1,
+        lastCharOfLine(editor.document, selection.end.line - 1)
+      );
+      selection = new vscode.Selection(selection.start, end);
+    }
     const edit = new vscode.WorkspaceEdit();
     edit.replace(editor.document.uri, editor.selection, prefix + text + suffix);
     await vscode.workspace.applyEdit(edit).then(

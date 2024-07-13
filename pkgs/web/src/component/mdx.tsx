@@ -218,7 +218,7 @@ function Reference({ to, children }: PropsWithChildren<ReferenceProps>) {
       className="reference ignore-activate text-xs cursor-pointer  bg-blue-100 py-[1px] px-0.5 rounded-sm dark:bg-blue-800"
       onClick={onClick}
     >
-      <span className="mr-0.5">some {children}</span>
+      <span className="mr-0.5">{children}</span>
       <sup>
         <ShareForward className="inline" />
       </sup>
