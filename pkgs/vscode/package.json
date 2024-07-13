@@ -112,29 +112,29 @@
       },
       {
         "command": "vscode-note.remove-highlight",
-        "key": "ctrl+k r",
+        "key": "ctrl+h r",
         "mac": "cmd+h r",
         "when": "editorTextFocus"
       },
       {
         "command": "vscode-note.add-node-down",
-        "key": "ctrl+h d",
-        "mac": "cmd+h d"
+        "key": "ctrl+h down",
+        "mac": "cmd+h down"
       },
       {
         "command": "vscode-note.add-node-right",
-        "key": "ctrl+h r",
-        "mac": "cmd+h r"
+        "key": "ctrl+h right",
+        "mac": "cmd+h right"
       },
       {
         "command": "vscode-note.add-node-up",
-        "key": "ctrl+h u",
-        "mac": "cmd+h u"
+        "key": "ctrl+h up",
+        "mac": "cmd+h up"
       },
       {
         "command": "vscode-note.add-node-left",
-        "key": "ctrl+h l",
-        "mac": "cmd+h l"
+        "key": "ctrl+h left",
+        "mac": "cmd+h left"
       },
       {
         "command": "vscode-note.remove-all",
